@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contexte délimité « Conformité » (lutte contre le blanchiment). Son propre modèle, son propre langage.
+    Il ne connaît la Tenue de compte QUE par son langage publié (Ddd.TenueDeCompte.Contrats).
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ddd.TenueDeCompte.Contrats\Ddd.TenueDeCompte.Contrats.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="LANGAGE.md" />
+  </ItemGroup>
+
+</Project>

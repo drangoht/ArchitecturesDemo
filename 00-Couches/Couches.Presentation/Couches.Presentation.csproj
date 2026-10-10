@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Couche haute — Présentation (contrôleurs MVC).
+    DisableTransitiveProjectReferences : sans ce réglage, la présentation pourrait utiliser directement
+    BanqueDbContext (référence transitive via Couches.Metier) et sauter la couche métier.
+  -->
+
+  <PropertyGroup>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Couches.Metier\Couches.Metier.csproj" />
+  </ItemGroup>
+
+</Project>

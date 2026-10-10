@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Le domaine : les événements et l'agrégat qui se reconstitue en les rejouant. Aucune dépendance. -->
+
+</Project>

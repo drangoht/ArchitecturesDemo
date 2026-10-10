@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Adapter sortant de notification (ici un simple journal texte ; demain un e-mail ou un SMS). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hexa.Hexagone\Hexa.Hexagone.csproj" />
+  </ItemGroup>
+
+</Project>

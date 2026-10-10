@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contrats publics du module Comptes : ce que les AUTRES modules ont le droit de connaître.
+    Les autres modules référencent ce projet, jamais Modulaire.Comptes lui-même.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modulaire.Partage\Modulaire.Partage.csproj" />
+  </ItemGroup>
+
+</Project>

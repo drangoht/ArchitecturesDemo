@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Couche externe : implémente les interfaces du domaine avec EF Core (base en mémoire pour la démo). -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Onion.Application\Onion.Application.csproj" />
+  </ItemGroup>
+
+</Project>

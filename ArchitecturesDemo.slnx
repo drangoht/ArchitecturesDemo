@@ -1,0 +1,93 @@
+<Solution>
+  <Folder Name="/00-Couches/">
+    <Project Path="00-Couches/Couches.Donnees/Couches.Donnees.csproj" />
+    <Project Path="00-Couches/Couches.Metier/Couches.Metier.csproj" />
+    <Project Path="00-Couches/Couches.Presentation/Couches.Presentation.csproj" />
+    <Project Path="00-Couches/Couches.Tests/Couches.Tests.csproj" />
+  </Folder>
+  <Folder Name="/01-Hexagonale/">
+    <Project Path="01-Hexagonale/Hexa.Adapters.Cli/Hexa.Adapters.Cli.csproj" />
+    <Project Path="01-Hexagonale/Hexa.Adapters.Notifications/Hexa.Adapters.Notifications.csproj" />
+    <Project Path="01-Hexagonale/Hexa.Adapters.Persistance/Hexa.Adapters.Persistance.csproj" />
+    <Project Path="01-Hexagonale/Hexa.Adapters.Web/Hexa.Adapters.Web.csproj" />
+    <Project Path="01-Hexagonale/Hexa.Hexagone/Hexa.Hexagone.csproj" />
+    <Project Path="01-Hexagonale/Hexa.Tests/Hexa.Tests.csproj" />
+  </Folder>
+  <Folder Name="/02-Onion/">
+    <Project Path="02-Onion/Onion.Api/Onion.Api.csproj" />
+    <Project Path="02-Onion/Onion.Application/Onion.Application.csproj" />
+    <Project Path="02-Onion/Onion.Domain/Onion.Domain.csproj" />
+    <Project Path="02-Onion/Onion.Infrastructure/Onion.Infrastructure.csproj" />
+    <Project Path="02-Onion/Onion.Tests/Onion.Tests.csproj" />
+  </Folder>
+  <Folder Name="/03-Clean/">
+    <Project Path="03-Clean/Clean.AdaptateursInterface/Clean.AdaptateursInterface.csproj" />
+    <Project Path="03-Clean/Clean.CasUtilisation/Clean.CasUtilisation.csproj" />
+    <Project Path="03-Clean/Clean.Entites/Clean.Entites.csproj" />
+    <Project Path="03-Clean/Clean.Tests/Clean.Tests.csproj" />
+    <Project Path="03-Clean/Clean.Web/Clean.Web.csproj" />
+  </Folder>
+  <Folder Name="/04-CoeurFonctionnel/">
+    <Project Path="04-CoeurFonctionnel/Fonctionnel.Coeur/Fonctionnel.Coeur.csproj" />
+    <Project Path="04-CoeurFonctionnel/Fonctionnel.Coquille/Fonctionnel.Coquille.csproj" />
+    <Project Path="04-CoeurFonctionnel/Fonctionnel.Tests/Fonctionnel.Tests.csproj" />
+  </Folder>
+  <Folder Name="/05-VerticalSlice/">
+    <Project Path="05-VerticalSlice/Vertical.Api/Vertical.Api.csproj" />
+    <Project Path="05-VerticalSlice/Vertical.Tests/Vertical.Tests.csproj" />
+  </Folder>
+  <Folder Name="/06-Composants/">
+    <Project Path="06-Composants/Composants.Api/Composants.Api.csproj" />
+    <Project Path="06-Composants/Composants.Comptes/Composants.Comptes.csproj" />
+    <Project Path="06-Composants/Composants.Tests/Composants.Tests.csproj" />
+    <Project Path="06-Composants/Composants.Virements/Composants.Virements.csproj" />
+  </Folder>
+  <Folder Name="/07-MonolitheModulaire/">
+    <Project Path="07-MonolitheModulaire/Modulaire.Comptes.Contrats/Modulaire.Comptes.Contrats.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Comptes/Modulaire.Comptes.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Hote/Modulaire.Hote.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Notifications/Modulaire.Notifications.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Partage/Modulaire.Partage.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Tests/Modulaire.Tests.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Virements.Contrats/Modulaire.Virements.Contrats.csproj" />
+    <Project Path="07-MonolitheModulaire/Modulaire.Virements/Modulaire.Virements.csproj" />
+  </Folder>
+  <Folder Name="/08-Microservices/">
+    <Project Path="08-Microservices/Micro.Comptes/Micro.Comptes.csproj" />
+    <Project Path="08-Microservices/Micro.Courtier/Micro.Courtier.csproj" />
+    <Project Path="08-Microservices/Micro.Lanceur/Micro.Lanceur.csproj" />
+    <Project Path="08-Microservices/Micro.Notifications/Micro.Notifications.csproj" />
+    <Project Path="08-Microservices/Micro.Passerelle/Micro.Passerelle.csproj" />
+    <Project Path="08-Microservices/Micro.Tests/Micro.Tests.csproj" />
+    <Project Path="08-Microservices/Micro.Virements/Micro.Virements.csproj" />
+  </Folder>
+  <Folder Name="/09-CQRS/">
+    <Project Path="09-CQRS/Cqrs.Api/Cqrs.Api.csproj" />
+    <Project Path="09-CQRS/Cqrs.Ecriture/Cqrs.Ecriture.csproj" />
+    <Project Path="09-CQRS/Cqrs.Evenements/Cqrs.Evenements.csproj" />
+    <Project Path="09-CQRS/Cqrs.Lecture/Cqrs.Lecture.csproj" />
+    <Project Path="09-CQRS/Cqrs.Tests/Cqrs.Tests.csproj" />
+  </Folder>
+  <Folder Name="/10-EventSourcing/">
+    <Project Path="10-EventSourcing/Es.Api/Es.Api.csproj" />
+    <Project Path="10-EventSourcing/Es.Domaine/Es.Domaine.csproj" />
+    <Project Path="10-EventSourcing/Es.Projections/Es.Projections.csproj" />
+    <Project Path="10-EventSourcing/Es.Stockage/Es.Stockage.csproj" />
+    <Project Path="10-EventSourcing/Es.Tests/Es.Tests.csproj" />
+  </Folder>
+  <Folder Name="/11-DDD/">
+    <Project Path="11-DDD/Ddd.Api/Ddd.Api.csproj" />
+    <Project Path="11-DDD/Ddd.Conformite/Ddd.Conformite.csproj" />
+    <Project Path="11-DDD/Ddd.TenueDeCompte.Application/Ddd.TenueDeCompte.Application.csproj" />
+    <Project Path="11-DDD/Ddd.TenueDeCompte.Contrats/Ddd.TenueDeCompte.Contrats.csproj" />
+    <Project Path="11-DDD/Ddd.TenueDeCompte.Domaine/Ddd.TenueDeCompte.Domaine.csproj" />
+    <Project Path="11-DDD/Ddd.TenueDeCompte.Infrastructure/Ddd.TenueDeCompte.Infrastructure.csproj" />
+    <Project Path="11-DDD/Ddd.Tests/Ddd.Tests.csproj" />
+  </Folder>
+  <Folder Name="/12-Serverless/">
+    <Project Path="12-Serverless/Sls.Fonctions/Sls.Fonctions.csproj" />
+    <Project Path="12-Serverless/Sls.Hote/Sls.Hote.csproj" />
+    <Project Path="12-Serverless/Sls.Plateforme/Sls.Plateforme.csproj" />
+    <Project Path="12-Serverless/Sls.Tests/Sls.Tests.csproj" />
+  </Folder>
+</Solution>

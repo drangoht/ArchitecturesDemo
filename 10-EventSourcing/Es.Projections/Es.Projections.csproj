@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Modèles de lecture construits en rejouant le flux global d'événements.
+    Ils sont jetables : on peut les effacer et les reconstruire à tout moment.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Es.Stockage\Es.Stockage.csproj" />
+  </ItemGroup>
+
+</Project>

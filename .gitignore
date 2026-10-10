@@ -1,0 +1,7 @@
+bin/
+obj/
+.vs/
+*.user
+comptes.json
+evenements.jsonl
+TestResults/

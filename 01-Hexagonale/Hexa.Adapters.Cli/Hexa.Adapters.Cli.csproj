@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Deuxième adapter entrant : la ligne de commande. Même hexagone que l'API web. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hexa.Hexagone\Hexa.Hexagone.csproj" />
+    <ProjectReference Include="..\Hexa.Adapters.Persistance\Hexa.Adapters.Persistance.csproj" />
+    <ProjectReference Include="..\Hexa.Adapters.Notifications\Hexa.Adapters.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Cercle 4 — Frameworks & Drivers : ASP.NET Core, simple « tuyauterie » vers les cercles intérieurs. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clean.AdaptateursInterface\Clean.AdaptateursInterface.csproj" />
+  </ItemGroup>
+
+</Project>

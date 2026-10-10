@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Le magasin d'événements (event store), écrit à la main pour la démo : un journal en ajout seul,
+    éventuellement persisté dans un fichier .jsonl. En production : EventStoreDB, Marten (PostgreSQL)…
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Es.Domaine\Es.Domaine.csproj" />
+  </ItemGroup>
+
+</Project>

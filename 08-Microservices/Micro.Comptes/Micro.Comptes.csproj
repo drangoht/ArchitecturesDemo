@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Service Comptes : un processus à part, sa propre base, déployable seul.
+    Aucune référence vers les autres services : on ne communique que par HTTP et par messages.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+</Project>

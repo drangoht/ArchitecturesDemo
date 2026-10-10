@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Onion.Api/Onion.Api.csproj" />
+  <Project Path="Onion.Application/Onion.Application.csproj" />
+  <Project Path="Onion.Domain/Onion.Domain.csproj" />
+  <Project Path="Onion.Infrastructure/Onion.Infrastructure.csproj" />
+  <Project Path="Onion.Tests/Onion.Tests.csproj" />
+</Solution>

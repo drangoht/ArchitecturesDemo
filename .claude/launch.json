@@ -1,0 +1,83 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "00-couches",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "00-Couches/Couches.Presentation", "--launch-profile", "http"],
+      "port": 5100
+    },
+    {
+      "name": "01-hexagonale",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "01-Hexagonale/Hexa.Adapters.Web", "--launch-profile", "http"],
+      "port": 5101
+    },
+    {
+      "name": "02-onion",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "02-Onion/Onion.Api", "--launch-profile", "http"],
+      "port": 5102
+    },
+    {
+      "name": "03-clean",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "03-Clean/Clean.Web", "--launch-profile", "http"],
+      "port": 5103
+    },
+    {
+      "name": "04-coeur-fonctionnel",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "04-CoeurFonctionnel/Fonctionnel.Coquille", "--launch-profile", "http"],
+      "port": 5104
+    },
+    {
+      "name": "05-vertical-slice",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "05-VerticalSlice/Vertical.Api", "--launch-profile", "http"],
+      "port": 5105
+    },
+    {
+      "name": "06-composants",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "06-Composants/Composants.Api", "--launch-profile", "http"],
+      "port": 5106
+    },
+    {
+      "name": "07-monolithe-modulaire",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "07-MonolitheModulaire/Modulaire.Hote", "--launch-profile", "http"],
+      "port": 5107
+    },
+    {
+      "name": "08-microservices",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "08-Microservices/Micro.Lanceur"],
+      "port": 5200
+    },
+    {
+      "name": "09-cqrs",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "09-CQRS/Cqrs.Api", "--launch-profile", "http"],
+      "port": 5108
+    },
+    {
+      "name": "10-event-sourcing",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "10-EventSourcing/Es.Api", "--launch-profile", "http"],
+      "port": 5109
+    },
+    {
+      "name": "11-ddd",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "11-DDD/Ddd.Api", "--launch-profile", "http"],
+      "port": 5110
+    },
+    {
+      "name": "12-serverless",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "12-Serverless/Sls.Hote", "--launch-profile", "http"],
+      "port": 5111
+    }
+  ]
+}

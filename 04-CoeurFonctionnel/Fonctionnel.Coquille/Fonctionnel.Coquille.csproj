@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Coquille impérative : toutes les I/O (HTTP, base, horloge, journal), mais aucune décision métier.
+    Chaque endpoint suit le même schéma : lire → décider (appel au cœur) → appliquer.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fonctionnel.Coeur\Fonctionnel.Coeur.csproj" />
+  </ItemGroup>
+
+</Project>

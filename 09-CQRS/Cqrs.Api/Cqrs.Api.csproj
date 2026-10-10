@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    L'API assemble les deux côtés : POST → commandes (écriture), GET → requêtes (lecture).
+    Elle fait aussi tourner le synchroniseur qui projette les événements vers la base de lecture.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cqrs.Ecriture\Cqrs.Ecriture.csproj" />
+    <ProjectReference Include="..\Cqrs.Lecture\Cqrs.Lecture.csproj" />
+  </ItemGroup>
+
+</Project>

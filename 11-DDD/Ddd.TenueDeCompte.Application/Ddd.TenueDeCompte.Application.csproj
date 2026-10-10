@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Couche application du contexte « Tenue de compte » : les cas d'utilisation.
+    Mince par nature : elle charge les agrégats, délègue au domaine, enregistre, publie. Aucune règle métier.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ddd.TenueDeCompte.Domaine\Ddd.TenueDeCompte.Domaine.csproj" />
+    <ProjectReference Include="..\Ddd.TenueDeCompte.Contrats\Ddd.TenueDeCompte.Contrats.csproj" />
+  </ItemGroup>
+
+</Project>

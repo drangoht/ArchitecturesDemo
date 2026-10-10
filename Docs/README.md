@@ -1,0 +1,169 @@
+# Architectures logicielles en C# — documentation
+
+Cette documentation explique **treize façons d'organiser une application**, chacune illustrée par une solution .NET 10
+complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
+
+> **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
+> GitHub / GitLab / Azure DevOps, dans Rider et Visual Studio 2022 (aperçu Markdown), et dans VS Code avec l'extension
+> *Markdown Preview Mermaid Support*.
+
+---
+
+## Sommaire
+
+| # | Architecture | En une phrase | Doc | Code |
+|---|---|---|---|---|
+| 0 | **Couches (N-tiers)** | Présentation → Métier → Données : les dépendances descendent vers la base | [00-couches](00-couches.md) | [`00-Couches`](../00-Couches) |
+| 1 | **Hexagonale** (ports & adapters) | Le métier au centre, branché au monde par des ports et des adapters interchangeables | [01-hexagonale](01-hexagonale.md) | [`01-Hexagonale`](../01-Hexagonale) |
+| 2 | **Onion** | Des couches concentriques, toutes les dépendances pointent vers le domaine | [02-onion](02-onion.md) | [`02-Onion`](../02-Onion) |
+| 3 | **Clean Architecture** | Un interacteur par cas d'utilisation ; le résultat sort par un *presenter* | [03-clean](03-clean.md) | [`03-Clean`](../03-Clean) |
+| 4 | **Functional Core, Imperative Shell** | Des règles 100 % pures qui décident ; une coquille qui fait les entrées/sorties | [04-coeur-fonctionnel](04-coeur-fonctionnel.md) | [`04-CoeurFonctionnel`](../04-CoeurFonctionnel) |
+| 5 | **Vertical Slice** | Un fichier par fonctionnalité, de la route jusqu'à la base | [05-vertical-slice](05-vertical-slice.md) | [`05-VerticalSlice`](../05-VerticalSlice) |
+| 6 | **Package by Component** | Une interface publique par composant, tout le reste `internal` | [06-composants](06-composants.md) | [`06-Composants`](../06-Composants) |
+| 7 | **Monolithe modulaire** | Des modules autonomes, reliés par des contrats et des événements, dans un seul déploiement | [07-monolithe-modulaire](07-monolithe-modulaire.md) | [`07-MonolitheModulaire`](../07-MonolitheModulaire) |
+| 8 | **Microservices** | Un processus par service, HTTP + messages, aucun code partagé | [08-microservices](08-microservices.md) | [`08-Microservices`](../08-Microservices) |
+| 9 | **CQRS** | Un modèle pour écrire, un autre pour lire, reliés par des événements | [09-cqrs](09-cqrs.md) | [`09-CQRS`](../09-CQRS) |
+| 10 | **Event Sourcing** | On stocke les événements, l'état se recalcule en les rejouant | [10-event-sourcing](10-event-sourcing.md) | [`10-EventSourcing`](../10-EventSourcing) |
+| 11 | **Domain-Driven Design** | Modéliser le métier dans sa langue ; découper en contextes délimités | [11-ddd](11-ddd.md) | [`11-DDD`](../11-DDD) |
+| 12 | **Serverless** | Des fonctions sans état déclenchées par des événements, facturées à l'usage | [12-serverless](12-serverless.md) | [`12-Serverless`](../12-Serverless) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 7 à 12) |
+
+---
+
+## Trois questions différentes
+
+Ces « architectures » ne répondent pas toutes à la même question. Les mélanger dans un même classement est la principale
+source de confusion. Elles se rangent en trois familles, **et se combinent** d'une famille à l'autre.
+
+```mermaid
+flowchart LR
+    Q1["<b>① Comment organiser le code<br/>à l'intérieur d'une application ?</b>"]
+    Q2["<b>② Comment découper le système<br/>en morceaux indépendants ?</b>"]
+    Q3["<b>③ Comment modéliser<br/>le métier et les données ?</b>"]
+
+    Q1 --> C0["Couches"]
+    Q1 --> C1["Hexagonale"]
+    Q1 --> C2["Onion"]
+    Q1 --> C3["Clean"]
+    Q1 --> C4["Cœur fonctionnel"]
+    Q1 --> C5["Vertical Slice"]
+
+    Q2 --> D6["Composants"]
+    Q2 --> D7["Monolithe modulaire"]
+    Q2 --> D8["Microservices"]
+    Q2 --> D12["Serverless"]
+
+    Q3 --> M11["DDD"]
+    Q3 --> M9["CQRS"]
+    Q3 --> M10["Event Sourcing"]
+
+    classDef q fill:#1f6feb,color:#fff,stroke:#1f6feb
+    class Q1,Q2,Q3 q
+```
+
+| Famille | Question | Granularité | Exemples de combinaison |
+|---|---|---|---|
+| **Organisation du code** | Où mettre quoi, et qui dépend de qui ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice |
+| **Découpage du système** | Quelles frontières, quel déploiement ? | le système entier | Monolithe modulaire dont un module devient microservice |
+| **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
+
+### Les deux grands axes de l'organisation du code
+
+```mermaid
+flowchart TB
+    subgraph H["HORIZONTAL · par couche"]
+        direction LR
+        H1["Couches"] -->|"inversion des<br/>dépendances"| H2["Hexagonale<br/>Onion"] -->|"cas d'utilisation<br/>explicites"| H3["Clean"]
+    end
+    subgraph V["VERTICAL · par fonctionnalité"]
+        direction LR
+        V1["Vertical Slice"] -->|"internal"| V2["Composants"] -->|"contrats +<br/>événements"| V3["Monolithe<br/>modulaire"] -->|"réseau"| V4["Microservices"]
+    end
+    H ~~~ V
+```
+
+- **Horizontal** : on sépare *la technique* (UI, métier, données). Le progrès de *Couches* vers *Hexagonale / Onion / Clean*
+  est l'**inversion des dépendances** : le métier cesse de dépendre de la base de données.
+- **Vertical** : on sépare *les fonctionnalités ou les sous-domaines*. Le progrès de *Composants* vers *Microservices* est
+  une **isolation de plus en plus forte** : visibilité `internal`, puis contrats, puis frontière réseau.
+
+---
+
+## Guide de choix
+
+Aucun choix n'est « le bon » dans l'absolu. Cet arbre donne un **point de départ raisonnable** ; chaque page détaille
+les signaux qui doivent faire évoluer le choix.
+
+```mermaid
+flowchart TD
+    A{"Le métier est-il<br/>surtout du CRUD ?"} -->|oui| B["<b>Couches</b> ou <b>Vertical Slice</b><br/>simple et suffisant"]
+    A -->|"non : règles riches"| C{"Plusieurs équipes /<br/>sous-domaines distincts ?"}
+    C -->|non| D["<b>Hexagonale</b> / <b>Onion</b> / <b>Clean</b><br/>+ objets-valeurs du <b>DDD</b>"]
+    C -->|oui| E["<b>DDD stratégique</b><br/>pour trouver les contextes"]
+    E --> F{"Besoin de déployer /<br/>scaler séparément ?"}
+    F -->|"non (cas le plus fréquent)"| G["<b>Monolithe modulaire</b>"]
+    F -->|"oui, et l'équipe sait<br/>exploiter du distribué"| H["<b>Microservices</b>"]
+    F -->|"charge très irrégulière,<br/>traitements événementiels"| S["<b>Serverless</b><br/>(pour ces traitements)"]
+    G --> I{"Lectures très différentes<br/>ou bien plus nombreuses<br/>que les écritures ?"}
+    H --> I
+    I -->|oui| J["<b>CQRS</b> dans ce module"]
+    J --> K{"L'historique est-il<br/>une donnée métier ?<br/>(audit, banque, compta)"}
+    K -->|oui| L["<b>Event Sourcing</b> dans ce module"]
+    D --> M{"Règles complexes<br/>difficiles à tester ?"}
+    M -->|oui| N["<b>Cœur fonctionnel</b><br/>pour ces règles"]
+```
+
+---
+
+## Comparatif
+
+| | Dépendance du métier | Ce qu'on stocke | Déploiements | Garde-fou | Coût principal |
+|---|---|---|---|---|---|
+| [Couches](00-couches.md) | dépend de la couche données | l'état | 1 | références non transitives | métier couplé à la persistance |
+| [Hexagonale](01-hexagonale.md) | rien | l'état | 1 | discipline + test d'archi | interfaces à maintenir |
+| [Onion](02-onion.md) | rien | l'état | 1 | références de projets | nombre de projets |
+| [Clean](03-clean.md) | rien | l'état | 1 | références de projets | cérémonie (boundaries, presenters) |
+| [Cœur fonctionnel](04-coeur-fonctionnel.md) | rien (pur) | l'état | 1 | séparation des projets | tout charger *avant* de décider |
+| [Vertical Slice](05-vertical-slice.md) | du `DbContext` | l'état | 1 | discipline | duplication si on ne refactore pas |
+| [Composants](06-composants.md) | rien hors du composant | l'état | 1 | **compilateur** (`internal`) | interfaces à concevoir |
+| [Monolithe modulaire](07-monolithe-modulaire.md) | contrats des autres modules | l'état (1 base / module) | 1 | `internal` + Contrats + test d'archi | pas de transaction entre modules |
+| [Microservices](08-microservices.md) | JSON des autres services | l'état (1 base / service) | **N** | **le réseau** | pannes, idempotence, exploitation |
+| [CQRS](09-cqrs.md) | rien (côté écriture) | l'état + des vues | 1 | références de projets | cohérence à terme, données dupliquées |
+| [Event Sourcing](10-event-sourcing.md) | rien | **les événements** | 1 | magasin en ajout seul | versionnement, RGPD, courbe d'apprentissage |
+| [DDD](11-ddd.md) | rien | l'état | 1 | langage + contextes | exige des experts métier disponibles |
+| [Serverless](12-serverless.md) | services gérés du fournisseur | l'état (services gérés) | **1 par fonction** | **la plateforme** | démarrages à froid, dépendance au fournisseur |
+
+---
+
+## Le fil rouge : un virement
+
+Pour comparer, gardez en tête ce scénario, présent dans toutes les démos : *Alice vire 250 € à Bob*.
+Chaque page montre son trajet dans l'architecture concernée.
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant Systeme as Application
+    Client->>Systeme: POST /virements (Alice → Bob, 250 €)
+    Systeme->>Systeme: vérifier les règles (montant, solde, comptes différents…)
+    Systeme->>Systeme: débiter Alice, créditer Bob
+    Systeme-->>Client: résultat (200, 202, 400, 404…)
+    Note over Systeme: Selon l'architecture : synchrone ou non,<br/>une ou plusieurs bases, un ou plusieurs processus,<br/>avec ou sans événements, avec ou sans compensation.
+```
+
+Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1 000 €) et
+**Bob** `22222222-2222-2222-2222-222222222222` (500 €).
+
+---
+
+## Lancer les démos
+
+```powershell
+dotnet test ArchitecturesDemo.slnx                          # les 153 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5111)
+dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
+```
+
+Chaque API contient un fichier **`Banque.http`** avec les requêtes du scénario, à exécuter depuis Visual Studio, Rider
+ou VS Code (extension REST Client). Le [README principal](../README.md) détaille les points à observer pour chaque démo.

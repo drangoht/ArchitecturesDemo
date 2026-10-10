@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Couche 3 — Application Services : orchestration des cas d'utilisation. Dépend uniquement du domaine. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Onion.Domain\Onion.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

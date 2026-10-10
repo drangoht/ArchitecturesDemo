@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    « Building blocks » partagés : le contrat IModule et le bus d'événements.
+    Aucun métier ici : si du métier atterrit dans ce projet, les modules redeviennent couplés.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

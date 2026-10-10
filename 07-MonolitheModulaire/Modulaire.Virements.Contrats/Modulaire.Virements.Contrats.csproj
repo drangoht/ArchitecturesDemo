@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contrats publics du module Virements : ici seulement l'événement qu'il publie. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modulaire.Partage\Modulaire.Partage.csproj" />
+  </ItemGroup>
+
+</Project>

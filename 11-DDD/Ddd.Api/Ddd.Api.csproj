@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Hôte : héberge les deux contextes délimités dans un même processus (ils pourraient être séparés). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ddd.TenueDeCompte.Infrastructure\Ddd.TenueDeCompte.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ddd.Conformite\Ddd.Conformite.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cercle 2 — Use Cases (Application Business Rules).
+    Un dossier par cas d'utilisation : modèles de requête/réponse, boundaries d'entrée/sortie, interacteur.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clean.Entites\Clean.Entites.csproj" />
+  </ItemGroup>
+
+</Project>

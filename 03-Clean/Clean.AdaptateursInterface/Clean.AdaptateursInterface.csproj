@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cercle 3 — Interface Adapters : contrôleurs (entrée), presenters (sortie), gateways (données).
+    Ne dépend toujours pas d'ASP.NET Core : les presenters produisent des view models, pas des IResult.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clean.CasUtilisation\Clean.CasUtilisation.csproj" />
+  </ItemGroup>
+
+</Project>

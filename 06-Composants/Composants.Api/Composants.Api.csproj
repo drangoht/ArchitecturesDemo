@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Couche web, séparée des composants (contrairement au Vertical Slice).
+    Elle référence les composants, mais n'en voit que les interfaces publiques.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Composants.Comptes\Composants.Comptes.csproj" />
+    <ProjectReference Include="..\Composants.Virements\Composants.Virements.csproj" />
+  </ItemGroup>
+
+</Project>

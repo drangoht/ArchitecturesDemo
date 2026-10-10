@@ -1,0 +1,38 @@
+# La projection est volontairement ralentie de 2 s (appsettings.json → Projections:DelaiMs)
+# pour qu'on voie la lecture « en retard » sur l'écriture. Mettre 0 pour la rendre quasi immédiate.
+@base = http://localhost:5108
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### [Requête] Relevé d'Alice : solde, nb d'opérations, 5 dernières opérations (vue prête à l'emploi)
+GET {{base}}/comptes/{{alice}}
+
+### [Commande] Retirer 100 € → 202 Accepted (rien à renvoyer)
+POST {{base}}/comptes/{{alice}}/retrait
+Content-Type: application/json
+
+{ "montant": 100 }
+
+### [Requête] Relevé d'Alice IMMÉDIATEMENT après : encore l'ancien solde (projection pas encore passée)
+GET {{base}}/comptes/{{alice}}
+
+### [Observabilité] Retard de la projection (relancer : le retard retombe à 0 après 2 s)
+GET {{base}}/admin/projections
+
+### [Commande] Virement d'Alice vers Bob
+POST {{base}}/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "cible": "{{bob}}", "montant": 250 }
+
+### [Commande] Rejetée par la validation du pipeline, avant même le gestionnaire (400)
+POST {{base}}/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "cible": "{{alice}}", "montant": 9000 }
+
+### [Requête] Historique paginé de Bob
+GET {{base}}/comptes/{{bob}}/operations?page=1&taille=10
+
+### [Requête] Tableau de bord : maintenu par la projection, jamais recalculé
+GET {{base}}/tableau-de-bord

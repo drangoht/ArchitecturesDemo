@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="Micro.Comptes/Micro.Comptes.csproj" />
+  <Project Path="Micro.Courtier/Micro.Courtier.csproj" />
+  <Project Path="Micro.Lanceur/Micro.Lanceur.csproj" />
+  <Project Path="Micro.Notifications/Micro.Notifications.csproj" />
+  <Project Path="Micro.Passerelle/Micro.Passerelle.csproj" />
+  <Project Path="Micro.Tests/Micro.Tests.csproj" />
+  <Project Path="Micro.Virements/Micro.Virements.csproj" />
+</Solution>

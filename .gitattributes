@@ -1,0 +1,4 @@
+# Fins de ligne normalisées (LF dans le dépôt, natives dans la copie de travail)
+* text=auto
+
+*.sh text eol=lf

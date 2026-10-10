@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Module Notifications : il ne fait qu'écouter les événements des autres modules.
+    Il a été ajouté sans modifier une seule ligne de Comptes ni de Virements.
+    Personne ne l'appelle : il n'a donc pas besoin de projet Contrats.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modulaire.Comptes.Contrats\Modulaire.Comptes.Contrats.csproj" />
+    <ProjectReference Include="..\Modulaire.Virements.Contrats\Modulaire.Virements.Contrats.csproj" />
+  </ItemGroup>
+
+</Project>

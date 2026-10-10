@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Module Virements. Il a besoin des comptes, mais ne référence que leurs CONTRATS :
+    l'implémentation de IComptesApi lui est fournie par l'hôte, via l'injection de dépendances.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modulaire.Comptes.Contrats\Modulaire.Comptes.Contrats.csproj" />
+    <ProjectReference Include="..\Modulaire.Virements.Contrats\Modulaire.Virements.Contrats.csproj" />
+  </ItemGroup>
+
+</Project>

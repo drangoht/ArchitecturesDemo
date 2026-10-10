@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Adapters sortants de persistance : deux implémentations du même port IComptes. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hexa.Hexagone\Hexa.Hexagone.csproj" />
+  </ItemGroup>
+
+</Project>

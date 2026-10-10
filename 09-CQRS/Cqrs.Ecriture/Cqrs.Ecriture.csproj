@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Côté ÉCRITURE (Command) : un modèle riche, conçu pour faire respecter les règles.
+    Il ne sait pas répondre à « affiche-moi l'historique » : ce n'est pas son rôle.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cqrs.Evenements\Cqrs.Evenements.csproj" />
+  </ItemGroup>
+
+</Project>

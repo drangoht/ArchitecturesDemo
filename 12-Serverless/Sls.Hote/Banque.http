@@ -1,0 +1,86 @@
+# Regarder les en-têtes des réponses : X-Instance, X-Demarrage-A-Froid, X-Duree-Ms.
+@base = http://localhost:5111
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+@carla = 33333333-3333-3333-3333-333333333333
+
+############ Démarrage à froid, mise à l'échelle, mise à zéro ############
+
+### 1er appel : démarrage à froid (≈ 600 ms de plus). Relancer aussitôt : instance chaude, quelques ms.
+GET {{base}}/comptes/{{alice}}
+
+### Mémoire d'instance vs service géré : relancer plusieurs fois, puis attendre 20 s (recyclage) et relancer
+GET {{base}}/visites
+
+############ Traitement asynchrone par file ############
+
+### Le virement est accepté (202) puis exécuté par une autre fonction, déclenchée par la file
+POST {{base}}/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "cible": "{{bob}}", "montant": 250 }
+
+### Suivre le virement (remplacer l'identifiant par celui renvoyé ci-dessus)
+GET {{base}}/virements/00000000-0000-0000-0000-000000000000
+
+### Notifications de Bob
+GET {{base}}/comptes/{{bob}}/notifications
+
+############ Fan-out : un fichier déposé → une instance par virement ############
+
+### Déposer un fichier de 8 virements : TraiterImport le découpe, ExecuterVirement monte à plusieurs instances
+POST {{base}}/imports
+Content-Type: text/plain
+
+source;cible;montant
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;10
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;20
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;30
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;40
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;50
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;60
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;70
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;80
+
+### Statistiques : regarder « picInstances » d'ExecuterVirement
+GET {{base}}/plateforme/fonctions
+
+############ Pannes : nouveaux essais et messages empoisonnés ############
+
+### Simuler une panne du fournisseur de SMS (réglage modifié sans redéployer)
+PUT {{base}}/plateforme/reglages/Sms:EnPanne
+Content-Type: application/json
+
+{ "valeur": "true" }
+
+### Faire un virement : il réussit, mais ses notifications échouent 3 fois puis partent dans « notifications-poison »
+POST {{base}}/virements
+Content-Type: application/json
+
+{ "source": "{{carla}}", "cible": "{{alice}}", "montant": 5 }
+
+### Files : voir notifications-poison (attendre ~2 s)
+GET {{base}}/plateforme/files
+
+### Réparer, puis rejouer les messages empoisonnés
+PUT {{base}}/plateforme/reglages/Sms:EnPanne
+Content-Type: application/json
+
+{ "valeur": "false" }
+
+###
+POST {{base}}/plateforme/files/notifications-poison/rejouer
+
+############ Console du fournisseur ############
+
+### Déclencher la minuterie tout de suite (sinon : toutes les 30 s)
+POST {{base}}/plateforme/minuteries/ProduireRapport/declencher
+
+### Objets stockés (imports et rapports)
+GET {{base}}/plateforme/stockage
+
+### Journal centralisé
+GET {{base}}/plateforme/journal?nombre=30
+
+### Facture : à l'invocation et à la Go-seconde
+GET {{base}}/plateforme/facture
