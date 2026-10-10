@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Saga.Api/Saga.Api.csproj" />
+  <Project Path="Saga.Orchestrateur/Saga.Orchestrateur.csproj" />
+  <Project Path="Saga.Participants/Saga.Participants.csproj" />
+  <Project Path="Saga.Tests/Saga.Tests.csproj" />
+</Solution>

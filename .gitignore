@@ -4,4 +4,6 @@ obj/
 *.user
 comptes.json
 evenements.jsonl
+# Sortie de compilation des plugins de la démo 13 (régénérée par dotnet build)
+13-Microkernel/plugins/
 TestResults/

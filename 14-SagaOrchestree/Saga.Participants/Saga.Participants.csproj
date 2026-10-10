@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Les PARTICIPANTS de la saga : en réalité des services distincts, appelés par le réseau.
+    Simulés ici dans le même processus pour se concentrer sur l'orchestration. Chaque opération est idempotente.
+  -->
+
+</Project>

@@ -3,7 +3,7 @@
 > **En une phrase** : on n'écrit plus d'application qui tourne en continu, mais des **fonctions sans état** que le
 > fournisseur cloud exécute à la demande, quand un **événement** survient, et qu'il facture à l'usage.
 
-📁 Code : [`12-Serverless`](../12-Serverless) · ⬅️ [DDD](11-ddd.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`12-Serverless`](../12-Serverless) · ⬅️ [DDD](11-ddd.md) · ➡️ [Microkernel](13-microkernel.md)
 
 ---
 

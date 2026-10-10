@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    Réglages communs aux projets de plugins (importé par chaque .csproj de plugin).
+    - Sortie dans 13-Microkernel/plugins/{NomDuProjet}/ : c'est là que le noyau les cherche.
+    - Mk.Contrats référencé SANS être copié : le plugin utilisera l'exemplaire chargé par le noyau.
+  -->
+  <PropertyGroup>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)plugins\$(MSBuildProjectName)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Mk.Contrats\Mk.Contrats.csproj" Private="false" ExcludeAssets="runtime" />
+    <None Update="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

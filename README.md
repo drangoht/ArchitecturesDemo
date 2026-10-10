@@ -1,10 +1,10 @@
 # Démos d'architectures en C#
 
-Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec douze architectures, plus une démo de conception pilotée par le domaine (DDD).
+Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec quatorze architectures,
+plus une démo de conception pilotée par le domaine (DDD). On peut ainsi comparer la **forme** du code à fonctionnalités égales.
+La démo 0 (couches classiques) sert de point de comparaison : toutes les autres sont nées pour corriger l'une de ses limites.
 
 📘 **Documentation complète, avec schémas : [`Docs/`](Docs/README.md)**.
-On peut ainsi comparer la **forme** du code à fonctionnalités égales. La démo 0 (couches classiques) sert de point de comparaison :
-toutes les autres sont nées pour corriger l'une de ses limites.
 
 | # | Dossier | Architecture | Idée clé | Port |
 |---|---|---|---|---|
@@ -21,6 +21,8 @@ toutes les autres sont nées pour corriger l'une de ses limites.
 | 10 | `10-EventSourcing` | Event Sourcing | On ne stocke pas l'état mais la suite des événements ; l'état se recalcule en les rejouant | 5109 |
 | 11 | `11-DDD` | Domain-Driven Design | Modéliser le métier dans son langage : objets-valeurs, agrégats, contextes délimités, anti-corruption | 5110 |
 | 12 | `12-Serverless` | Serverless (FaaS) | Des fonctions sans état déclenchées par des événements ; le fournisseur gère les serveurs et facture à l'usage | 5111 |
+| 13 | `13-Microkernel` | Microkernel (plugins) | Un noyau minimal ; contrôles, frais et formats de relevé sont des plugins chargés à chaud | 5112 |
+| 14 | `14-SagaOrchestree` | Saga orchestrée | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
 
 Données de démo, identiques partout :
 - **Alice** `11111111-1111-1111-1111-111111111111` : 1 000 € (5 000 € dans la démo 4, pour tester le plafond)
@@ -31,7 +33,7 @@ Tout tourne en mémoire (EF Core InMemory ou dictionnaires) : aucune base à ins
 ## Lancer
 
 ```powershell
-# Tout compiler et tester (153 tests)
+# Tout compiler et tester (181 tests)
 dotnet test ArchitecturesDemo.slnx
 
 # Lancer une API (chaque dossier a aussi sa propre solution .slnx)
@@ -423,20 +425,68 @@ La plateforme est simulée (aucun téléchargement), mais elle reproduit les com
 
 ---
 
+## 13. Microkernel — `13-Microkernel`
+
+```
+Mk.Contrats      le SDK des plugins : IPlugin, IControleOperation, IRegleFrais, IFormatReleve
+Mk.Noyau         NoyauBancaire (comptes, débit, crédit), RegistrePlugins, ChargeurPlugins (AssemblyLoadContext)
+Mk.Hote          API + surveillance du dossier plugins/ (rechargement automatique)
+Mk.Plugins.*     PlafondNocturne, ListeNoire, FraisVirement, Exports (CSV + QIF) → compilés dans plugins/{Nom}/
+```
+
+Un noyau minimal qui ne référence **aucun** plugin ; tout ce qui varie est branché à des points d'extension.
+
+**À observer** (détails : [Docs/13-microkernel.md](Docs/13-microkernel.md))
+- `GET /admin/plugins` : 5 extensions dans 4 DLL, avec leur état et leurs points d'extension.
+- **Rechargement à chaud** : modifier `plugins\Mk.Plugins.ListeNoire\plugin.json`, ou recompiler un plugin **pendant que
+  l'API tourne** (`dotnet build Mk.Plugins.ListeNoire`) : il est rechargé automatiquement. Les DLL sont lues en mémoire,
+  donc jamais verrouillées ; les anciens contextes de chargement sont déchargés.
+- `POST /admin/plugins/{nom}/desactiver` / `activer` : changer le comportement sans redémarrer.
+- **Le piège classique**, évité : `Mk.Contrats` n'est **pas** copié dans le dossier des plugins (`Private="false"`) ; sinon
+  l'`IPlugin` du plugin serait un autre type que celui du noyau. Un test vérifie qu'il n'y en a qu'un exemplaire.
+- Un plugin qui plante est mis « en erreur » et écarté (l'opération en cours est refusée par sécurité) ; un plugin qui
+  exige un noyau plus récent est refusé.
+
+## 14. Saga orchestrée — `14-SagaOrchestree`
+
+```
+Saga.Participants   services simulés et idempotents : Comptes (réserver / capturer), Conformité, Change, Notifications
+Saga.Orchestrateur  DefinitionVirement (les 6 étapes et leurs compensations), MoteurSaga, EtatSaga, MagasinSagas
+Saga.Api            démarrer / suivre une saga, décision de l'analyste, pannes simulées (PUT /chaos), arrêt / relance
+```
+
+Les démos 7 et 8 coordonnent par **chorégraphie** (chacun réagit aux événements des autres) ; ici, un **orchestrateur**
+explicite conduit le processus : ① réserver les fonds, ② contrôle de conformité, ③ change, ④ crédit, ⑤ débit définitif
+(point de non-retour), ⑥ notification.
+
+**À observer** (détails : [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md))
+- `GET /sagas/{id}` : l'état de chaque étape et le journal complet de la saga.
+- **Panne passagère** : `PUT /chaos {"echecsChangeRestants":2}` puis un virement Alice → Carla (USD) : 2 nouveaux essais, puis succès.
+- **Panne durable** : `{"changeHorsService":true}` : abandon au 4e échec, puis compensation en ordre inverse (fonds libérés).
+- **Attente d'un événement extérieur** : un virement ≥ 10 000 € attend la décision d'un analyste
+  (`POST /sagas/{id}/conformite`) ; sans décision avant l'échéance (60 s), il est compensé.
+- **Point de non-retour** : `{"notificationsHorsService":true}` : après le débit définitif on ne compense plus, la saga
+  passe en `ATraiterManuellement`.
+- **Reprise** : `POST /admin/orchestrateur/arreter` pendant une saga, puis `relancer` : elle reprend exactement où elle était,
+  car tout son état est dans le magasin.
+- En production : Temporal, Azure Durable Functions, AWS Step Functions, ou les sagas de MassTransit / NServiceBus.
+
+---
+
 ## Comparatif
 
-| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement |
-| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur |
-| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés |
-| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) |
-| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) |
-| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste |
-| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie |
-| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet |
-| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels |
-| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué |
+| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants |
+| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur |
+| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga |
+| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 |
+| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants |
+| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser |
+| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs |
+| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise |
+| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas |
+| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter |
 
 La progression 6 → 7 → 8 montre un même découpage par sous-domaine de plus en plus isolé : visibilité `internal`, puis
 modules autonomes dans un processus, puis services séparés par le réseau. Chaque étape apporte de l'indépendance

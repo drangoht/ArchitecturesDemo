@@ -78,6 +78,18 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "12-Serverless/Sls.Hote", "--launch-profile", "http"],
       "port": 5111
+    },
+    {
+      "name": "13-microkernel",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "13-Microkernel/Mk.Hote", "--launch-profile", "http"],
+      "port": 5112
+    },
+    {
+      "name": "14-saga-orchestree",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "14-SagaOrchestree/Saga.Api", "--launch-profile", "http"],
+      "port": 5113
     }
   ]
 }

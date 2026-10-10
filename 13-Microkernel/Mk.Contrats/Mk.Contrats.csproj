@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Le SDK des plugins : les SEULS types partagés entre le noyau et les plugins.
+    Les plugins le référencent sans le copier (Private="false") : à l'exécution, ils utilisent l'exemplaire du noyau.
+  -->
+
+</Project>

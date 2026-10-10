@@ -90,4 +90,20 @@
     <Project Path="12-Serverless/Sls.Plateforme/Sls.Plateforme.csproj" />
     <Project Path="12-Serverless/Sls.Tests/Sls.Tests.csproj" />
   </Folder>
+  <Folder Name="/13-Microkernel/">
+    <Project Path="13-Microkernel/Mk.Contrats/Mk.Contrats.csproj" />
+    <Project Path="13-Microkernel/Mk.Hote/Mk.Hote.csproj" />
+    <Project Path="13-Microkernel/Mk.Noyau/Mk.Noyau.csproj" />
+    <Project Path="13-Microkernel/Mk.Plugins.Exports/Mk.Plugins.Exports.csproj" />
+    <Project Path="13-Microkernel/Mk.Plugins.FraisVirement/Mk.Plugins.FraisVirement.csproj" />
+    <Project Path="13-Microkernel/Mk.Plugins.ListeNoire/Mk.Plugins.ListeNoire.csproj" />
+    <Project Path="13-Microkernel/Mk.Plugins.PlafondNocturne/Mk.Plugins.PlafondNocturne.csproj" />
+    <Project Path="13-Microkernel/Mk.Tests/Mk.Tests.csproj" />
+  </Folder>
+  <Folder Name="/14-SagaOrchestree/">
+    <Project Path="14-SagaOrchestree/Saga.Api/Saga.Api.csproj" />
+    <Project Path="14-SagaOrchestree/Saga.Orchestrateur/Saga.Orchestrateur.csproj" />
+    <Project Path="14-SagaOrchestree/Saga.Participants/Saga.Participants.csproj" />
+    <Project Path="14-SagaOrchestree/Saga.Tests/Saga.Tests.csproj" />
+  </Folder>
 </Solution>

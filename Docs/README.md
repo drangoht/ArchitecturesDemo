@@ -1,6 +1,6 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **treize façons d'organiser une application**, chacune illustrée par une solution .NET 10
+Cette documentation explique **quinze façons d'organiser une application**, chacune illustrée par une solution .NET 10
 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
@@ -27,7 +27,9 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 10 | **Event Sourcing** | On stocke les événements, l'état se recalcule en les rejouant | [10-event-sourcing](10-event-sourcing.md) | [`10-EventSourcing`](../10-EventSourcing) |
 | 11 | **Domain-Driven Design** | Modéliser le métier dans sa langue ; découper en contextes délimités | [11-ddd](11-ddd.md) | [`11-DDD`](../11-DDD) |
 | 12 | **Serverless** | Des fonctions sans état déclenchées par des événements, facturées à l'usage | [12-serverless](12-serverless.md) | [`12-Serverless`](../12-Serverless) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 7 à 12) |
+| 13 | **Microkernel** (plugins) | Un noyau minimal et des plugins chargés, déchargés et mis à jour à chaud | [13-microkernel](13-microkernel.md) | [`13-Microkernel`](../13-Microkernel) |
+| 14 | **Saga orchestrée** | Un orchestrateur pilote un processus multi-services : état persistant, réessais, attentes, compensation | [14-saga-orchestree](14-saga-orchestree.md) | [`14-SagaOrchestree`](../14-SagaOrchestree) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 14) |
 
 ---
 
@@ -48,11 +50,13 @@ flowchart LR
     Q1 --> C3["Clean"]
     Q1 --> C4["Cœur fonctionnel"]
     Q1 --> C5["Vertical Slice"]
+    Q1 --> C13["Microkernel"]
 
     Q2 --> D6["Composants"]
     Q2 --> D7["Monolithe modulaire"]
     Q2 --> D8["Microservices"]
     Q2 --> D12["Serverless"]
+    Q2 --> D14["Saga orchestrée"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -64,8 +68,8 @@ flowchart LR
 
 | Famille | Question | Granularité | Exemples de combinaison |
 |---|---|---|---|
-| **Organisation du code** | Où mettre quoi, et qui dépend de qui ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice |
-| **Découpage du système** | Quelles frontières, quel déploiement ? | le système entier | Monolithe modulaire dont un module devient microservice |
+| **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau |
+| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
 
 ### Les deux grands axes de l'organisation du code
@@ -112,6 +116,12 @@ flowchart TD
     K -->|oui| L["<b>Event Sourcing</b> dans ce module"]
     D --> M{"Règles complexes<br/>difficiles à tester ?"}
     M -->|oui| N["<b>Cœur fonctionnel</b><br/>pour ces règles"]
+    D --> P{"Variantes par client,<br/>extensions par des tiers ?"}
+    P -->|oui| Q["<b>Microkernel</b><br/>(plugins)"]
+    H --> T{"Processus en plusieurs étapes<br/>entre services, avec attentes<br/>et règles d'échec ?"}
+    G --> T
+    T -->|oui| U["<b>Saga orchestrée</b>"]
+    T -->|"non : simples notifications"| V["chorégraphie<br/>(événements)"]
 ```
 
 ---
@@ -133,6 +143,8 @@ flowchart TD
 | [Event Sourcing](10-event-sourcing.md) | rien | **les événements** | 1 | magasin en ajout seul | versionnement, RGPD, courbe d'apprentissage |
 | [DDD](11-ddd.md) | rien | l'état | 1 | langage + contextes | exige des experts métier disponibles |
 | [Serverless](12-serverless.md) | services gérés du fournisseur | l'état (services gérés) | **1 par fonction** | **la plateforme** | démarrages à froid, dépendance au fournisseur |
+| [Microkernel](13-microkernel.md) | rien (les plugins dépendent du SDK) | l'état | 1 (+ plugins déposés à chaud) | contexte de chargement par plugin | SDK à versionner, plugins dans le processus |
+| [Saga orchestrée](14-saga-orchestree.md) | des participants, via l'orchestrateur | l'état + l'état de chaque saga | 1 orchestrateur + N participants | moteur : réessais, échéances, compensation | participants idempotents, orchestrateur à exploiter |
 
 ---
 
@@ -160,8 +172,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 153 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5111)
+dotnet test ArchitecturesDemo.slnx                          # les 181 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5113)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

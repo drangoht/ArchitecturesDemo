@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mk.Hote\Mk.Hote.csproj" />
+    <!-- Les plugins ne sont PAS référencés comme bibliothèques : on s'assure seulement qu'ils sont compilés avant les tests. -->
+    <ProjectReference Include="..\Mk.Plugins.FraisVirement\Mk.Plugins.FraisVirement.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mk.Plugins.PlafondNocturne\Mk.Plugins.PlafondNocturne.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mk.Plugins.ListeNoire\Mk.Plugins.ListeNoire.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mk.Plugins.Exports\Mk.Plugins.Exports.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
