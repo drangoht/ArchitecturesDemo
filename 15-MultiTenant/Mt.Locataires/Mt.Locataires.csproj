@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    LA « LOCATION » (tenancy) : qui sont les locataires, comment reconnaître celui d'une requête, et ce que chacun
+    a le droit de consommer. Aucun métier bancaire ici : ce projet servirait tel quel à n'importe quelle application SaaS.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

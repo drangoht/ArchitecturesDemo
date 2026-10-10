@@ -1,6 +1,6 @@
 # Démos d'architectures en C#
 
-Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec quatorze architectures,
+Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec quinze architectures,
 plus une démo de conception pilotée par le domaine (DDD). On peut ainsi comparer la **forme** du code à fonctionnalités égales.
 La démo 0 (couches classiques) sert de point de comparaison : toutes les autres sont nées pour corriger l'une de ses limites.
 
@@ -23,17 +23,20 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 | 12 | `12-Serverless` | Serverless (FaaS) | Des fonctions sans état déclenchées par des événements ; le fournisseur gère les serveurs et facture à l'usage | 5111 |
 | 13 | `13-Microkernel` | Microkernel (plugins) | Un noyau minimal ; contrôles, frais et formats de relevé sont des plugins chargés à chaud | 5112 |
 | 14 | `14-SagaOrchestree` | Saga orchestrée | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
+| 15 | `15-MultiTenant` | Multi-tenant (SaaS) | Une seule application pour plusieurs banques clientes : données isolées, règles et quotas par client | 5114 |
 
 Données de démo, identiques partout :
 - **Alice** `11111111-1111-1111-1111-111111111111` : 1 000 € (5 000 € dans la démo 4, pour tester le plafond)
 - **Bob** `22222222-2222-2222-2222-222222222222` : 500 €
+
+Dans la démo 15, Alice et Bob existent chez chacune des trois banques clientes, avec des soldes différents.
 
 Tout tourne en mémoire (EF Core InMemory ou dictionnaires) : aucune base à installer.
 
 ## Lancer
 
 ```powershell
-# Tout compiler et tester (181 tests)
+# Tout compiler et tester (206 tests)
 dotnet test ArchitecturesDemo.slnx
 
 # Lancer une API (chaque dossier a aussi sa propre solution .slnx)
@@ -471,22 +474,58 @@ explicite conduit le processus : ① réserver les fonds, ② contrôle de confo
   car tout son état est dans le magasin.
 - En production : Temporal, Azure Durable Functions, AWS Step Functions, ou les sagas de MassTransit / NServiceBus.
 
+## 15. Multi-tenant — `15-MultiTenant`
+
+```
+Mt.Locataires   la LOCATION, sans métier : Locataire (formule, isolation, règles, quotas), CatalogueLocataires,
+                ContexteLocataire, résolveurs (sous-domaine, en-tête), MiddlewareLocataire, limitation de débit par locataire
+Mt.Banque       le métier, écrit comme pour une seule banque : ServiceBancaire ;
+                BanqueDbContext (filtre global, estampillage, refus des écritures croisées), FabriqueBanque (base partagée ou dédiée)
+Mt.Api          API des clients + back-office de la plateforme (/plateforme : inscription, formule, suspension, départ, tâches)
+```
+
+Une **seule application, un seul déploiement**, pour plusieurs clients (les *locataires*, ici trois banques) qui ne doivent
+jamais voir les données les uns des autres. C'est le modèle des SaaS. La question n'est plus « comment organiser le code »,
+mais « comment partager l'application **sans mélanger** les clients ».
+
+**À observer** (détails : [Docs/15-multi-tenant.md](Docs/15-multi-tenant.md), requêtes dans `Mt.Api\Banque.http`)
+- **Le métier ignore le locataire** : `ServiceBancaire` ne contient aucun `where LocataireId = …`. Le locataire est identifié
+  une fois, par `MiddlewareLocataire` (sous-domaine `beta.localhost:5114` ou en-tête `X-Locataire`), puis lu dans `ContexteLocataire`.
+- **La même URL, trois réponses** : `GET /comptes/1111…` donne Alice à 1 000 €, 3 000 € ou 25 000 € selon la banque. La clé
+  primaire est composite (`LocataireId`, `Id`) : les mêmes identifiants coexistent dans la base partagée.
+- **Le garde-fou est dans le DbContext** : filtre global sur toutes les entités qui implémentent `IAppartientAUnLocataire`,
+  estampillage des insertions, exception si une écriture vise un autre locataire. **Sans locataire, toute requête échoue**
+  au lieu de tout renvoyer ; la plateforme doit écrire `IgnoreQueryFilters()` pour voir plusieurs clients.
+- **Deux modèles d'isolation côte à côte** (`GET /plateforme/stockage`) : Alpha et Bêta (Standard) partagent `banque-partagee`,
+  Gamma (Premium) a sa base `banque-gamma`. Seule `FabriqueBanque` connaît cette différence.
+- **Changer de formule** : `POST /plateforme/locataires/alpha/formule` (Premium) déménage les données d'Alpha dans une base
+  dédiée, le locataire étant suspendu le temps de la copie.
+- **Règles et quotas par client** : plafond de virement, frais, nombre de comptes (contrat de chaque banque) ; requêtes par
+  minute (formule). Un **voisin bruyant** reçoit 429 sans ralentir les autres : un limiteur par locataire, et non un global.
+- **Une tâche de fond n'a pas de locataire** : `POST /plateforme/taches/frais-mensuels` ouvre un scope par banque et y fixe le
+  locataire elle-même. L'oublier lève une exception, plutôt que de prélever sur toutes les banques.
+- **Arrivée et départ d'un client** sans déploiement : `POST /plateforme/locataires` puis `DELETE` (base supprimée en Premium,
+  lignes supprimées en Standard).
+- Un compte d'une autre banque répond **404**, comme un compte inexistant : on ne révèle pas son existence.
+- En production : le locataire vient du **jeton** de l'utilisateur authentifié (ou est vérifié contre lui), le catalogue est
+  une base à part, et les migrations de schéma doivent passer sur **chaque** base dédiée. Bibliothèque courante : Finbuckle.MultiTenant.
+
 ---
 
 ## Comparatif
 
-| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants |
-| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur |
-| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga |
-| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 |
-| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants |
-| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser |
-| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs |
-| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise |
-| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas |
-| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter |
+| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée | Multi-tenant |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants | par locataire (client), au niveau des données |
+| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur | de rien (le locataire est ambiant) |
+| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga | l'état, étiqueté par locataire (base partagée ou dédiée) |
+| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 | 4 |
+| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants | **1 pour tous les clients** |
+| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser | contexte de locataire, résolveurs, fabrique de bases |
+| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs | appels directs |
+| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise | isolation : un locataire ne voit ni ne modifie l'autre ; quotas |
+| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas | filtre global + estampillage + clé composite (+ test d'archi) |
+| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter | fuite entre clients au moindre oubli, voisin bruyant, migrations sur N bases |
 
 La progression 6 → 7 → 8 montre un même découpage par sous-domaine de plus en plus isolé : visibilité `internal`, puis
 modules autonomes dans un processus, puis services séparés par le réseau. Chaque étape apporte de l'indépendance
@@ -503,3 +542,8 @@ L'**Event Sourcing** va encore un cran plus loin, et seulement pour les modules 
 Le **DDD** n'a pas de colonne dans le tableau : ce n'est pas une architecture concurrente, mais la démarche qui dit
 **où couper**. Ce sont ses contextes délimités qui donnent les modules (démo 7) ou les services (démo 8), et ses agrégats
 qui donnent les flux d'événements (démo 10). Ses objets-valeurs et son langage améliorent n'importe laquelle des autres démos.
+
+Le **multi-tenant** (démo 15) est lui aussi transversal : il ne dit pas comment organiser le code, mais comment **partager**
+une application entre plusieurs clients sans les mélanger, quelle que soit son organisation interne. Il se combine avec le
+**Microkernel** quand les clients veulent des comportements différents (et pas seulement des paramètres), et avec les
+**microservices**, où chaque service doit alors propager le locataire et l'appliquer à ses propres données.

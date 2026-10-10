@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    LE MÉTIER, écrit comme pour un seul client : aucune méthode ne reçoit ni ne filtre un identifiant de locataire.
+    L'isolation est assurée en dessous, par BanqueDbContext (filtre global + estampillage) et FabriqueBanque (choix de la base).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mt.Locataires\Mt.Locataires.csproj" />
+  </ItemGroup>
+
+</Project>

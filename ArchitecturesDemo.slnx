@@ -106,4 +106,10 @@
     <Project Path="14-SagaOrchestree/Saga.Participants/Saga.Participants.csproj" />
     <Project Path="14-SagaOrchestree/Saga.Tests/Saga.Tests.csproj" />
   </Folder>
+  <Folder Name="/15-MultiTenant/">
+    <Project Path="15-MultiTenant/Mt.Api/Mt.Api.csproj" />
+    <Project Path="15-MultiTenant/Mt.Banque/Mt.Banque.csproj" />
+    <Project Path="15-MultiTenant/Mt.Locataires/Mt.Locataires.csproj" />
+    <Project Path="15-MultiTenant/Mt.Tests/Mt.Tests.csproj" />
+  </Folder>
 </Solution>

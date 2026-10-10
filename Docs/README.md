@@ -1,6 +1,6 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **quinze façons d'organiser une application**, chacune illustrée par une solution .NET 10
+Cette documentation explique **seize façons d'organiser une application**, chacune illustrée par une solution .NET 10
 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
@@ -29,7 +29,8 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 12 | **Serverless** | Des fonctions sans état déclenchées par des événements, facturées à l'usage | [12-serverless](12-serverless.md) | [`12-Serverless`](../12-Serverless) |
 | 13 | **Microkernel** (plugins) | Un noyau minimal et des plugins chargés, déchargés et mis à jour à chaud | [13-microkernel](13-microkernel.md) | [`13-Microkernel`](../13-Microkernel) |
 | 14 | **Saga orchestrée** | Un orchestrateur pilote un processus multi-services : état persistant, réessais, attentes, compensation | [14-saga-orchestree](14-saga-orchestree.md) | [`14-SagaOrchestree`](../14-SagaOrchestree) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 14) |
+| 15 | **Multi-tenant** (SaaS) | Une seule application pour plusieurs clients : données isolées, règles et quotas par client | [15-multi-tenant](15-multi-tenant.md) | [`15-MultiTenant`](../15-MultiTenant) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 15) |
 
 ---
 
@@ -57,6 +58,7 @@ flowchart LR
     Q2 --> D8["Microservices"]
     Q2 --> D12["Serverless"]
     Q2 --> D14["Saga orchestrée"]
+    Q2 --> D15["Multi-tenant"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -69,7 +71,7 @@ flowchart LR
 | Famille | Question | Granularité | Exemples de combinaison |
 |---|---|---|---|
 | **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau |
-| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services |
+| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
 
 ### Les deux grands axes de l'organisation du code
@@ -122,6 +124,8 @@ flowchart TD
     G --> T
     T -->|oui| U["<b>Saga orchestrée</b>"]
     T -->|"non : simples notifications"| V["chorégraphie<br/>(événements)"]
+    G --> W{"Le même logiciel vendu à<br/>plusieurs organisations ?"}
+    W -->|oui| X["<b>Multi-tenant</b><br/>(base partagée, puis dédiée<br/>pour qui la paie)"]
 ```
 
 ---
@@ -145,6 +149,7 @@ flowchart TD
 | [Serverless](12-serverless.md) | services gérés du fournisseur | l'état (services gérés) | **1 par fonction** | **la plateforme** | démarrages à froid, dépendance au fournisseur |
 | [Microkernel](13-microkernel.md) | rien (les plugins dépendent du SDK) | l'état | 1 (+ plugins déposés à chaud) | contexte de chargement par plugin | SDK à versionner, plugins dans le processus |
 | [Saga orchestrée](14-saga-orchestree.md) | des participants, via l'orchestrateur | l'état + l'état de chaque saga | 1 orchestrateur + N participants | moteur : réessais, échéances, compensation | participants idempotents, orchestrateur à exploiter |
+| [Multi-tenant](15-multi-tenant.md) | rien (le locataire est ambiant) | l'état, étiqueté par locataire | **1 pour tous les clients** | filtre global + estampillage + clé composite | fuite entre clients au moindre oubli, voisin bruyant |
 
 ---
 
@@ -172,8 +177,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 181 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5113)
+dotnet test ArchitecturesDemo.slnx                          # les 206 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5114)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

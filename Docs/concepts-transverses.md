@@ -8,7 +8,7 @@ mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 
 | Concept | Problème résolu | Démos |
 |---|---|---|
-| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14 |
+| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15 |
 | [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9) |
 | [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 |
 | [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14 |
@@ -39,6 +39,7 @@ flowchart LR
 | Clé déterministe (écrasement sans doublon) | [Sls.Fonctions/Fonctions.cs](../12-Serverless/Sls.Fonctions/Fonctions.cs) : notification `{compte}/{virement}` |
 | Identifiant dérivé de l'entrée | `IdentifiantDeterministe($"{fichier}#{ligne}")` : un import retraité ne crée pas de doublons |
 | Point de reprise | [Projecteur.cs](../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs) : `if (sequence <= DerniereSequence) return;` |
+| Clé de période sur l'opération | [ServiceBancaire.cs](../15-MultiTenant/Mt.Banque/ServiceBancaire.cs) : `var cle = $"frais-{mois}";` (frais mensuels prélevés une fois) |
 
 ---
 

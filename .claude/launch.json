@@ -90,6 +90,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "14-SagaOrchestree/Saga.Api", "--launch-profile", "http"],
       "port": 5113
+    },
+    {
+      "name": "15-multi-tenant",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "15-MultiTenant/Mt.Api", "--launch-profile", "http"],
+      "port": 5114
     }
   ]
 }
