@@ -10,7 +10,7 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 
 📗 **Pas développeur ? La même chose expliquée avec des mots simples et des images : [`Docs/pour-tous/`](Docs/pour-tous/README.md)**.
 
-🗂️ **Pressé ? Une fiche mémo d'une page par architecture : [`Docs/fiches/`](Docs/fiches/README.md)**.
+🗂️ **Pressé ? Une fiche mémo d'une page par architecture : [`Docs/fiches/`](Docs/fiches/README.md)**, aussi en [PDF imprimable](Docs/fiches/pdf/fiches-architectures.pdf).
 
 | # | Dossier | Architecture | Idée clé | Port |
 |---|---|---|---|---|

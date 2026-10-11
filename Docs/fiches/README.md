@@ -4,6 +4,9 @@ Le résumé technique de chaque démo, à relire en deux minutes : l'idée en un
 l'architecture, quand l'utiliser ou non, les pièges. Pour le code, les tests et les déroulements, chaque fiche renvoie
 à sa page complète.
 
+🖨️ **Version imprimable** : [fiches-architectures.pdf](pdf/fiches-architectures.pdf) (A4, une fiche par page,
+27 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
+
 📖 Documentation complète : [Docs](../README.md) · 📗 Version sans code : [pour tous](../pour-tous/README.md) ·
 ★ [Concepts transverses](../concepts-transverses.md) (idempotence, outbox, concurrence optimiste, compensation)
 
