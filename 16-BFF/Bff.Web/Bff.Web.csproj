@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    LE BFF DU SITE WEB : il appartient à l'équipe du site, sert son application (wwwroot) sur la même origine,
+    garde le jeton d'accès côté serveur (session + cookie HttpOnly) et agrège les services pour chaque écran.
+    Aucune référence aux autres projets : il ne connaît les services que par HTTP.
+  -->
+
+</Project>

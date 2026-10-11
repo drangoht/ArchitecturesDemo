@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Bff.Mobile/Bff.Mobile.csproj" />
+  <Project Path="Bff.Services/Bff.Services.csproj" />
+  <Project Path="Bff.Tests/Bff.Tests.csproj" />
+  <Project Path="Bff.Web/Bff.Web.csproj" />
+</Solution>

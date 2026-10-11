@@ -1,0 +1,81 @@
+# Lancer d'abord les services (Bff.Services, port 5210), puis ce BFF (port 5115).
+# Le plus parlant : ouvrir http://localhost:5115 dans un navigateur (alice / demo).
+# Ici, le client REST garde le cookie de session entre les requêtes, comme un navigateur.
+@web = http://localhost:5115
+@services = http://localhost:5210
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Sans session : 401 (et non une redirection vers une page de connexion)
+GET {{web}}/api/tableau-de-bord
+X-CSRF: 1
+
+### Connexion : la réponse ne contient qu'un cookie HttpOnly, aucun jeton
+POST {{web}}/bff/connexion
+X-CSRF: 1
+Content-Type: application/json
+
+{ "utilisateur": "alice", "motDePasse": "demo" }
+
+### Tableau de bord : 1 requête, 7 appels aux services (voir X-Appels-Aval, X-Duree-Totale-Ms, X-Duree-Aval-Cumulee-Ms)
+GET {{web}}/api/tableau-de-bord
+X-CSRF: 1
+
+### Sans l'en-tête X-CSRF : refusé, même avec une session valide
+POST {{web}}/api/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "cible": "{{bob}}", "montant": 25 }
+
+### Avec l'en-tête : virement effectué, avec le jeton d'Alice gardé côté serveur
+POST {{web}}/api/virements
+X-CSRF: 1
+Content-Type: application/json
+
+{ "source": "{{alice}}", "cible": "{{bob}}", "montant": 25 }
+
+### Débiter le compte de Bob : 403, les services vérifient les droits (le BFF n'a pas de passe-droit)
+POST {{web}}/api/virements
+X-CSRF: 1
+Content-Type: application/json
+
+{ "source": "{{bob}}", "cible": "{{alice}}", "montant": 25 }
+
+### ─── Dégradation : le service des offres tombe en panne ───
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "offresEnPanne": true }
+
+### Le tableau de bord s'affiche quand même : "offres": null, "degrade": ["offres"]
+GET {{web}}/api/tableau-de-bord
+X-CSRF: 1
+
+###
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "offresEnPanne": false }
+
+### Services plus lents : la durée totale suit l'appel le plus lent, pas la somme
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "latenceMs": 400 }
+
+###
+GET {{web}}/api/tableau-de-bord
+X-CSRF: 1
+
+###
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "latenceMs": 120 }
+
+### Déconnexion : la session est supprimée côté serveur
+POST {{web}}/bff/deconnexion
+X-CSRF: 1
+
+### Les services refusent un appel direct sans jeton : seul le BFF (avec le jeton de l'utilisateur) y accède
+GET {{services}}/profils/moi

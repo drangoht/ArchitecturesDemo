@@ -112,4 +112,10 @@
     <Project Path="15-MultiTenant/Mt.Locataires/Mt.Locataires.csproj" />
     <Project Path="15-MultiTenant/Mt.Tests/Mt.Tests.csproj" />
   </Folder>
+  <Folder Name="/16-BFF/">
+    <Project Path="16-BFF/Bff.Mobile/Bff.Mobile.csproj" />
+    <Project Path="16-BFF/Bff.Services/Bff.Services.csproj" />
+    <Project Path="16-BFF/Bff.Tests/Bff.Tests.csproj" />
+    <Project Path="16-BFF/Bff.Web/Bff.Web.csproj" />
+  </Folder>
 </Solution>

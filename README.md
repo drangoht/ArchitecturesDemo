@@ -1,6 +1,6 @@
 # Démos d'architectures en C#
 
-Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec quinze architectures,
+Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec seize architectures,
 plus une démo de conception pilotée par le domaine (DDD). On peut ainsi comparer la **forme** du code à fonctionnalités égales.
 La démo 0 (couches classiques) sert de point de comparaison : toutes les autres sont nées pour corriger l'une de ses limites.
 
@@ -24,19 +24,22 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 | 13 | `13-Microkernel` | Microkernel (plugins) | Un noyau minimal ; contrôles, frais et formats de relevé sont des plugins chargés à chaud | 5112 |
 | 14 | `14-SagaOrchestree` | Saga orchestrée | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
 | 15 | `15-MultiTenant` | Multi-tenant (SaaS) | Une seule application pour plusieurs banques clientes : données isolées, règles et quotas par client | 5114 |
+| 16 | `16-BFF` | Backend for Frontend | Un backend par application cliente (site, mobile) : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | 5115 (web), 5116 (mobile) |
 
 Données de démo, identiques partout :
 - **Alice** `11111111-1111-1111-1111-111111111111` : 1 000 € (5 000 € dans la démo 4, pour tester le plafond)
 - **Bob** `22222222-2222-2222-2222-222222222222` : 500 €
 
 Dans la démo 15, Alice et Bob existent chez chacune des trois banques clientes, avec des soldes différents.
+Dans la démo 16, ce sont des utilisateurs (`alice` / `bob`, mot de passe `demo`) ; Alice a aussi un Livret A
+`44444444-4444-4444-4444-444444444444` (8 000 €).
 
 Tout tourne en mémoire (EF Core InMemory ou dictionnaires) : aucune base à installer.
 
 ## Lancer
 
 ```powershell
-# Tout compiler et tester (206 tests)
+# Tout compiler et tester (232 tests)
 dotnet test ArchitecturesDemo.slnx
 
 # Lancer une API (chaque dossier a aussi sa propre solution .slnx)
@@ -510,22 +513,64 @@ mais « comment partager l'application **sans mélanger** les clients ».
 - En production : le locataire vient du **jeton** de l'utilisateur authentifié (ou est vérifié contre lui), le catalogue est
   une base à part, et les migrations de schéma doivent passer sur **chaque** base dédiée. Bibliothèque courante : Finbuckle.MultiTenant.
 
+## 16. Backend for Frontend (BFF) — `16-BFF`
+
+```
+Bff.Services  :5210  les services métier, génériques (simulés dans un seul processus) : identité (jetons), profils, comptes,
+                     opérations, conseillers, offres ; latence et pannes réglables (PUT /chaos)
+Bff.Web       :5115  le BFF du SITE : sert l'application (wwwroot), session côté serveur + cookie HttpOnly (le jeton ne va
+                     jamais au navigateur), protection CSRF, un tableau de bord agrégé en une requête
+Bff.Mobile    :5116  le BFF de l'APPLICATION MOBILE : réponses compactes, un appel par écran, pagination par curseur,
+                     versions /v1 et /v2 alignées sur les versions de l'application
+```
+
+```powershell
+dotnet run --project 16-BFF\Bff.Services     # puis, dans deux autres terminaux :
+dotnet run --project 16-BFF\Bff.Web          # http://localhost:5115 (alice / demo)
+dotnet run --project 16-BFF\Bff.Mobile
+```
+
+Des services génériques servent plusieurs applications aux besoins opposés : un site sur grand écran et réseau rapide, une
+application mobile sur petit écran et réseau lent. Plutôt que de faire choisir les services entre les deux, chaque application
+a **son propre backend**, écrit et déployé par son équipe, qui fait l'interface entre elle et les services.
+
+**À observer** (détails : [Docs/16-bff.md](Docs/16-bff.md), requêtes dans `Bff.Web\Banque.http` et `Bff.Mobile\Banque.http`)
+- **Un écran, une requête** : `GET /api/tableau-de-bord` déclenche 7 appels aux services, faits côté serveur et **en parallèle**.
+  Les en-têtes `X-Appels-Aval`, `X-Duree-Totale-Ms` (≈ 2 latences) et `X-Duree-Aval-Cumulee-Ms` (≈ 7 latences) le montrent.
+- **Le jeton reste sur le serveur** (`Bff.Web\Session.cs`) : le navigateur ne reçoit qu'un cookie `HttpOnly`, `SameSite=Strict`,
+  qui désigne une session gardée par le BFF. La page affiche `document.cookie = ""` : un script injecté (XSS) n'a rien à voler.
+  Se déconnecter supprime la session, et un cookie copié auparavant ne vaut plus rien.
+- **CSRF** : toute requête vers `/bff` et `/api` doit porter `X-CSRF: 1`, ce qu'un formulaire d'un autre site ne peut pas faire.
+- **Aucun passe-droit** : le BFF appelle les services avec le jeton **de l'utilisateur** ; Alice ne peut pas débiter le compte
+  de Bob, même en passant par le BFF (403 des services).
+- **Une réponse par écran** : le mobile reçoit une réponse plus de 5 fois plus légère que le site, sans IBAN ni champ inutile,
+  avec des libellés raccourcis (« CB CARREFOUR 0910 PARIS 15 » → « Carrefour »).
+- **Dégradation** : si les offres sont en panne ou trop lentes (budget de 800 ms), le tableau de bord s'affiche sans elles
+  (`"degrade": ["offres"]`) au lieu d'échouer.
+- **Versions** : `/mobile/v2/accueil` ajoute un bandeau d'offre pour la nouvelle version de l'application ; `/v1` reste servie
+  aux téléphones pas encore mis à jour. Les services n'ont pas changé.
+- **Deux BFF indépendants** : aucun code partagé entre eux ni avec les services (vérifié par un test). Les contrats sont
+  recopiés, avec seulement les champs utiles à chaque écran.
+- Ne pas confondre avec une **passerelle d'API** (démo 8) : la passerelle est unique et générique (routage, sécurité, quotas) ;
+  un BFF est spécifique à une application. Les deux se combinent souvent. En production : Duende BFF ou YARP pour le relais,
+  OpenID Connect pour la connexion, un cache distribué pour les sessions.
+
 ---
 
 ## Comparatif
 
-| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée | Multi-tenant |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants | par locataire (client), au niveau des données |
-| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur | de rien (le locataire est ambiant) |
-| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga | l'état, étiqueté par locataire (base partagée ou dédiée) |
-| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 | 4 |
-| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants | **1 pour tous les clients** |
-| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser | contexte de locataire, résolveurs, fabrique de bases |
-| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs | appels directs |
-| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise | isolation : un locataire ne voit ni ne modifie l'autre ; quotas |
-| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas | filtre global + estampillage + clé composite (+ test d'archi) |
-| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter | fuite entre clients au moindre oubli, voisin bruyant, migrations sur N bases |
+| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée | Multi-tenant | BFF |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants | par locataire (client), au niveau des données | un backend par application cliente |
+| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur | de rien (le locataire est ambiant) | des services en aval (par HTTP) |
+| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga | l'état, étiqueté par locataire (base partagée ou dédiée) | rien, sauf les sessions (le métier est dans les services) |
+| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 | 4 | 4 (dont les services simulés) |
+| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants | **1 pour tous les clients** | 1 par application cliente (+ les services) |
+| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser | contexte de locataire, résolveurs, fabrique de bases | contrats recopiés, vues par écran |
+| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs | appels directs | HTTP vers les services, en parallèle |
+| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise | isolation : un locataire ne voit ni ne modifie l'autre ; quotas | BFF + vrais services en mémoire : agrégation, sécurité, dégradation |
+| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas | filtre global + estampillage + clé composite (+ test d'archi) | aucune référence entre BFF (test d'archi) ; droits vérifiés par les services |
+| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter | fuite entre clients au moindre oubli, voisin bruyant, migrations sur N bases | un composant de plus par application, duplication entre BFF, tentation d'y mettre du métier |
 
 La progression 6 → 7 → 8 montre un même découpage par sous-domaine de plus en plus isolé : visibilité `internal`, puis
 modules autonomes dans un processus, puis services séparés par le réseau. Chaque étape apporte de l'indépendance
@@ -547,3 +592,7 @@ Le **multi-tenant** (démo 15) est lui aussi transversal : il ne dit pas comment
 une application entre plusieurs clients sans les mélanger, quelle que soit son organisation interne. Il se combine avec le
 **Microkernel** quand les clients veulent des comportements différents (et pas seulement des paramètres), et avec les
 **microservices**, où chaque service doit alors propager le locataire et l'appliquer à ses propres données.
+
+Le **BFF** (démo 16) se place devant n'importe lequel de ces systèmes, côté clients : quand plusieurs applications (site,
+mobile, partenaires) consomment les mêmes services avec des besoins différents, chacune reçoit un backend à sa mesure.
+Il prolonge naturellement les **microservices** (démo 8), dont il agrège les appels, et cohabite avec leur passerelle.

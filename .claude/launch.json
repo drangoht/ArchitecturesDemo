@@ -96,6 +96,24 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "15-MultiTenant/Mt.Api", "--launch-profile", "http"],
       "port": 5114
+    },
+    {
+      "name": "16-bff-services",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "16-BFF/Bff.Services", "--launch-profile", "http"],
+      "port": 5210
+    },
+    {
+      "name": "16-bff-web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "16-BFF/Bff.Web", "--launch-profile", "http"],
+      "port": 5115
+    },
+    {
+      "name": "16-bff-mobile",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "16-BFF/Bff.Mobile", "--launch-profile", "http"],
+      "port": 5116
     }
   ]
 }

@@ -3,7 +3,7 @@
 > **En une phrase** : une **seule application**, un seul déploiement, sert **plusieurs clients** (les *locataires*) ;
 > chacun a ses données, ses règles et ses quotas, et aucun ne doit jamais voir ceux des autres.
 
-📁 Code : [`15-MultiTenant`](../15-MultiTenant) · ⬅️ [Saga orchestrée](14-saga-orchestree.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`15-MultiTenant`](../15-MultiTenant) · ⬅️ [Saga orchestrée](14-saga-orchestree.md) · ➡️ [BFF](16-bff.md)
 
 ---
 
