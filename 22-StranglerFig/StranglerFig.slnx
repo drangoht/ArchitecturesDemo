@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Fig.Ancien/Fig.Ancien.csproj" />
+  <Project Path="Fig.Facade/Fig.Facade.csproj" />
+  <Project Path="Fig.Nouveau/Fig.Nouveau.csproj" />
+  <Project Path="Fig.Tests/Fig.Tests.csproj" />
+</Solution>

@@ -3,7 +3,7 @@
 > **En une phrase** : aucun service ne conduit le processus ; chacun **réagit aux événements** des autres et publie les
 > siens, et le virement avance de réaction en réaction, comme des danseurs qui suivent la musique sans chef d'orchestre.
 
-📁 Code : [`21-Choregraphie`](../21-Choregraphie) · ⬅️ [Pipeline](20-pipeline.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`21-Choregraphie`](../21-Choregraphie) · ⬅️ [Pipeline](20-pipeline.md) · ➡️ [Strangler Fig](22-strangler-fig.md)
 
 ---
 

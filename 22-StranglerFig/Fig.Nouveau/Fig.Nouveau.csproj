@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    LE NOUVEAU SERVICE, qui reprend les fonctions de l'ancien une à une. Son domaine est propre (euros en decimal, dates
+    avec fuseau) ; tout ce qui vient de l'ancien ou y retourne passe par la couche anti-corruption. Il expose, en plus,
+    le contrat HISTORIQUE de l'ancien, à l'identique, pour que la façade puisse basculer une route sans que les clients
+    ne voient la différence.
+    Aucune référence à Fig.Ancien : il ne le connaît que par HTTP (vérifié par un test).
+  -->
+
+</Project>

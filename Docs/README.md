@@ -1,7 +1,7 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **vingt-deux façons d'organiser une application**, chacune illustrée par une solution .NET 10
-complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+Cette documentation explique **vingt-deux façons d'organiser une application**, et **une façon d'y arriver** depuis un
+système existant, chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
 > **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
@@ -36,20 +36,23 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 19 | **Architecture spatiale** (space-based) | Les données en mémoire, répliquées entre des unités qu'on ajoute à volonté ; la base mise à jour en arrière-plan | [19-space-based](19-space-based.md) | [`19-SpaceBased`](../19-SpaceBased) |
 | 20 | **Pipeline** (pipes & filters) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent tous en même temps sur un flux de données | [20-pipeline](20-pipeline.md) | [`20-Pipeline`](../20-Pipeline) |
 | 21 | **Chorégraphie** (événementiel pur) | Le même virement que la démo 14, sans orchestrateur : chaque service réagit aux événements des autres | [21-choregraphie](21-choregraphie.md) | [`21-Choregraphie`](../21-Choregraphie) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 21) |
+| 22 | **Strangler Fig** (migration progressive) | Une façade devant l'ancien système, qui lui retire ses fonctions une route à la fois au profit du nouveau | [22-strangler-fig](22-strangler-fig.md) | [`22-StranglerFig`](../22-StranglerFig) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---
 
-## Trois questions différentes
+## Trois questions différentes (et une quatrième)
 
 Ces « architectures » ne répondent pas toutes à la même question. Les mélanger dans un même classement est la principale
-source de confusion. Elles se rangent en trois familles, **et se combinent** d'une famille à l'autre.
+source de confusion. Elles se rangent en trois familles, **et se combinent** d'une famille à l'autre. Une quatrième
+question se pose dès qu'un système existe déjà : comment passer de lui à l'une de ces architectures.
 
 ```mermaid
 flowchart LR
     Q1["<b>① Comment organiser le code<br/>à l'intérieur d'une application ?</b>"]
     Q2["<b>② Comment découper le système<br/>en morceaux indépendants ?</b>"]
     Q3["<b>③ Comment modéliser<br/>le métier et les données ?</b>"]
+    Q4["<b>④ Comment remplacer<br/>un système existant ?</b>"]
 
     Q1 --> C0["Couches"]
     Q1 --> C1["Hexagonale"]
@@ -76,8 +79,10 @@ flowchart LR
     Q3 --> M9["CQRS"]
     Q3 --> M10["Event Sourcing"]
 
+    Q4 --> S22["Strangler Fig"]
+
     classDef q fill:#1f6feb,color:#fff,stroke:#1f6feb
-    class Q1,Q2,Q3 q
+    class Q1,Q2,Q3,Q4 q
 ```
 
 | Famille | Question | Granularité | Exemples de combinaison |
@@ -85,6 +90,7 @@ flowchart LR
 | **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau |
 | **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire ; des acteurs à l'intérieur d'un service |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
+| **Migration** | Comment remplacer un système en production sans tout arrêter ? | le système entier, le temps de la migration | Strangler Fig vers un monolithe modulaire ou des microservices ; sa façade devient ensuite leur passerelle |
 
 ### Les deux grands axes de l'organisation du code
 
@@ -115,6 +121,9 @@ les signaux qui doivent faire évoluer le choix.
 
 ```mermaid
 flowchart TD
+    SF{"Un système en production<br/>à remplacer ?"} -->|oui| SG["<b>Strangler Fig</b><br/>route par route,<br/>vers la cible choisie ci-dessous"]
+    SF -->|"non : système neuf"| A
+    SG -.-> A
     A{"Le métier est-il<br/>surtout du CRUD ?"} -->|oui| B["<b>Couches</b> ou <b>Vertical Slice</b><br/>simple et suffisant"]
     A -->|"non : règles riches"| C{"Plusieurs équipes /<br/>sous-domaines distincts ?"}
     C -->|non| D["<b>Hexagonale</b> / <b>Onion</b> / <b>Clean</b><br/>+ objets-valeurs du <b>DDD</b>"]
@@ -179,6 +188,7 @@ flowchart TD
 | [Spatiale](19-space-based.md) | rien (seulement la réplique de son unité) | l'état, **en mémoire** dans chaque unité ; la base en différé | **N unités**, ajoutées et retirées selon la charge | versions + routage par affinité | collisions (écritures perdues), tout en mémoire, base en retard |
 | [Pipeline](20-pipeline.md) | rien (un filtre ne connaît que son entrée et sa sortie) | l'état ; les données ne font que passer | 1 | tuyaux bornés (contre-pression) ; types vérifiés à l'assemblage | traitements en flux seulement ; filtres à état uniques ; reprise idempotente |
 | [Chorégraphie](21-choregraphie.md) | des contrats d'événements, jamais des autres services | l'état de chaque service + le journal des événements | 1 par service + le courtier | test d'architecture : aucun service n'en référence un autre | processus écrit nulle part ; compensations et délais dispersés ; pannes silencieuses |
+| [Strangler Fig](22-strangler-fig.md) | rien (l'ancien n'est vu qu'à travers la couche anti-corruption) | l'état, **deux fois** (ancien et nouveau), synchronisé dans les deux sens | façade + ancien + nouveau, puis façade + nouveau | la façade : ce qui n'est pas déclaré reste à l'ancien ; retour arrière en une requête | deux systèmes à faire vivre ensemble ; synchronisation ; contrat hérité à reproduire |
 
 ---
 
@@ -206,8 +216,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 342 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5121)
+dotnet test ArchitecturesDemo.slnx                          # les 389 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5122)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

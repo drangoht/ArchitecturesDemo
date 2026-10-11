@@ -148,4 +148,10 @@
     <Project Path="21-Choregraphie/Choreo.Services/Choreo.Services.csproj" />
     <Project Path="21-Choregraphie/Choreo.Tests/Choreo.Tests.csproj" />
   </Folder>
+  <Folder Name="/22-StranglerFig/">
+    <Project Path="22-StranglerFig/Fig.Ancien/Fig.Ancien.csproj" />
+    <Project Path="22-StranglerFig/Fig.Facade/Fig.Facade.csproj" />
+    <Project Path="22-StranglerFig/Fig.Nouveau/Fig.Nouveau.csproj" />
+    <Project Path="22-StranglerFig/Fig.Tests/Fig.Tests.csproj" />
+  </Folder>
 </Solution>

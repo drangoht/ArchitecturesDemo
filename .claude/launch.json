@@ -144,6 +144,24 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "21-Choregraphie/Choreo.Api", "--launch-profile", "http"],
       "port": 5121
+    },
+    {
+      "name": "22-strangler-ancien",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Ancien", "--launch-profile", "http"],
+      "port": 5240
+    },
+    {
+      "name": "22-strangler-nouveau",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Nouveau", "--launch-profile", "http"],
+      "port": 5241
+    },
+    {
+      "name": "22-strangler-facade",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Facade", "--launch-profile", "http"],
+      "port": 5122
     }
   ]
 }

@@ -8,12 +8,12 @@ mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 
 | Concept | Problème résolu | Démos |
 |---|---|---|
-| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17, 18, 20, 21 |
-| [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9) |
+| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17, 18, 20, 21, 22 |
+| [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9, 22) |
 | [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 (et l'alternative : 18 ; le contre-exemple : 19) |
 | [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17, 18, 21 |
 | [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18, 21 |
-| [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12, 19 |
+| [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12, 19, 22 |
 | [Événements de domaine vs d'intégration](#événements-de-domaine-vs-dintégration) | Ce qu'on publie aux autres | 7, 9, 11 |
 
 ---
@@ -44,6 +44,7 @@ flowchart LR
 | L'identité de l'acteur | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) : rejouer `virement/facture-42` réveille le même acteur, qui connaît déjà la réponse |
 | Boîte de réception par service | [Autres.cs](../21-Choregraphie/Choreo.Services/Autres.cs) : `Reactif.UneSeuleFois`, testé avec un courtier qui livre chaque événement deux fois |
 | Référence de ligne, à deux niveaux | [Filtres.cs](../20-Pipeline/Pipeline.Banque/Filtres.cs) : `Dedupliquer` écarte tôt les références déjà exécutées ; le registre refuse en dernier recours. Un import interrompu se rejoue tel quel |
+| Identifiant d'opération, dans les deux sens d'une synchronisation | [SystemeBancaire.cs](../22-StranglerFig/Fig.Ancien/SystemeBancaire.cs) : l'ancien ignore un lot renvoyé après une réponse perdue ; [Domaine.cs](../22-StranglerFig/Fig.Nouveau/Domaine.cs) : le nouveau ignore l'écho de ses propres écritures (pas de boucle) |
 
 ---
 
@@ -80,7 +81,9 @@ sequenceDiagram
 
 Le relais peut envoyer un message deux fois (crash entre l'envoi et la mise à jour de `EnvoyeLe`) : d'où l'**idempotence**
 chez les abonnés. Code : [RelaisOutbox.cs](../08-Microservices/Micro.Comptes/RelaisOutbox.cs). En CQRS, le journal
-d'événements de [EcritureDb](../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs) joue le même rôle.
+d'événements de [EcritureDb](../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs) joue le même rôle. Dans la démo 22, les
+opérations écrites par le nouveau service attendent dans une boîte d'envoi (`Depot.AReporter`, remplie sous le même verrou
+que le virement) d'être reportées dans l'ancien système ; elles n'en sortent qu'après la confirmation de l'import.
 
 ---
 
@@ -209,7 +212,8 @@ sequenceDiagram
 ```
 
 Rendu visible dans la démo CQRS (`Projections:DelaiMs`, `GET /admin/projections`), dans les microservices (Notifications
-arrêté puis redémarré) et en serverless (`202` puis `GET /virements/{id}`). Côté interface : afficher « en cours »,
+arrêté puis redémarré), en serverless (`202` puis `GET /virements/{id}`) et pendant une migration (démo 22 : un virement
+servi par l'ancien système n'apparaît dans la consultation, servie par le nouveau, qu'au cycle de synchronisation suivant). Côté interface : afficher « en cours »,
 renvoyer l'état connu juste après une commande, ou interroger jusqu'à la mise à jour.
 
 ---
