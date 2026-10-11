@@ -31,7 +31,7 @@ flowchart LR
 | **Recommended starting point** for a growing system | Modules can't be scaled independently |
 | Several subdomains, a single operations team | No transactions or joins across modules |
 
-**Pitfall**: the in-memory bus loses events on a crash → [outbox](../../concepts-transverses.md#outbox) (French).
+**Pitfall**: the in-memory bus loses events on a crash → [outbox](../concepts-transverses.md#outbox).
 A bad split is expensive: find the boundaries with [DDD](11-ddd.md).
 
 **Next step**: a module that must be deployed separately → its contracts become a network API → [Microservices](08-microservices.md).

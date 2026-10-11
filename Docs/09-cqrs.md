@@ -3,7 +3,7 @@
 > **En une phrase** : un modèle pour **écrire** (fait respecter les règles), un autre pour **lire** (des vues prêtes à
 > afficher), reliés par des événements.
 
-📁 Code : [`09-CQRS`](../09-CQRS) · ⬅️ [Microservices](08-microservices.md) · ➡️ [Event Sourcing](10-event-sourcing.md)
+📁 Code : [`09-CQRS`](../09-CQRS) · ⬅️ [Microservices](08-microservices.md) · ➡️ [Event Sourcing](10-event-sourcing.md) · 🌐 [English](en/09-cqrs.md)
 
 ---
 

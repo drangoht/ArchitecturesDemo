@@ -5,7 +5,7 @@
 > **En une phrase** : un **orchestrateur** explicite pilote un processus réparti sur plusieurs services, étape par étape ;
 > il mémorise où il en est, réessaie, attend des événements extérieurs, et **compense** en ordre inverse si besoin.
 
-📁 Code : [`14-SagaOrchestree`](../14-SagaOrchestree) · ⬅️ [Microkernel](13-microkernel.md) · ➡️ [Multi-tenant](15-multi-tenant.md)
+📁 Code : [`14-SagaOrchestree`](../14-SagaOrchestree) · ⬅️ [Microkernel](13-microkernel.md) · ➡️ [Multi-tenant](15-multi-tenant.md) · 🌐 [English](en/14-saga-orchestree.md)
 
 ---
 

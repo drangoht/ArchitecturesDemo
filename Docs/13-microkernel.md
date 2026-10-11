@@ -3,7 +3,7 @@
 > **En une phrase** : un **noyau minimal** qui définit des **points d'extension** ; les fonctionnalités variables sont
 > des **plugins** chargés à l'exécution, que l'on ajoute, retire ou met à jour sans recompiler ni redémarrer le noyau.
 
-📁 Code : [`13-Microkernel`](../13-Microkernel) · ⬅️ [Serverless](12-serverless.md) · ➡️ [Saga orchestrée](14-saga-orchestree.md)
+📁 Code : [`13-Microkernel`](../13-Microkernel) · ⬅️ [Serverless](12-serverless.md) · ➡️ [Saga orchestrée](14-saga-orchestree.md) · 🌐 [English](en/13-microkernel.md)
 
 ---
 

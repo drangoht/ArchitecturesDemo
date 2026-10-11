@@ -3,7 +3,7 @@
 > **In one sentence**: each service is a **separate process**, with its own database, deployable on its own; the
 > services communicate only over the **network** (HTTP and messages) and share no code.
 
-📁 Code: [`08-Microservices`](../../08-Microservices) · ⬅️ [Modular Monolith](07-monolithe-modulaire.md) · ➡️ [CQRS (FR)](../09-cqrs.md) ·
+📁 Code: [`08-Microservices`](../../08-Microservices) · ⬅️ [Modular Monolith](07-monolithe-modulaire.md) · ➡️ [CQRS](09-cqrs.md) ·
 🌐 [Français](../08-microservices.md)
 
 ---
@@ -292,4 +292,4 @@ The full journey is checked by running the system (`dotnet run --project Micro.L
 **When to use it**: several teams, very different scaling needs, independent release cycles — and an organization able
 to operate a distributed system. Otherwise, the [modular monolith](07-monolithe-modulaire.md) brings most of the
 benefits at a fraction of the cost. In production: RabbitMQ / Azure Service Bus, YARP, .NET Aspire or Kubernetes,
-OpenTelemetry. The mechanisms are detailed in the [cross-cutting concepts](../concepts-transverses.md) (French).
+OpenTelemetry. The mechanisms are detailed in the [cross-cutting concepts](concepts-transverses.md).

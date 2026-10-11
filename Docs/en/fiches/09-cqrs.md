@@ -4,7 +4,7 @@
 > by events.
 
 **Family**: modeling · **Origin**: Greg Young, around 2010, after Bertrand Meyer's CQS ·
-**Demo**: [`09-CQRS`](../../../09-CQRS) (port 5108) · 📖 [Full page (French)](../../09-cqrs.md) ·
+**Demo**: [`09-CQRS`](../../../09-CQRS) (port 5108) · 📖 [Full page](../09-cqrs.md) ·
 🌐 [Français](../../fiches/09-cqrs.md)
 
 ```mermaid

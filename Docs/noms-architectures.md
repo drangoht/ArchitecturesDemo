@@ -1,5 +1,7 @@
 # Noms des architectures — français et anglais
 
+🌐 [English](en/noms-architectures.md)
+
 Règle : une architecture connue sous un nom anglais **le garde** (pas de traduction inventée) ; une architecture
 nommée en français **affiche aussi son nom anglais**, sous le titre de chaque page (documentation complète, fiches,
 version pour tous). Cette table est la référence, en particulier pour la future version anglaise de la documentation

@@ -4,7 +4,7 @@ Dès qu'un système a **plusieurs bases** (démos 6 à 12) ou **plusieurs proces
 garanties qu'on croyait acquises : *la transaction unique* et *l'appel qui réussit ou échoue franchement*. Les mêmes
 mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 
-⬅️ [Sommaire](README.md)
+⬅️ [Sommaire](README.md) · 🌐 [English](en/concepts-transverses.md)
 
 | Concept | Problème résolu | Démos |
 |---|---|---|

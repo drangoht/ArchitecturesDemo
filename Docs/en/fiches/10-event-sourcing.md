@@ -4,7 +4,7 @@
 > and nothing is ever deleted.
 
 **Family**: modeling · **Demo**: [`10-EventSourcing`](../../../10-EventSourcing) (port 5109; human-readable store:
-`Es.Api\evenements.jsonl`) · 📖 [Full page (French)](../../10-event-sourcing.md) ·
+`Es.Api\evenements.jsonl`) · 📖 [Full page](../10-event-sourcing.md) ·
 🌐 [Français](../../fiches/10-event-sourcing.md)
 
 ```mermaid

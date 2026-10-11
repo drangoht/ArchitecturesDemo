@@ -12,7 +12,7 @@ Demo 0 (classic layers) is the baseline: every other one was born to fix one of 
 > a few common words help reading them: *compte* = account, *virement* = transfer, *retrait / retirer* = withdrawal /
 > withdraw, *solde* = balance, *métier* = business, *banque* = bank.
 
-📘 **Full documentation, with diagrams: [`Docs/en/`](Docs/en/README.md)** (full pages in French for now: [`Docs/`](Docs/README.md)).
+📘 **Full documentation, with diagrams: [`Docs/en/`](Docs/en/README.md)** (French original: 🌐 [Français](Docs/README.md)).
 
 📗 **Not a developer? The same thing explained with simple words and pictures: [`Docs/pour-tous/`](Docs/pour-tous/README.md)** (French).
 
@@ -486,7 +486,7 @@ Mk.Plugins.*     PlafondNocturne, ListeNoire, FraisVirement, Exports (CSV + QIF)
 A minimal core that references **no** plug-in; everything that varies is plugged into extension points (night-time
 limit, blacklist, transfer fees, statement exports).
 
-**What to look at** (details: [Docs/13-microkernel.md](Docs/13-microkernel.md), French)
+**What to look at** (details: [Docs/en/13-microkernel.md](Docs/en/13-microkernel.md))
 - `GET /admin/plugins`: 5 extensions in 4 DLLs, with their state and their extension points.
 - **Hot reload**: edit `plugins\Mk.Plugins.ListeNoire\plugin.json`, or rebuild a plug-in **while the API is running**
   (`dotnet build Mk.Plugins.ListeNoire`): it is reloaded automatically. The DLLs are read into memory, so never locked;
@@ -509,7 +509,7 @@ Demos 7 and 8 coordinate through **choreography** (each one reacts to the others
 **orchestrator** drives the process: ① reserve the funds, ② compliance check, ③ currency exchange, ④ credit,
 ⑤ final debit (point of no return), ⑥ notification.
 
-**What to look at** (details: [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md), French; requests in `Saga.Api\Banque.http`)
+**What to look at** (details: [Docs/en/14-saga-orchestree.md](Docs/en/14-saga-orchestree.md); requests in `Saga.Api\Banque.http`)
 - `GET /sagas/{id}`: the state of each step and the saga's full log.
 - **Transient failure**: `PUT /chaos {"echecsChangeRestants":2}` then a transfer Alice → Carla (USD): 2 retries, then success.
 - **Lasting failure**: `{"changeHorsService":true}`: abandoned at the 4th failure, then compensation in reverse order (funds released).
@@ -535,7 +535,7 @@ A **single application, a single deployment**, for several customers (the *tenan
 three banks) who must never see each other's data. It is the SaaS model. The question is no longer "how to organize
 the code", but "how to share the application **without mixing** the customers".
 
-**What to look at** (details: [Docs/15-multi-tenant.md](Docs/15-multi-tenant.md), French; requests in `Mt.Api\Banque.http`)
+**What to look at** (details: [Docs/en/15-multi-tenant.md](Docs/en/15-multi-tenant.md); requests in `Mt.Api\Banque.http`)
 - **The business ignores the tenant**: `ServiceBancaire` contains no `where LocataireId = …`. The tenant is identified
   once, by `MiddlewareLocataire` (subdomain `beta.localhost:5114` or `X-Locataire` header), then read from `ContexteLocataire`.
 - **The same URL, three answers**: `GET /comptes/1111…` gives Alice at €1,000, €3,000 or €25,000 depending on the bank.
@@ -578,7 +578,7 @@ Generic services serve several applications with opposite needs: a site on a big
 app on a small screen and a slow network. Rather than make the services choose between the two, each application has
 **its own backend**, written and deployed by its team, which acts as the interface between it and the services.
 
-**What to look at** (details: [Docs/16-bff.md](Docs/16-bff.md), French; requests in `Bff.Web\Banque.http` and `Bff.Mobile\Banque.http`)
+**What to look at** (details: [Docs/en/16-bff.md](Docs/en/16-bff.md); requests in `Bff.Web\Banque.http` and `Bff.Mobile\Banque.http`)
 - **One screen, one request**: `GET /api/tableau-de-bord` (dashboard) triggers 7 calls to the services, made on the server
   and **in parallel**. The headers `X-Appels-Aval` (downstream calls), `X-Duree-Totale-Ms` (≈ 2 latencies) and
   `X-Duree-Aval-Cumulee-Ms` (≈ 7 latencies) show it.

@@ -3,7 +3,7 @@
 > **En une phrase** : chaque application cliente (site web, application mobile…) a **son propre backend**, écrit par son
 > équipe, qui assemble les services génériques en réponses taillées pour ses écrans, et qui gère la sécurité à sa façon.
 
-📁 Code : [`16-BFF`](../16-BFF) · ⬅️ [Multi-tenant](15-multi-tenant.md) · ➡️ [Architecture cellulaire](17-cell-based.md)
+📁 Code : [`16-BFF`](../16-BFF) · ⬅️ [Multi-tenant](15-multi-tenant.md) · ➡️ [Architecture cellulaire](17-cell-based.md) · 🌐 [English](en/16-bff.md)
 
 ---
 

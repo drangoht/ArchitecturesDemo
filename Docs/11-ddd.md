@@ -3,7 +3,7 @@
 > **En une phrase** : partir du métier, parler **sa** langue, et laisser le modèle guider le code — à l'intérieur d'un
 > contexte (volet **tactique**) comme entre les contextes (volet **stratégique**).
 
-📁 Code : [`11-DDD`](../11-DDD) · ⬅️ [Event Sourcing](10-event-sourcing.md) · ➡️ [Serverless](12-serverless.md)
+📁 Code : [`11-DDD`](../11-DDD) · ⬅️ [Event Sourcing](10-event-sourcing.md) · ➡️ [Serverless](12-serverless.md) · 🌐 [English](en/11-ddd.md)
 
 ---
 

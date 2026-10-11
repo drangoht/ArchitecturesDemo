@@ -6,7 +6,7 @@
 > retries, waits, and **compensates** in reverse order when needed.
 
 **Family**: system decomposition · **Origin**: sagas, Garcia-Molina and Salem, 1987 ·
-**Demo**: [`14-SagaOrchestree`](../../../14-SagaOrchestree) (port 5113) · 📖 [Full page (French)](../../14-saga-orchestree.md) ·
+**Demo**: [`14-SagaOrchestree`](../../../14-SagaOrchestree) (port 5113) · 📖 [Full page](../14-saga-orchestree.md) ·
 🌐 [Français](../../fiches/14-saga-orchestree.md)
 
 ```mermaid

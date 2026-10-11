@@ -4,7 +4,7 @@
 > context (tactical) and between contexts (strategic).
 
 **Family**: modeling · **Origin**: Eric Evans, *Domain-Driven Design*, 2003 ·
-**Demo**: [`11-DDD`](../../../11-DDD) (port 5110, Onion base) · 📖 [Full page (French)](../../11-ddd.md) ·
+**Demo**: [`11-DDD`](../../../11-DDD) (port 5110, Onion base) · 📖 [Full page](../11-ddd.md) ·
 🌐 [Français](../../fiches/11-ddd.md)
 
 ```mermaid

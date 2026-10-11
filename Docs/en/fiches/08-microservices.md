@@ -32,7 +32,7 @@ flowchart LR
 **Pitfall**: partial failures and eventual consistency everywhere; most of the code handles failures.
 
 **In production**: RabbitMQ / Azure Service Bus, YARP, .NET Aspire or Kubernetes, OpenTelemetry.
-Mechanisms: [cross-cutting concepts](../../concepts-transverses.md) (French).
+Mechanisms: [cross-cutting concepts](../concepts-transverses.md).
 
 ---
 ⬅️ [Modular Monolith](07-monolithe-modulaire.md) · [Cheat sheet index](README.md) · ➡️ [CQRS](09-cqrs.md)

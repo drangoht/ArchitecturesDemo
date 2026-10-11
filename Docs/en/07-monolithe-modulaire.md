@@ -254,4 +254,4 @@ public void Un_module_ne_reference_que_des_contrats_et_le_projet_partage(string 
 
 **The recommended starting point** for a growing system. The day a module must be deployed separately, its contracts
 become a network API and its bus a real broker: that is [demo 8](08-microservices.md). In production, add an *outbox*
-(see [cross-cutting concepts](../concepts-transverses.md#outbox), French).
+(see [cross-cutting concepts](concepts-transverses.md#outbox)).

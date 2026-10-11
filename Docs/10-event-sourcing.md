@@ -3,7 +3,7 @@
 > **En une phrase** : on ne stocke pas l'état, mais **la suite des événements** qui y ont mené ; l'état se recalcule en
 > les rejouant, et on n'efface jamais rien.
 
-📁 Code : [`10-EventSourcing`](../10-EventSourcing) · ⬅️ [CQRS](09-cqrs.md) · ➡️ [DDD](11-ddd.md)
+📁 Code : [`10-EventSourcing`](../10-EventSourcing) · ⬅️ [CQRS](09-cqrs.md) · ➡️ [DDD](11-ddd.md) · 🌐 [English](en/10-event-sourcing.md)
 
 ---
 

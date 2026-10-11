@@ -4,7 +4,7 @@
 > provider, billed per use.
 
 **Family**: system decomposition · **Origin**: AWS Lambda, 2014 ·
-**Demo**: [`12-Serverless`](../../../12-Serverless) (port 5111, **simulated** platform) · 📖 [Full page (French)](../../12-serverless.md) ·
+**Demo**: [`12-Serverless`](../../../12-Serverless) (port 5111, **simulated** platform) · 📖 [Full page](../12-serverless.md) ·
 🌐 [Français](../../fiches/12-serverless.md)
 
 ```mermaid

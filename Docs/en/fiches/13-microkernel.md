@@ -5,7 +5,7 @@
 
 **Family**: code organization · **Examples**: VS Code, Eclipse, web browsers, payroll software ·
 **Demo**: [`13-Microkernel`](../../../13-Microkernel) (port 5112; build the solution first, `plugins/` is a build
-output) · 📖 [Full page (French)](../../13-microkernel.md) · 🌐 [Français](../../fiches/13-microkernel.md)
+output) · 📖 [Full page](../13-microkernel.md) · 🌐 [Français](../../fiches/13-microkernel.md)
 
 ```mermaid
 flowchart LR

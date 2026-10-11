@@ -200,4 +200,4 @@ The test project references **only** the core: no EF Core, no ASP.NET Core, no m
 | Decisions are data (can be logged, replayed) | Requires familiarity with the functional style |
 
 **When to use it**: complex rules (pricing, eligibility, calculations, limits), inside any other architecture. The same
-principle — *deciding* separated from *applying* — is at the heart of [Event Sourcing (FR)](../10-event-sourcing.md).
+principle — *deciding* separated from *applying* — is at the heart of [Event Sourcing](10-event-sourcing.md).

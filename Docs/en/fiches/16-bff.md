@@ -4,7 +4,7 @@
 > into responses tailored to its screens and handles security its own way.
 
 **Family**: system decomposition · **Origin**: SoundCloud, popularized by Sam Newman ·
-**Demo**: [`16-BFF`](../../../16-BFF) (web BFF 5115, mobile BFF 5116, services 5210; `alice / demo`) · 📖 [Full page (French)](../../16-bff.md) ·
+**Demo**: [`16-BFF`](../../../16-BFF) (web BFF 5115, mobile BFF 5116, services 5210; `alice / demo`) · 📖 [Full page](../16-bff.md) ·
 🌐 [Français](../../fiches/16-bff.md)
 
 ```mermaid
