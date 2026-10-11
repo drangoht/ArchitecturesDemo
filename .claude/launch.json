@@ -162,6 +162,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Facade", "--launch-profile", "http"],
       "port": 5122
+    },
+    {
+      "name": "23-rest-grpc-graphql",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "23-RestGrpcGraphQL/Styles.Serveur", "--launch-profile", "http"],
+      "port": 5123
     }
   ]
 }

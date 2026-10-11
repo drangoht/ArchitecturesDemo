@@ -154,4 +154,12 @@
     <Project Path="22-StranglerFig/Fig.Nouveau/Fig.Nouveau.csproj" />
     <Project Path="22-StranglerFig/Fig.Tests/Fig.Tests.csproj" />
   </Folder>
+  <Folder Name="/23-RestGrpcGraphQL/">
+    <Project Path="23-RestGrpcGraphQL/Styles.Banque/Styles.Banque.csproj" />
+    <Project Path="23-RestGrpcGraphQL/Styles.Client/Styles.Client.csproj" />
+    <Project Path="23-RestGrpcGraphQL/Styles.Contrats/Styles.Contrats.csproj" />
+    <Project Path="23-RestGrpcGraphQL/Styles.Outillage/Styles.Outillage.csproj" />
+    <Project Path="23-RestGrpcGraphQL/Styles.Serveur/Styles.Serveur.csproj" />
+    <Project Path="23-RestGrpcGraphQL/Styles.Tests/Styles.Tests.csproj" />
+  </Folder>
 </Solution>

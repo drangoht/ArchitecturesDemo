@@ -1,7 +1,7 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **vingt-deux façons d'organiser une application**, et **une façon d'y arriver** depuis un
-système existant, chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+Cette documentation explique **vingt-deux façons d'organiser une application**, **une façon d'y arriver** depuis un
+système existant, et **trois façons de l'exposer** à ses clients, chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
 > **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
@@ -37,15 +37,17 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 20 | **Pipeline** (pipes & filters) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent tous en même temps sur un flux de données | [20-pipeline](20-pipeline.md) | [`20-Pipeline`](../20-Pipeline) |
 | 21 | **Chorégraphie** (événementiel pur) | Le même virement que la démo 14, sans orchestrateur : chaque service réagit aux événements des autres | [21-choregraphie](21-choregraphie.md) | [`21-Choregraphie`](../21-Choregraphie) |
 | 22 | **Strangler Fig** (migration progressive) | Une façade devant l'ancien système, qui lui retire ses fonctions une route à la fois au profit du nouveau | [22-strangler-fig](22-strangler-fig.md) | [`22-StranglerFig`](../22-StranglerFig) |
+| 23 | **REST, gRPC, GraphQL** (styles d'API) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client | [23-rest-grpc-graphql](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) |
 | ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---
 
-## Trois questions différentes (et une quatrième)
+## Trois questions différentes (et deux de plus)
 
 Ces « architectures » ne répondent pas toutes à la même question. Les mélanger dans un même classement est la principale
 source de confusion. Elles se rangent en trois familles, **et se combinent** d'une famille à l'autre. Une quatrième
-question se pose dès qu'un système existe déjà : comment passer de lui à l'une de ces architectures.
+question se pose dès qu'un système existe déjà : comment passer de lui à l'une de ces architectures. Une cinquième
+concerne sa surface, quelle que soit son organisation : comment l'exposer à ses clients.
 
 ```mermaid
 flowchart LR
@@ -53,6 +55,7 @@ flowchart LR
     Q2["<b>② Comment découper le système<br/>en morceaux indépendants ?</b>"]
     Q3["<b>③ Comment modéliser<br/>le métier et les données ?</b>"]
     Q4["<b>④ Comment remplacer<br/>un système existant ?</b>"]
+    Q5["<b>⑤ Comment exposer<br/>le système à ses clients ?</b>"]
 
     Q1 --> C0["Couches"]
     Q1 --> C1["Hexagonale"]
@@ -81,8 +84,10 @@ flowchart LR
 
     Q4 --> S22["Strangler Fig"]
 
+    Q5 --> E23["REST · gRPC · GraphQL"]
+
     classDef q fill:#1f6feb,color:#fff,stroke:#1f6feb
-    class Q1,Q2,Q3,Q4 q
+    class Q1,Q2,Q3,Q4,Q5 q
 ```
 
 | Famille | Question | Granularité | Exemples de combinaison |
@@ -91,6 +96,7 @@ flowchart LR
 | **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire ; des acteurs à l'intérieur d'un service |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
 | **Migration** | Comment remplacer un système en production sans tout arrêter ? | le système entier, le temps de la migration | Strangler Fig vers un monolithe modulaire ou des microservices ; sa façade devient ensuite leur passerelle |
+| **Exposition** | Sous quelle forme les clients appellent-ils le système ? | chaque frontière (public, partenaires, entre services) | gRPC entre microservices, REST pour l'API publique ; GraphQL devant les applications, à la place d'un BFF par application |
 
 ### Les deux grands axes de l'organisation du code
 
@@ -160,6 +166,11 @@ flowchart TD
     SB -->|oui| SC["<b>Architecture spatiale</b><br/>(données en mémoire)"]
 ```
 
+Le **style d'API** se choisit à part, frontière par frontière, quelle que soit l'architecture retenue :
+**REST** pour une API publique ou partenaire (simple, universelle, le cache HTTP) ; **gRPC** entre services internes
+(compact, contrat strict, flux) ; **GraphQL** devant des applications aux écrans riches et variés (le client choisit
+ses champs, un aller-retour par écran). Détails et mesures : [démo 23](23-rest-grpc-graphql.md).
+
 ---
 
 ## Comparatif
@@ -189,6 +200,7 @@ flowchart TD
 | [Pipeline](20-pipeline.md) | rien (un filtre ne connaît que son entrée et sa sortie) | l'état ; les données ne font que passer | 1 | tuyaux bornés (contre-pression) ; types vérifiés à l'assemblage | traitements en flux seulement ; filtres à état uniques ; reprise idempotente |
 | [Chorégraphie](21-choregraphie.md) | des contrats d'événements, jamais des autres services | l'état de chaque service + le journal des événements | 1 par service + le courtier | test d'architecture : aucun service n'en référence un autre | processus écrit nulle part ; compensations et délais dispersés ; pannes silencieuses |
 | [Strangler Fig](22-strangler-fig.md) | rien (l'ancien n'est vu qu'à travers la couche anti-corruption) | l'état, **deux fois** (ancien et nouveau), synchronisé dans les deux sens | façade + ancien + nouveau, puis façade + nouveau | la façade : ce qui n'est pas déclaré reste à l'ancien ; retour arrière en une requête | deux systèmes à faire vivre ensemble ; synchronisation ; contrat hérité à reproduire |
+| [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) | rien (il ignore HTTP, JSON, Protobuf et GraphQL) | l'état | 1 (REST et GraphQL en HTTP/1.1, gRPC en HTTP/2) | le `.proto` (test de correspondance) ; le schéma GraphQL, validé avant exécution | REST : allers-retours, sur-récupération ; gRPC : pas de navigateur ; GraphQL : N+1 caché, requêtes à borner, cache HTTP perdu |
 
 ---
 
@@ -216,8 +228,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 389 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5122)
+dotnet test ArchitecturesDemo.slnx                          # les 438 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5123)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    LE CLIENT DE COMPARAISON : les mêmes usages (écran d'accueil, virement, suivi en direct) joués avec les trois API,
+    en comptant requêtes et octets. Ses classes servent aussi aux tests (ComparaisonTests).
+    Lancer d'abord le serveur (projet Styles.Serveur).
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Styles.Contrats\Styles.Contrats.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    LE SERVEUR : la même banque exposée de trois façons, dans le même processus.
+    - REST (ApiRest.cs) et GraphQL (ApiGraphQL.cs) sur http://localhost:5123, en HTTP/1.1 ;
+    - gRPC (ApiGrpc.cs) sur http://localhost:5250, en HTTP/2 seulement (gRPC a besoin des trailers de HTTP/2).
+    Chaque API est une fine couche de traduction ; les règles sont toutes dans Styles.Banque.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Styles.Banque\Styles.Banque.csproj" />
+    <ProjectReference Include="..\Styles.Contrats\Styles.Contrats.csproj" />
+  </ItemGroup>
+
+</Project>

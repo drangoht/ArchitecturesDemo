@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Styles.Banque/Styles.Banque.csproj" />
+  <Project Path="Styles.Client/Styles.Client.csproj" />
+  <Project Path="Styles.Contrats/Styles.Contrats.csproj" />
+  <Project Path="Styles.Outillage/Styles.Outillage.csproj" />
+  <Project Path="Styles.Serveur/Styles.Serveur.csproj" />
+  <Project Path="Styles.Tests/Styles.Tests.csproj" />
+</Solution>
