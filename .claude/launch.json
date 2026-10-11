@@ -132,6 +132,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "19-SpaceBased/Espace.Api", "--launch-profile", "http"],
       "port": 5119
+    },
+    {
+      "name": "20-pipeline",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "20-Pipeline/Pipeline.Api", "--launch-profile", "http"],
+      "port": 5120
     }
   ]
 }

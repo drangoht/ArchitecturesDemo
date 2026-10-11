@@ -4,7 +4,7 @@
 > **toutes les données en mémoire**, dans une grille répliquée entre les unités, et la base n'est mise à jour qu'en
 > arrière-plan. On peut alors ajouter et retirer des unités à volonté pour absorber la charge.
 
-📁 Code : [`19-SpaceBased`](../19-SpaceBased) · ⬅️ [Modèle d'acteurs](18-modele-acteurs.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`19-SpaceBased`](../19-SpaceBased) · ⬅️ [Modèle d'acteurs](18-modele-acteurs.md) · ➡️ [Pipeline](20-pipeline.md)
 
 ---
 

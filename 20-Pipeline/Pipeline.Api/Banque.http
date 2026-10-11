@@ -1,0 +1,65 @@
+@base = http://localhost:5120
+@alice = FR7630006000011234567890189
+@bob = FR1230006000019876543210452
+
+### Les comptes avant l'import : Alice 1 000 €, Bob 500 €
+GET {{base}}/comptes/{{alice}}
+
+###
+GET {{base}}/comptes/{{bob}}
+
+### Import « à blanc » : les mêmes filtres, sans le dernier (Exécuter). Rien n'est modifié ; le bilan dit ce qui passerait.
+POST {{base}}/imports?aBlanc=true
+Content-Type: text/csv
+
+< ./Virements-exemple.csv
+
+### L'import : 11 lignes, 3 virements exécutés, 8 rejets, chacun par le filtre qui le concerne (premiersRejets)
+### Le bilan mesure aussi chaque étage : éléments traités, temps de traitement, attente du tuyau suivant
+POST {{base}}/imports
+Content-Type: text/csv
+
+< ./Virements-exemple.csv
+
+### Alice : 842,80 € ; Bob : 657,20 €
+GET {{base}}/comptes/{{alice}}
+
+### Rejouer le même fichier : rien n'est exécuté deux fois (doublons « déjà exécuté ») ; seul VIR-009 passe, Bob ayant maintenant de quoi payer
+POST {{base}}/imports
+Content-Type: text/csv
+
+< ./Virements-exemple.csv
+
+### Les imports faits, et le compte rendu de l'un d'eux
+GET {{base}}/imports
+
+###
+GET {{base}}/imports/1
+
+### Une panne en plein import (une exception, pas un rejet) : tout le pipeline s'arrête, 500.
+### À lancer sur une API fraîchement démarrée, puis relancer l'import normal : il termine le travail sans rien refaire.
+POST {{base}}/imports?panneALaReference=VIR-010
+Content-Type: text/csv
+
+< ./Virements-exemple.csv
+
+### ─── Débit, goulot, contre-pression ───
+
+### 100 000 lignes générées à la volée, 1 copie du contrôle de fraude : c'est le goulot (occupation ≈ 0,94),
+### les autres étages passent leur temps à attendre (attenteSortieMs) ; maxEnTransit reste de quelques centaines
+POST {{base}}/demo/import-massif
+Content-Type: application/json
+
+{ "lignes": 100000, "parallelismeFraude": 1 }
+
+### 8 copies du contrôle de fraude : plusieurs fois plus rapide, même résultat
+POST {{base}}/demo/import-massif
+Content-Type: application/json
+
+{ "lignes": 100000, "parallelismeFraude": 8 }
+
+### Un score de fraude léger : paralléliser déplace le goulot vers un autre étage (Valider)
+POST {{base}}/demo/import-massif
+Content-Type: application/json
+
+{ "lignes": 100000, "parallelismeFraude": 8, "coutScoring": 5 }

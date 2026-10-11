@@ -1,6 +1,6 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **vingt façons d'organiser une application**, chacune illustrée par une solution .NET 10
+Cette documentation explique **vingt et une façons d'organiser une application**, chacune illustrée par une solution .NET 10
 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
@@ -34,7 +34,8 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 17 | **Architecture cellulaire** (cell-based) | Plusieurs copies complètes du système, chacune pour une partie des clients : rayon d'impact borné | [17-cell-based](17-cell-based.md) | [`17-CellBased`](../17-CellBased) |
 | 18 | **Modèle d'acteurs** | Des milliers d'acteurs à l'état privé, qui ne se parlent que par messages traités un par un ; on remplace ceux qui plantent | [18-modele-acteurs](18-modele-acteurs.md) | [`18-ModeleActeurs`](../18-ModeleActeurs) |
 | 19 | **Architecture spatiale** (space-based) | Les données en mémoire, répliquées entre des unités qu'on ajoute à volonté ; la base mise à jour en arrière-plan | [19-space-based](19-space-based.md) | [`19-SpaceBased`](../19-SpaceBased) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 19) |
+| 20 | **Pipeline** (pipes & filters) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent tous en même temps sur un flux de données | [20-pipeline](20-pipeline.md) | [`20-Pipeline`](../20-Pipeline) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 20) |
 
 ---
 
@@ -56,6 +57,7 @@ flowchart LR
     Q1 --> C4["Cœur fonctionnel"]
     Q1 --> C5["Vertical Slice"]
     Q1 --> C13["Microkernel"]
+    Q1 --> C20["Pipeline"]
 
     Q2 --> D6["Composants"]
     Q2 --> D7["Monolithe modulaire"]
@@ -128,6 +130,8 @@ flowchart TD
     M -->|oui| N["<b>Cœur fonctionnel</b><br/>pour ces règles"]
     D --> P{"Variantes par client,<br/>extensions par des tiers ?"}
     P -->|oui| Q["<b>Microkernel</b><br/>(plugins)"]
+    D --> PL{"Traitement de données<br/>en plusieurs étapes<br/>(import, ETL, flux) ?"}
+    PL -->|oui| PM["<b>Pipeline</b><br/>(pour ce traitement)"]
     H --> T{"Processus en plusieurs étapes<br/>entre services, avec attentes<br/>et règles d'échec ?"}
     G --> T
     T -->|oui| U["<b>Saga orchestrée</b>"]
@@ -171,6 +175,7 @@ flowchart TD
 | [Cellules](17-cell-based.md) | rien (chaque cellule est autonome) | l'état, réparti entre cellules | 1 routeur + **N cellules**, par vagues | **la cellule** : rayon d'impact borné | échanges inter-cellules, N fois l'infrastructure, migrations |
 | [Acteurs](18-modele-acteurs.md) | rien (un acteur ne connaît que des adresses) | l'état, une ligne par acteur | 1 (ou une grappe de serveurs : Orleans, Akka) | **la boîte aux lettres** : un message à la fois ; le superviseur | pas de transaction entre acteurs, lectures transversales, cycles de demandes |
 | [Spatiale](19-space-based.md) | rien (seulement la réplique de son unité) | l'état, **en mémoire** dans chaque unité ; la base en différé | **N unités**, ajoutées et retirées selon la charge | versions + routage par affinité | collisions (écritures perdues), tout en mémoire, base en retard |
+| [Pipeline](20-pipeline.md) | rien (un filtre ne connaît que son entrée et sa sortie) | l'état ; les données ne font que passer | 1 | tuyaux bornés (contre-pression) ; types vérifiés à l'assemblage | traitements en flux seulement ; filtres à état uniques ; reprise idempotente |
 
 ---
 
@@ -198,8 +203,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 302 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5119)
+dotnet test ArchitecturesDemo.slnx                          # les 326 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5120)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

@@ -136,4 +136,10 @@
     <Project Path="19-SpaceBased/Espace.Grille/Espace.Grille.csproj" />
     <Project Path="19-SpaceBased/Espace.Tests/Espace.Tests.csproj" />
   </Folder>
+  <Folder Name="/20-Pipeline/">
+    <Project Path="20-Pipeline/Pipeline.Api/Pipeline.Api.csproj" />
+    <Project Path="20-Pipeline/Pipeline.Banque/Pipeline.Banque.csproj" />
+    <Project Path="20-Pipeline/Pipeline.Noyau/Pipeline.Noyau.csproj" />
+    <Project Path="20-Pipeline/Pipeline.Tests/Pipeline.Tests.csproj" />
+  </Folder>
 </Solution>
