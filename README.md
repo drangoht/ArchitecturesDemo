@@ -10,6 +10,8 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 
 📗 **Pas développeur ? La même chose expliquée avec des mots simples et des images : [`Docs/pour-tous/`](Docs/pour-tous/README.md)**.
 
+🗂️ **Pressé ? Une fiche mémo d'une page par architecture : [`Docs/fiches/`](Docs/fiches/README.md)**.
+
 | # | Dossier | Architecture | Idée clé | Port |
 |---|---|---|---|---|
 | 0 | `00-Couches` | Couches / N-tiers (classique) | Présentation → Métier → Données : les dépendances descendent vers la base | 5100 |

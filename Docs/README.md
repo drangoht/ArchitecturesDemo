@@ -7,6 +7,9 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 > 📗 **Pas développeur ?** Une version sans code, avec des mots simples et des images de la vie courante :
 > [les architectures expliquées à tout le monde](pour-tous/README.md).
 
+> 🗂️ **Besoin d'un résumé ?** Une fiche mémo d'une page par architecture (idée, schéma, règles, quand l'utiliser,
+> pièges) : [les fiches](fiches/README.md).
+
 > **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
 > GitHub / GitLab / Azure DevOps, dans Rider et Visual Studio 2022 (aperçu Markdown), et dans VS Code avec l'extension
 > *Markdown Preview Mermaid Support*.
