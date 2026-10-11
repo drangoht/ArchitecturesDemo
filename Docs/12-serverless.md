@@ -98,7 +98,7 @@ Entrée = le déclencheur + le contexte ; sortie = une réponse. Tout ce qui doi
 ([Fonctions.cs](../12-Serverless/Sls.Fonctions/Fonctions.cs))
 
 ```csharp
-/// HTTP : on ne fait PAS le virement ici. On l'accepte (202) et on le confie à une file : réponse immédiate.
+/// <summary>HTTP : on ne fait PAS le virement ici. On l'accepte (202) et on le confie à une file : réponse immédiate.</summary>
 public static async Task<ReponseHttp> Demander(RequeteHttp requete, ContexteFonction contexte)
 {
     var demande = requete.Lire<VirementDemande>();

@@ -64,42 +64,65 @@ flowchart TB
 ([Compte.cs](../10-EventSourcing/Es.Domaine/Compte.cs))
 
 ```csharp
-// DÉCISION : vérifie les règles, puis enregistre un événement.
-public void Retirer(decimal montant, string motif, DateTime date)
+/// <summary>
+/// Agrégat « event-sourcé ». Deux sortes de méthodes, à ne jamais mélanger :
+/// - les DÉCISIONS (Retirer, Cloturer…) vérifient les règles puis enregistrent un événement ;
+/// - Appliquer fait évoluer l'état à partir d'un événement, sans aucune règle (un fait passé ne se refuse pas).
+/// Charger un compte = rejouer Appliquer sur tout son historique.
+/// </summary>
+public class Compte
 {
-    VerifierOuvert();
-    VerifierMontant(montant);
-    if (montant > Solde)
-        throw new RegleMetierException("Solde insuffisant.");
-    Enregistrer(new ArgentRetire(Id, montant, motif, date));
-}
-
-private void Enregistrer(IEvenement evenement)
-{
-    Appliquer(evenement);
-    _nouveaux.Add(evenement);
-}
-
-// APPLICATION : fait évoluer l'état, SANS AUCUNE RÈGLE (un fait passé ne se refuse pas).
-private void Appliquer(IEvenement evenement)
-{
-    switch (evenement)
+    // …
+    public void Retirer(decimal montant, string motif, DateTime date)
     {
-        case CompteOuvert e: (Id, Titulaire, Solde) = (e.CompteId, e.Titulaire, e.DepotInitial); break;
-        case ArgentDepose e: Solde += e.Montant; break;
-        case ArgentRetire e: Solde -= e.Montant; break;
-        case VirementEmis e: Solde -= e.Montant; break;
-        case VirementRecu e: Solde += e.Montant; break;
-        case CompteCloture: Cloture = true; break;
+        VerifierOuvert();
+        VerifierMontant(montant);
+        if (montant > Solde)
+            throw new RegleMetierException("Solde insuffisant.");
+        Enregistrer(new ArgentRetire(Id, montant, motif, date));
     }
-    Version++;
-}
+    // …
+
+    // ─── Évolution de l'état ───
+
+    private void Enregistrer(IEvenement evenement)
+    {
+        Appliquer(evenement);
+        _nouveaux.Add(evenement);
+    }
+
+    private void Appliquer(IEvenement evenement)
+    {
+        switch (evenement)
+        {
+            case CompteOuvert e:
+                (Id, Titulaire, Solde) = (e.CompteId, e.Titulaire, e.DepotInitial);
+                break;
+            case ArgentDepose e:
+                Solde += e.Montant;
+                break;
+            case ArgentRetire e:
+                Solde -= e.Montant;
+                break;
+            case VirementEmis e:
+                Solde -= e.Montant;
+                break;
+            case VirementRecu e:
+                Solde += e.Montant;
+                break;
+            case CompteCloture:
+                Cloture = true;
+                break;
+        }
+        Version++;
+    }
 ```
 
 Charger un compte, c'est rejouer `Appliquer` sur tout son historique :
 
 ```csharp
-public static Compte Reconstituer(IEnumerable<IEvenement> historique) => DepuisInstantane(null, historique);
+public static Compte Reconstituer(IEnumerable<IEvenement> historique) =>
+    DepuisInstantane(null, historique);
 ```
 
 ```mermaid
@@ -169,11 +192,12 @@ public async Task<Compte> Charger(Guid id)
 ### 4. Le voyage dans le temps
 
 ```csharp
-/// Voyage dans le temps : l'état du compte tel qu'il était à une version donnée.
+/// <summary>Voyage dans le temps : l'état du compte tel qu'il était à une version donnée.</summary>
 public async Task<Compte> ChargerALaVersion(Guid id, int version)
 {
     var historique = await magasin.LireFlux(id);
-    // …
+    if (historique.Count == 0)
+        throw new CompteIntrouvableException(id);
     return Compte.Reconstituer(historique.Where(e => e.Version <= version).Select(e => e.Evenement()));
 }
 ```
