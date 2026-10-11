@@ -126,6 +126,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "18-ModeleActeurs/Acteurs.Api", "--launch-profile", "http"],
       "port": 5118
+    },
+    {
+      "name": "19-space-based",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "19-SpaceBased/Espace.Api", "--launch-profile", "http"],
+      "port": 5119
     }
   ]
 }

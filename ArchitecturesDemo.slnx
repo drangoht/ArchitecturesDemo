@@ -130,4 +130,10 @@
     <Project Path="18-ModeleActeurs/Acteurs.Noyau/Acteurs.Noyau.csproj" />
     <Project Path="18-ModeleActeurs/Acteurs.Tests/Acteurs.Tests.csproj" />
   </Folder>
+  <Folder Name="/19-SpaceBased/">
+    <Project Path="19-SpaceBased/Espace.Api/Espace.Api.csproj" />
+    <Project Path="19-SpaceBased/Espace.Banque/Espace.Banque.csproj" />
+    <Project Path="19-SpaceBased/Espace.Grille/Espace.Grille.csproj" />
+    <Project Path="19-SpaceBased/Espace.Tests/Espace.Tests.csproj" />
+  </Folder>
 </Solution>

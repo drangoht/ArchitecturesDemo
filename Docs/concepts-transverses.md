@@ -10,10 +10,10 @@ mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 |---|---|---|
 | [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17, 18 |
 | [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9) |
-| [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 (et l'alternative : 18) |
+| [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 (et l'alternative : 18 ; le contre-exemple : 19) |
 | [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17, 18 |
 | [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18 |
-| [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12 |
+| [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12, 19 |
 | [Événements de domaine vs d'intégration](#événements-de-domaine-vs-dintégration) | Ce qu'on publie aux autres | 7, 9, 11 |
 
 ---
@@ -114,6 +114,11 @@ sequenceDiagram
 les rend impossibles : chaque compte a un seul propriétaire, qui traite ses messages un par un. Les deux retraits de
 80 € arrivent dans sa boîte et sont traités l'un après l'autre ; le second voit 20 € et est refusé, sans version ni
 nouvel essai.
+
+**Le contre-exemple : la dernière écriture gagne.** Dans l'[architecture spatiale](19-space-based.md), chaque unité écrit
+dans sa propre réplique sans rien vérifier ailleurs ; la réplication garde la plus grande version et **jette l'autre**.
+Les deux retraits de 80 € sont acceptés, un seul est débité. Seul un routage qui donne chaque compte à une seule unité
+(affinité) évite ces collisions.
 
 ---
 

@@ -1,6 +1,6 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **dix-neuf façons d'organiser une application**, chacune illustrée par une solution .NET 10
+Cette documentation explique **vingt façons d'organiser une application**, chacune illustrée par une solution .NET 10
 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
@@ -33,7 +33,8 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 16 | **Backend for Frontend** (BFF) | Un backend par application cliente : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | [16-bff](16-bff.md) | [`16-BFF`](../16-BFF) |
 | 17 | **Architecture cellulaire** (cell-based) | Plusieurs copies complètes du système, chacune pour une partie des clients : rayon d'impact borné | [17-cell-based](17-cell-based.md) | [`17-CellBased`](../17-CellBased) |
 | 18 | **Modèle d'acteurs** | Des milliers d'acteurs à l'état privé, qui ne se parlent que par messages traités un par un ; on remplace ceux qui plantent | [18-modele-acteurs](18-modele-acteurs.md) | [`18-ModeleActeurs`](../18-ModeleActeurs) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 18) |
+| 19 | **Architecture spatiale** (space-based) | Les données en mémoire, répliquées entre des unités qu'on ajoute à volonté ; la base mise à jour en arrière-plan | [19-space-based](19-space-based.md) | [`19-SpaceBased`](../19-SpaceBased) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 19) |
 
 ---
 
@@ -65,6 +66,7 @@ flowchart LR
     Q2 --> D16["BFF"]
     Q2 --> D17["Cellules"]
     Q2 --> D18["Acteurs"]
+    Q2 --> D19["Spatiale"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -139,6 +141,8 @@ flowchart TD
     G --> AC{"Beaucoup d'entités indépendantes,<br/>à l'état modifié souvent<br/>et en concurrence ?"}
     H --> AC
     AC -->|oui| AD["<b>Acteurs</b><br/>(un par entité)"]
+    H --> SB{"Pics de charge énormes<br/>que la base ne suit pas ?"}
+    SB -->|oui| SC["<b>Architecture spatiale</b><br/>(données en mémoire)"]
 ```
 
 ---
@@ -166,6 +170,7 @@ flowchart TD
 | [BFF](16-bff.md) | des services en aval (HTTP) | rien, sauf les sessions | 1 par application cliente | aucune référence entre BFF ; droits vérifiés par les services | un composant par application, duplication, métier qui s'y glisse |
 | [Cellules](17-cell-based.md) | rien (chaque cellule est autonome) | l'état, réparti entre cellules | 1 routeur + **N cellules**, par vagues | **la cellule** : rayon d'impact borné | échanges inter-cellules, N fois l'infrastructure, migrations |
 | [Acteurs](18-modele-acteurs.md) | rien (un acteur ne connaît que des adresses) | l'état, une ligne par acteur | 1 (ou une grappe de serveurs : Orleans, Akka) | **la boîte aux lettres** : un message à la fois ; le superviseur | pas de transaction entre acteurs, lectures transversales, cycles de demandes |
+| [Spatiale](19-space-based.md) | rien (seulement la réplique de son unité) | l'état, **en mémoire** dans chaque unité ; la base en différé | **N unités**, ajoutées et retirées selon la charge | versions + routage par affinité | collisions (écritures perdues), tout en mémoire, base en retard |
 
 ---
 
@@ -193,8 +198,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 281 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5118)
+dotnet test ArchitecturesDemo.slnx                          # les 302 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5119)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

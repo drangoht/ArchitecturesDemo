@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- LE MÉTIER d'une unité de traitement : il ne lit et n'écrit que dans la réplique en mémoire de son unité, jamais dans la base. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Espace.Grille\Espace.Grille.csproj" />
+  </ItemGroup>
+
+</Project>

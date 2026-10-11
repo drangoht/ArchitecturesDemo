@@ -4,7 +4,7 @@
 > **ne partagent rien** et ne communiquent que **par messages**, traités **un par un** ; la concurrence ne demande plus
 > aucun verrou, et une panne se répare en **remplaçant** l'acteur fautif.
 
-📁 Code : [`18-ModeleActeurs`](../18-ModeleActeurs) · ⬅️ [Architecture cellulaire](17-cell-based.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`18-ModeleActeurs`](../18-ModeleActeurs) · ⬅️ [Architecture cellulaire](17-cell-based.md) · ➡️ [Architecture spatiale](19-space-based.md)
 
 ---
 
