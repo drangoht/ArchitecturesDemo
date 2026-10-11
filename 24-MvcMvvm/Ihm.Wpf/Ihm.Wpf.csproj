@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    LA VUE WPF des ViewModels de Ihm.Presentation : du XAML et des liaisons de données, AUCUNE logique.
+    MainWindow.xaml.cs ne contient que InitializeComponent ; App.xaml.cs assemble (banque, ViewModel, fenêtre).
+    Windows uniquement (WPF). Le reste de la démo, tests compris, n'en dépend pas.
+    Lancer : dotnet run (projet 24-MvcMvvm\Ihm.Wpf) ; avec l'argument « capture fichier.png », la fenêtre est
+    dessinée dans une image sans être affichée.
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ihm.Presentation\Ihm.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

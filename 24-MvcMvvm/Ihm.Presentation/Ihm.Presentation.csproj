@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MVVM (Modèle - Vue - VueModèle) : les ViewModels, en .NET pur (net10.0, sans WPF, vérifié par un test).
+    - Un ViewModel est l'ÉTAT de l'écran (ce qui est saisi, sélectionné, affiché, en cours) et ses COMMANDES.
+    - Il ne connaît pas la vue : il PRÉVIENT quand une propriété change (INotifyPropertyChanged), et la vue, liée
+      à lui par des liaisons de données (bindings), se met à jour seule.
+    - D'où le grand intérêt : tout le comportement de l'écran se teste sans écran, et deux vues différentes
+      (Ihm.Wpf et Ihm.Console) se branchent sur les mêmes ViewModels.
+    INotifyPropertyChanged, INotifyDataErrorInfo, ICommand et ObservableCollection font partie de .NET lui-même.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ihm.Banque\Ihm.Banque.csproj" />
+  </ItemGroup>
+
+</Project>

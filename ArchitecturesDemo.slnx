@@ -162,4 +162,12 @@
     <Project Path="23-RestGrpcGraphQL/Styles.Serveur/Styles.Serveur.csproj" />
     <Project Path="23-RestGrpcGraphQL/Styles.Tests/Styles.Tests.csproj" />
   </Folder>
+  <Folder Name="/24-MvcMvvm/">
+    <Project Path="24-MvcMvvm/Ihm.Banque/Ihm.Banque.csproj" />
+    <Project Path="24-MvcMvvm/Ihm.Console/Ihm.Console.csproj" />
+    <Project Path="24-MvcMvvm/Ihm.Mvc/Ihm.Mvc.csproj" />
+    <Project Path="24-MvcMvvm/Ihm.Presentation/Ihm.Presentation.csproj" />
+    <Project Path="24-MvcMvvm/Ihm.Tests/Ihm.Tests.csproj" />
+    <Project Path="24-MvcMvvm/Ihm.Wpf/Ihm.Wpf.csproj" />
+  </Folder>
 </Solution>

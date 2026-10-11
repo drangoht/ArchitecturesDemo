@@ -1,0 +1,32 @@
+@model DetailCompte
+@{
+    ViewData["Titre"] = Model.Compte.Libelle;
+}
+
+@if (TempData["Message"] is string message)
+{
+    @* Déposé par l'action de virement juste avant la redirection ; lu ici, donc effacé. *@
+    <p class="message" role="status">@message</p>
+}
+
+<h2>@Model.Compte.Libelle de @Model.Compte.Titulaire</h2>
+<p>Solde : <strong id="solde">@Model.Compte.Solde</strong></p>
+<p><a class="bouton" asp-controller="Virements" asp-action="Nouveau" asp-route-source="@Model.Compte.Id">Virer depuis ce compte</a></p>
+
+<h3>Opérations</h3>
+<table>
+    <thead>
+        <tr><th>Date</th><th>Libellé</th><th class="montant">Montant</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var operation in Model.Operations)
+        {
+            <tr>
+                <td>@operation.Date</td>
+                <td>@operation.Libelle</td>
+                <td class="montant @(operation.EstDebit ? "debit" : null)">@operation.Montant</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p><a asp-action="Index">← Tous les comptes</a></p>

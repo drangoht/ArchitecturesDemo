@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    UNE DEUXIÈME VUE sur les MÊMES ViewModels que la fenêtre WPF : une console, pilotée par des commandes tapées
+    (ou lues dans un fichier). Ihm.Presentation n'a pas changé d'une ligne pour l'accueillir.
+    Liaison.cs montre ce que fait un {Binding} de WPF, en vingt lignes : s'abonner à PropertyChanged et recopier.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ihm.Presentation\Ihm.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

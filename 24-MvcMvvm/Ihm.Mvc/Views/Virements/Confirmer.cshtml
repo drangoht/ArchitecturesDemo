@@ -1,0 +1,21 @@
+@model FormulaireVirement
+@* Une deuxième vue pour la même action : le contrôleur l'a choisie parce que le montant dépasse le seuil.
+   Le serveur ne garde rien entre les deux requêtes : le formulaire renvoie tout, en champs cachés. *@
+@{
+    ViewData["Titre"] = "Confirmer le virement";
+    var source = Model.Comptes.First(c => c.Id == Model.Source);
+    var cible = Model.Comptes.First(c => c.Id == Model.Cible);
+}
+
+<h2>Confirmer le virement</h2>
+<p>Virer <strong>@Ihm.Banque.Format.Euros(Model.Montant!.Value)</strong>
+   de <strong>@source.Titulaire — @source.Libelle</strong>
+   vers <strong>@cible.Titulaire — @cible.Libelle</strong> ?</p>
+<form asp-action="Nouveau" method="post">
+    <input type="hidden" asp-for="Source" />
+    <input type="hidden" asp-for="Cible" />
+    <input type="hidden" asp-for="Montant" />
+    <input type="hidden" name="Confirme" value="true" />
+    <button type="submit">Confirmer</button>
+    <a class="bouton secondaire" asp-action="Nouveau" asp-route-source="@Model.Source">Annuler</a>
+</form>

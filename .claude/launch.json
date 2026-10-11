@@ -168,6 +168,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "23-RestGrpcGraphQL/Styles.Serveur", "--launch-profile", "http"],
       "port": 5123
+    },
+    {
+      "name": "24-mvc",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "24-MvcMvvm/Ihm.Mvc", "--launch-profile", "http"],
+      "port": 5124
     }
   ]
 }

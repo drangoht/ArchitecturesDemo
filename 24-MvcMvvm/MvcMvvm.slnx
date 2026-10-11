@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Ihm.Banque/Ihm.Banque.csproj" />
+  <Project Path="Ihm.Console/Ihm.Console.csproj" />
+  <Project Path="Ihm.Mvc/Ihm.Mvc.csproj" />
+  <Project Path="Ihm.Presentation/Ihm.Presentation.csproj" />
+  <Project Path="Ihm.Tests/Ihm.Tests.csproj" />
+  <Project Path="Ihm.Wpf/Ihm.Wpf.csproj" />
+</Solution>

@@ -1,0 +1,22 @@
+@model ListeComptes
+@* Une vue fortement typée : elle reçoit ce que le contrôleur a préparé, et ne fait que le mettre en forme. *@
+@{
+    ViewData["Titre"] = "Comptes";
+}
+
+<h2>Comptes</h2>
+<table>
+    <thead>
+        <tr><th>Titulaire</th><th>Compte</th><th class="montant">Solde</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var compte in Model.Comptes)
+        {
+            <tr>
+                <td>@compte.Titulaire</td>
+                <td><a asp-action="Detail" asp-route-id="@compte.Id">@compte.Libelle</a></td>
+                <td class="montant">@compte.Solde</td>
+            </tr>
+        }
+    </tbody>
+</table>
