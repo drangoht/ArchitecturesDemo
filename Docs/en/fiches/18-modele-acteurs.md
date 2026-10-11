@@ -7,7 +7,7 @@
 
 **Family**: system decomposition · **Origin**: Carl Hewitt, 1973; popularized by Erlang ·
 **Demo**: [`18-ModeleActeurs`](../../../18-ModeleActeurs) (port 5118; `/systeme` to observe and trigger failures) ·
-📖 [Full page (French)](../../18-modele-acteurs.md) · 🌐 [Français](../../fiches/18-modele-acteurs.md)
+📖 [Full page](../18-modele-acteurs.md) · 🌐 [Français](../../fiches/18-modele-acteurs.md)
 
 ```mermaid
 flowchart LR

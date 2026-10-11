@@ -4,7 +4,7 @@
 > **graphe que le client interroge** (GraphQL) ; le métier ne bouge pas, ce qui change, c'est qui décide de la forme
 > des réponses, ce qui circule sur le réseau, et ce que HTTP fait encore pour vous.
 
-📁 Code : [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) · ⬅️ [Strangler Fig](22-strangler-fig.md) · ➡️ [MVC et MVVM](24-mvc-mvvm.md)
+📁 Code : [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) · ⬅️ [Strangler Fig](22-strangler-fig.md) · ➡️ [MVC et MVVM](24-mvc-mvvm.md) · 🌐 [English](en/23-rest-grpc-graphql.md)
 
 ---
 

@@ -4,7 +4,7 @@
 > favor of the new one, until the legacy can be switched off.
 
 **Family**: migration · **Origin**: Martin Fowler, 2004 ·
-**Demo**: [`22-StranglerFig`](../../../22-StranglerFig) (façade 5122, legacy 5240, new 5241) · 📖 [Full page (French)](../../22-strangler-fig.md) ·
+**Demo**: [`22-StranglerFig`](../../../22-StranglerFig) (façade 5122, legacy 5240, new 5241) · 📖 [Full page](../22-strangler-fig.md) ·
 🌐 [Français](../../fiches/22-strangler-fig.md)
 
 ```mermaid

@@ -45,7 +45,7 @@ flowchart LR
 | Tools | message broker | Durable Functions, Temporal, Step Functions, MassTransit, NServiceBus |
 
 **Rule of thumb**: choreography to **notify** ("this happened"), orchestration to **drive** a multi-step business
-process with failure rules. [Demo 21 (FR)](../21-choregraphie.md) makes the **same transfer** through choreography, for a
+process with failure rules. [Demo 21](21-choregraphie.md) makes the **same transfer** through choreography, for a
 side-by-side comparison.
 
 ---

@@ -6,7 +6,7 @@
 > a failure stays **locked inside its cell**.
 
 **Family**: system decomposition · **Demo**: [`17-CellBased`](../../../17-CellBased) (router 5117, cells 5231–5234;
-start everything with `Cell.Lanceur`) · 📖 [Full page (French)](../../17-cell-based.md) ·
+start everything with `Cell.Lanceur`) · 📖 [Full page](../17-cell-based.md) ·
 🌐 [Français](../../fiches/17-cell-based.md)
 
 ```mermaid

@@ -115,11 +115,11 @@ sequenceDiagram
 
 "Optimistic": nothing is locked, you bet there will be no conflict, and detect it if there is one.
 
-**The alternative: a single writer.** Rather than detecting conflicts, the [actor model (FR)](../18-modele-acteurs.md) makes them
+**The alternative: a single writer.** Rather than detecting conflicts, the [actor model](18-modele-acteurs.md) makes them
 impossible: each account has a single owner, which handles its messages one at a time. The two €80 withdrawals arrive
 in its mailbox and are handled one after the other; the second sees €20 and is refused, with no version and no retry.
 
-**The counter-example: last write wins.** In the [space-based architecture (FR)](../19-space-based.md), each unit writes to its
+**The counter-example: last write wins.** In the [space-based architecture](19-space-based.md), each unit writes to its
 own replica without checking anything elsewhere; replication keeps the highest version and **throws the other away**.
 Both €80 withdrawals are accepted, only one is debited. Only routing that gives each account to a single unit
 (affinity) avoids these collisions.
@@ -153,7 +153,7 @@ flowchart LR
 | 21 | [Comptes.cs](../../21-Choregraphie/Choreo.Services/Comptes.cs) | **choreographed** saga: no coordinator; Accounts compensates by listening to the others' failures, and an expiring reservation unblocks a process left hanging |
 
 Two ways to coordinate a saga: **choreography** (each service reacts to the others' events, demos 7, 8 and
-[21 (FR)](../21-choregraphie.md)) and **orchestration** (an explicit conductor drives the steps, [demo 14](14-saga-orchestree.md)).
+[21](21-choregraphie.md)) and **orchestration** (an explicit conductor drives the steps, [demo 14](14-saga-orchestree.md)).
 The steps after the **point of no return** (for example the final debit) are no longer compensated: they can only be retried.
 
 A compensation doesn't erase the past: the customer sees a debit **then** a credit. It is a reverse entry, as in accounting.
@@ -181,7 +181,7 @@ flowchart LR
 | HTTP calls | [`AddStandardResilienceHandler`](../../08-Microservices/Micro.Virements/Program.cs): 3 retries + timeout + circuit breaker | — |
 | Messages | [Broker](../../08-Microservices/Micro.Courtier/Courtier.cs): 8 attempts then dead letters | [ServiceFiles](../../12-Serverless/Sls.Plateforme/ServicesGeres.cs): 3 attempts then `-poison`, replayable |
 
-The [actor model (FR)](../18-modele-acteurs.md) applies the same idea to the actors themselves: a crashing actor is restarted
+The [actor model](18-modele-acteurs.md) applies the same idea to the actors themselves: a crashing actor is restarted
 (up to 3 times per minute), then stopped and quarantined; the messages sent to it meanwhile are "dead letters", counted
 by the runtime.
 

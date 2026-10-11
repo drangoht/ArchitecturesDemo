@@ -4,7 +4,7 @@
 > puis on lui retire ses fonctions **une route à la fois** au profit d'un nouveau service, jusqu'au jour où il ne sert
 > plus à rien et qu'on peut l'éteindre.
 
-📁 Code : [`22-StranglerFig`](../22-StranglerFig) · ⬅️ [Chorégraphie](21-choregraphie.md) · ➡️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md)
+📁 Code : [`22-StranglerFig`](../22-StranglerFig) · ⬅️ [Chorégraphie](21-choregraphie.md) · ➡️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🌐 [English](en/22-strangler-fig.md)
 
 ---
 

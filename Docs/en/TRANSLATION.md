@@ -11,7 +11,7 @@ decided once the documentation is done.
 | 1 | Structure, this file, `Docs/en/README.md`, the 25 cheat sheets + index, English PDF, root `README.en.md` | ~23,000 | ✅ done (2026-10-11) |
 | 2 | Full pages 0 to 8 (`Docs/0x-*.md`) | ~8,800 | ✅ done (2026-10-11) |
 | 3 | Full pages 9 to 16 + `concepts-transverses.md` + `noms-architectures.md` | ~17,000 | ✅ done (2026-10-11) |
-| 4 | Full pages 17 to 24 | ~16,000 | ⏳ to do |
+| 4 | Full pages 17 to 24 | ~19,000 | ✅ done (2026-10-11) |
 | 5 | `pour-tous/` (25 pages, index, glossary `lexique.md`; images shared) | ~12,600 | ⏳ to do |
 | 6 | `differences/` (17 comparisons + index) | ~14,700 | ⏳ to do |
 | 7 | Code (identifiers, comments, routes, tests) — strategy to be decided | 28,000 lines | ⏸ later |

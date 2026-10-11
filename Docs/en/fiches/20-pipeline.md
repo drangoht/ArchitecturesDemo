@@ -5,7 +5,7 @@
 
 **Family**: code organization · **Examples**: Unix shell, compilers, ETL ·
 **Demo**: [`20-Pipeline`](../../../20-Pipeline) (port 5120; `POST /imports` of a CSV file of transfers) ·
-📖 [Full page (French)](../../20-pipeline.md) · 🌐 [Français](../../fiches/20-pipeline.md)
+📖 [Full page](../20-pipeline.md) · 🌐 [Français](../../fiches/20-pipeline.md)
 
 ```mermaid
 flowchart LR

@@ -5,7 +5,7 @@
 > de l'écran et ses commandes, la vue s'y lie et suit chacun de ses changements) ; le modèle ne bouge pas, ce qui
 > change, c'est **qui reçoit l'action de l'utilisateur, et combien de temps l'écran vit**.
 
-📁 Code : [`24-MvcMvvm`](../24-MvcMvvm) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`24-MvcMvvm`](../24-MvcMvvm) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · ➡️ [Concepts transverses](concepts-transverses.md) · 🌐 [English](en/24-mvc-mvvm.md)
 
 ---
 

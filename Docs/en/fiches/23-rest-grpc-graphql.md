@@ -4,7 +4,7 @@
 > **graph the client queries** (GraphQL).
 
 **Family**: exposure · **Demo**: [`23-RestGrpcGraphQL`](../../../23-RestGrpcGraphQL) (REST and GraphQL 5123 over
-HTTP/1.1, gRPC 5250 over HTTP/2; Protobuf, gRPC and GraphQL hand-written) · 📖 [Full page (French)](../../23-rest-grpc-graphql.md) ·
+HTTP/1.1, gRPC 5250 over HTTP/2; Protobuf, gRPC and GraphQL hand-written) · 📖 [Full page](../23-rest-grpc-graphql.md) ·
 🌐 [Français](../../fiches/23-rest-grpc-graphql.md)
 
 ```mermaid

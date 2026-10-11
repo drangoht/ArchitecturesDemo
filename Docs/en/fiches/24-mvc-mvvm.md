@@ -4,7 +4,7 @@
 > after rendering) and in **MVVM** (a living ViewModel that the view observes through bindings).
 
 **Family**: presentation · **Demo**: [`24-MvcMvvm`](../../../24-MvcMvvm) (MVC site 5124; WPF views, Windows only,
-and a console on the same ViewModels) · 📖 [Full page (French)](../../24-mvc-mvvm.md) ·
+and a console on the same ViewModels) · 📖 [Full page](../24-mvc-mvvm.md) ·
 🌐 [Français](../../fiches/24-mvc-mvvm.md)
 
 ```mermaid

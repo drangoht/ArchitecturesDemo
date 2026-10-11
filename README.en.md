@@ -621,7 +621,7 @@ the **cells**, each serving part of the customers. A failure, a bad deployment o
 cell: the **blast radius** is bounded. An approach described by AWS for its own services, adopted notably by Slack,
 and close to Salesforce's "pods".
 
-**What to look at** (details: [Docs/17-cell-based.md](Docs/17-cell-based.md), French; requests in `Cell.Routeur\Banque.http`)
+**What to look at** (details: [Docs/en/17-cell-based.md](Docs/en/17-cell-based.md); requests in `Cell.Routeur\Banque.http`)
 - **The router is tiny** (`Relais.cs`): it reads the customer from the URL, finds its cell in the placement table,
   forwards, and adds `X-Cellule`. No business logic, no database: it is the only shared component, it must be unbreakable.
 - **Blast radius**: stop c2's process → Bob and Emma get 503, Alice, Carla and David notice nothing.
@@ -657,7 +657,7 @@ handled **one at a time** from its mailbox. No more locks or transactions to pro
 it. The model of Erlang, Akka and Orleans (Halo, Xbox); here, Orleans-style *virtual* actors, activated on the first
 message and put to sleep after 30 s of inactivity.
 
-**What to look at** (details: [Docs/18-modele-acteurs.md](Docs/18-modele-acteurs.md), French; requests in `Acteurs.Api\Banque.http`)
+**What to look at** (details: [Docs/en/18-modele-acteurs.md](Docs/en/18-modele-acteurs.md); requests in `Acteurs.Api\Banque.http`)
 - **Concurrency without locks**: `POST /demo/retraits-simultanes` fires 1,000 €3 withdrawals **at the same time** on
   Alice's account: exactly 333 accepted, final balance €1, never negative. `CompteActeur` reads, checks and changes its
   balance like a sequential program.
@@ -690,7 +690,7 @@ The database is the bottleneck of every other demo. Here, it leaves the request 
 Units are added when the load rises and removed when it drops. The model of GigaSpaces, Hazelcast or Apache Ignite
 (ticketing, auctions, trading).
 
-**What to look at** (details: [Docs/19-space-based.md](Docs/19-space-based.md), French; requests in `Espace.Api\Banque.http`)
+**What to look at** (details: [Docs/en/19-space-based.md](Docs/en/19-space-based.md); requests in `Espace.Api\Banque.http`)
 - **The database can go down** (`POST /grille/base/panne`): requests still answer `200`, `pompeEnAttente` (pending pump)
   grows, then drains when the database comes back.
 - **Collisions**, the price of the replicated grid: `POST /demo/retraits-concurrents` with **affinity** (each account
@@ -717,7 +717,7 @@ Data processing split into independent **filters**, connected by **pipes**: the 
 ETL. Here, importing a file of transfers sent by a company; each filter does one thing, and they all work at the same
 time, each on a different line.
 
-**What to look at** (details: [Docs/20-pipeline.md](Docs/20-pipeline.md), French; requests in `Pipeline.Api\Banque.http`)
+**What to look at** (details: [Docs/en/20-pipeline.md](Docs/en/20-pipeline.md); requests in `Pipeline.Api\Banque.http`)
 - **Rejects**: the sample file (11 lines) gives 3 transfers and 8 rejects, each set aside by the filter concerned
   (malformed line, invalid IBAN, duplicate, unknown currency, blacklist, limit, insufficient balance).
 - **Recomposition**: `POST /imports?aBlanc=true` is the same pipeline without the last filter: it tells what would go through.
@@ -743,7 +743,7 @@ The **same transfer as demo 14**, with the same data and the same rules, but **w
 reacts to the others' events and publishes its own. The process is written nowhere; it emerges from the subscriptions.
 Demos 7 and 8 used choreography to notify; here, it drives a whole business process.
 
-**What to look at** (details: [Docs/21-choregraphie.md](Docs/21-choregraphie.md), French; requests in `Choreo.Api\Banque.http`)
+**What to look at** (details: [Docs/en/21-choregraphie.md](Docs/en/21-choregraphie.md); requests in `Choreo.Api\Banque.http`)
 - **The causal history**: `GET /virements/{id}` shows each event, who published it, in reaction to what. It is the
   process's only thread; "where is the transfer" requires one more service (the Tracking).
 - **Scattered compensations**: a compliance refusal or an exchange failure is compensated by Accounts, which has to
@@ -776,7 +776,7 @@ Every other demo starts from scratch; this one starts from an **existing system*
 rewritten in one go. A façade is placed in front of it, then takes its features away one route at a time in favor of a
 new service, until the day nothing calls it anymore. (In the code: *Ancien* = legacy, *Ombre* = shadow, *Nouveau* = new.)
 
-**What to look at** (details: [Docs/22-strangler-fig.md](Docs/22-strangler-fig.md), French; requests in `Fig.Facade\Banque.http`)
+**What to look at** (details: [Docs/en/22-strangler-fig.md](Docs/en/22-strangler-fig.md); requests in `Fig.Facade\Banque.http`)
 - **Who answers?** The `X-Servi-Par` (served by) header of each response. At first, account lookup is migrated,
   operations are in shadow mode, the statement and transfers still on the legacy. Anything undeclared (`/agences`) goes
   to the legacy.
@@ -816,7 +816,7 @@ dotnet run --project 23-RestGrpcGraphQL\Styles.Client     # (-- --latence 0 pour
 The other demos change the inside of the system; this one keeps a single inside and changes its **surface**. What
 varies: who decides the shape of the responses, what travels over the network, and what HTTP still does for you.
 
-**What to look at** (details: [Docs/23-rest-grpc-graphql.md](Docs/23-rest-grpc-graphql.md), French; requests in `Styles.Serveur\Banque.http`)
+**What to look at** (details: [Docs/en/23-rest-grpc-graphql.md](Docs/en/23-rest-grpc-graphql.md); requests in `Styles.Serveur\Banque.http`)
 - **Alice's home screen** (3 accounts and their latest operations): REST **5 requests** (the customer, their accounts,
   then one per account), GraphQL and gRPC **just one**. Bodies received: 2,014, 881 and 378 bytes; the same data, byte
   for byte.
@@ -850,7 +850,7 @@ The other demos organize the system or its API; this one organizes the **last mi
 What changes: who receives the action (the controller, or the view that passes it on to the ViewModel), and how long
 the screen lives (one request, or as long as the window is open).
 
-**What to look at** (details: [Docs/24-mvc-mvvm.md](Docs/24-mvc-mvvm.md), French; requests in `Ihm.Mvc\Banque.http`)
+**What to look at** (details: [Docs/en/24-mvc-mvvm.md](Docs/en/24-mvc-mvvm.md); requests in `Ihm.Mvc\Banque.http`)
 - **MVC**: the controller decides (which view, which data, which redirect), the view formats. Invalid form: the **same
   view shown again** (200) with the errors and the input, even "abc"; valid form: **Post/Redirect/Get** (302), message
   passed through **TempData** and shown only once; POST without a token: 400.

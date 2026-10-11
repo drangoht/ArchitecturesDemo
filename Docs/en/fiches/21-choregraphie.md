@@ -6,7 +6,7 @@
 > own.
 
 **Family**: system decomposition · **Demo**: [`21-Choregraphie`](../../../21-Choregraphie) (port 5121; `/bus` and
-`/chaos` to observe and break things) · 📖 [Full page (French)](../../21-choregraphie.md) ·
+`/chaos` to observe and break things) · 📖 [Full page](../21-choregraphie.md) ·
 🌐 [Français](../../fiches/21-choregraphie.md)
 
 ```mermaid

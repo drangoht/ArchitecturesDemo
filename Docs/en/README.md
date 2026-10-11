@@ -51,14 +51,14 @@ features.
 | 14 | **Orchestrated Saga** | Saga orchestrée | An orchestrator drives a multi-service process: persistent state, retries, waits, compensation | [14](fiches/14-saga-orchestree.md) | [EN](14-saga-orchestree.md) | [`14-SagaOrchestree`](../../14-SagaOrchestree) |
 | 15 | **Multi-tenant** (SaaS) | — | A single application for several customers: isolated data, rules and quotas per customer | [15](fiches/15-multi-tenant.md) | [EN](15-multi-tenant.md) | [`15-MultiTenant`](../../15-MultiTenant) |
 | 16 | **Backend for Frontend** (BFF) | — | One backend per client application: aggregation, screen-tailored responses, token kept on the server | [16](fiches/16-bff.md) | [EN](16-bff.md) | [`16-BFF`](../../16-BFF) |
-| 17 | **Cell-Based Architecture** | Architecture cellulaire | Several complete copies of the system, each for part of the customers: bounded blast radius | [17](fiches/17-cell-based.md) | [*FR*](../17-cell-based.md) | [`17-CellBased`](../../17-CellBased) |
-| 18 | **Actor Model** | Modèle d'acteurs | Thousands of actors with private state, talking only through messages handled one at a time; crashed ones are replaced | [18](fiches/18-modele-acteurs.md) | [*FR*](../18-modele-acteurs.md) | [`18-ModeleActeurs`](../../18-ModeleActeurs) |
-| 19 | **Space-Based Architecture** | Architecture spatiale | Data in memory, replicated between units added at will; the database updated in the background | [19](fiches/19-space-based.md) | [*FR*](../19-space-based.md) | [`19-SpaceBased`](../../19-SpaceBased) |
-| 20 | **Pipeline** (pipes & filters) | — | Independent filters connected by bounded pipes, all working at the same time on a stream of data | [20](fiches/20-pipeline.md) | [*FR*](../20-pipeline.md) | [`20-Pipeline`](../../20-Pipeline) |
-| 21 | **Event-Driven Choreography** | Chorégraphie | The same transfer as demo 14, without an orchestrator: each service reacts to the others' events | [21](fiches/21-choregraphie.md) | [*FR*](../21-choregraphie.md) | [`21-Choregraphie`](../../21-Choregraphie) |
-| 22 | **Strangler Fig** (progressive migration) | — | A façade in front of the legacy system takes its features away one route at a time in favor of the new one | [22](fiches/22-strangler-fig.md) | [*FR*](../22-strangler-fig.md) | [`22-StranglerFig`](../../22-StranglerFig) |
-| 23 | **REST, gRPC, GraphQL** (API styles) | — | The same business exposed as resources, as procedures and as a graph queried by the client | [23](fiches/23-rest-grpc-graphql.md) | [*FR*](../23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) |
-| 24 | **MVC and MVVM** (presentation patterns) | — | The same screen in web MVC (one request, a discarded view) and in MVVM (a living ViewModel the view observes) | [24](fiches/24-mvc-mvvm.md) | [*FR*](../24-mvc-mvvm.md) | [`24-MvcMvvm`](../../24-MvcMvvm) |
+| 17 | **Cell-Based Architecture** | Architecture cellulaire | Several complete copies of the system, each for part of the customers: bounded blast radius | [17](fiches/17-cell-based.md) | [EN](17-cell-based.md) | [`17-CellBased`](../../17-CellBased) |
+| 18 | **Actor Model** | Modèle d'acteurs | Thousands of actors with private state, talking only through messages handled one at a time; crashed ones are replaced | [18](fiches/18-modele-acteurs.md) | [EN](18-modele-acteurs.md) | [`18-ModeleActeurs`](../../18-ModeleActeurs) |
+| 19 | **Space-Based Architecture** | Architecture spatiale | Data in memory, replicated between units added at will; the database updated in the background | [19](fiches/19-space-based.md) | [EN](19-space-based.md) | [`19-SpaceBased`](../../19-SpaceBased) |
+| 20 | **Pipeline** (pipes & filters) | — | Independent filters connected by bounded pipes, all working at the same time on a stream of data | [20](fiches/20-pipeline.md) | [EN](20-pipeline.md) | [`20-Pipeline`](../../20-Pipeline) |
+| 21 | **Event-Driven Choreography** | Chorégraphie | The same transfer as demo 14, without an orchestrator: each service reacts to the others' events | [21](fiches/21-choregraphie.md) | [EN](21-choregraphie.md) | [`21-Choregraphie`](../../21-Choregraphie) |
+| 22 | **Strangler Fig** (progressive migration) | — | A façade in front of the legacy system takes its features away one route at a time in favor of the new one | [22](fiches/22-strangler-fig.md) | [EN](22-strangler-fig.md) | [`22-StranglerFig`](../../22-StranglerFig) |
+| 23 | **REST, gRPC, GraphQL** (API styles) | — | The same business exposed as resources, as procedures and as a graph queried by the client | [23](fiches/23-rest-grpc-graphql.md) | [EN](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) |
+| 24 | **MVC and MVVM** (presentation patterns) | — | The same screen in web MVC (one request, a discarded view) and in MVVM (a living ViewModel the view observes) | [24](fiches/24-mvc-mvvm.md) | [EN](24-mvc-mvvm.md) | [`24-MvcMvvm`](../../24-MvcMvvm) |
 | ★ | **Cross-cutting concepts** | Concepts transverses | Idempotency, outbox, optimistic concurrency, compensation, eventual consistency | | [EN](concepts-transverses.md) | (demos 6 to 22) |
 
 ---
@@ -194,11 +194,11 @@ flowchart TD
 The **API style** is chosen separately, boundary by boundary, whatever the architecture: **REST** for a public or
 partner API (simple, universal, HTTP caching); **gRPC** between internal services (compact, strict contract,
 streaming); **GraphQL** in front of applications with rich and varied screens (the client picks its fields, one round
-trip per screen). Details and measurements: [demo 23](../23-rest-grpc-graphql.md) (*FR*).
+trip per screen). Details and measurements: [demo 23](23-rest-grpc-graphql.md).
 
 The **organization of the interface** depends mostly on the platform: **MVC** for a server-rendered site, where each
 click is a request; **MVVM** for a desktop or mobile application, whose screen lives long and reacts to every
-keystroke. Details: [demo 24](../24-mvc-mvvm.md) (*FR*).
+keystroke. Details: [demo 24](24-mvc-mvvm.md).
 
 ---
 
