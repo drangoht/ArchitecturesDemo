@@ -4,6 +4,9 @@ Cette documentation explique **vingt-deux façons d'organiser une application**,
 système existant, **trois façons de l'exposer** à ses clients et **deux façons d'organiser son interface**, chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
+> 📗 **Pas développeur ?** Une version sans code, avec des mots simples et des images de la vie courante :
+> [les architectures expliquées à tout le monde](pour-tous/README.md).
+
 > **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
 > GitHub / GitLab / Azure DevOps, dans Rider et Visual Studio 2022 (aperçu Markdown), et dans VS Code avec l'extension
 > *Markdown Preview Mermaid Support*.
