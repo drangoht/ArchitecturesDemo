@@ -1,5 +1,7 @@
 # Saga orchestrée ou Chorégraphie ?
 
+**En anglais** : *Orchestrated Saga or Event-Driven Choreography?*
+
 > **La différence en une phrase** : le **même virement en plusieurs étapes**, écrit **en un seul endroit** (un
 > orchestrateur qui appelle chaque service) ou **nulle part** (chaque service réagit aux événements des autres).
 

@@ -1,6 +1,6 @@
-# 5. Les tranches verticales (« Vertical Slice »)
+# 5. Le « Vertical Slice » (ranger par tranches verticales)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le cœur fonctionnel](04-coeur-fonctionnel.md) · ➡️ [Les composants](06-composants.md) · 🔧 [Version technique](../05-vertical-slice.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Functional Core](04-coeur-fonctionnel.md) · ➡️ [Le Package by Component](06-composants.md) · 🔧 [Version technique](../05-vertical-slice.md)
 
 <p align="center"><img src="images/05.jpg" alt="Illustration : un livre de recettes" width="480"></p>
 
@@ -14,7 +14,7 @@
 Les architectures précédentes rangent par **étage technique** : tout l'accueil ensemble, toutes les règles ensemble,
 toutes les données ensemble. Pour comprendre « retirer de l'argent », il faut ouvrir un morceau de chaque étage.
 
-Les tranches verticales font l'inverse : on range par **fonctionnalité**. « Ouvrir un compte », « consulter un compte »,
+Le Vertical Slice fait l'inverse : on range par **fonctionnalité**. « Ouvrir un compte », « consulter un compte »,
 « retirer de l'argent », « faire un virement » : chacune est une tranche qui va de la demande jusqu'à la base de données,
 au même endroit.
 

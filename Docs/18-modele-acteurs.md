@@ -1,5 +1,7 @@
 # 18. Modèle d'acteurs
 
+**Nom anglais** : *Actor Model*
+
 > **En une phrase** : le système est fait de milliers de petits objets, les *acteurs*, qui ont chacun **leur propre état**,
 > **ne partagent rien** et ne communiquent que **par messages**, traités **un par un** ; la concurrence ne demande plus
 > aucun verrou, et une panne se répare en **remplaçant** l'acteur fautif.

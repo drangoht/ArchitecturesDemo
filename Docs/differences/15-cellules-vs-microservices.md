@@ -1,5 +1,7 @@
 # Cellules ou Microservices ?
 
+**En anglais** : *Cell-Based Architecture or Microservices?*
+
 > **La différence en une phrase** : les deux découpent le système en morceaux qui tournent séparément, mais **pas sur
 > le même axe** : les microservices découpent **par fonction** (comptes, virements), les cellules **par groupe de
 > clients** (chaque cellule a toutes les fonctions).

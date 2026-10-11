@@ -1,5 +1,7 @@
 # Multi-tenant ou Cellules ?
 
+**En anglais** : *Multi-tenant Architecture or Cell-Based Architecture?*
+
 > **La différence en une phrase** : le multi-tenant fait tourner **une seule copie** du système pour tous les clients,
 > afin de **mutualiser** ; les cellules en font tourner **plusieurs copies complètes**, chacune pour un groupe de
 > clients, afin de **borner le rayon d'impact**.

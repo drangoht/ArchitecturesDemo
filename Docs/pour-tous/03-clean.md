@@ -1,6 +1,6 @@
 # 3. La « Clean Architecture » (architecture propre)
 
-🏠 [Sommaire](README.md) · ⬅️ [L'oignon](02-onion.md) · ➡️ [Le cœur fonctionnel](04-coeur-fonctionnel.md) · 🔧 [Version technique](../03-clean.md)
+🏠 [Sommaire](README.md) · ⬅️ [L'Onion](02-onion.md) · ➡️ [Le Functional Core](04-coeur-fonctionnel.md) · 🔧 [Version technique](../03-clean.md)
 
 <p align="center"><img src="images/03.jpg" alt="Illustration : une mairie bien organisée" width="480"></p>
 
@@ -12,7 +12,7 @@
 
 ## L'idée
 
-Popularisée par Robert C. Martin (« Uncle Bob »), elle reprend les cercles de l'oignon et ajoute deux idées :
+Popularisée par Robert C. Martin (« Uncle Bob »), elle reprend les cercles de l'Onion et ajoute deux idées :
 
 - **Une démarche, un guichet.** Chaque chose que l'application sait faire (consulter un compte, faire un virement) est
   un « cas d'utilisation » à part, avec son entrée, sa procédure et sa sortie. En lisant la liste des guichets, on sait
@@ -24,7 +24,7 @@ Popularisée par Robert C. Martin (« Uncle Bob »), elle reprend les cercles de
 
 - **On lit l'application comme un sommaire** : la liste de ses cas d'utilisation dit ce qu'elle fait.
 - **Chaque démarche se teste seule**, en vérifiant ce qu'elle a remis au présentateur.
-- **Les règles sont totalement indépendantes** de la technique, comme dans l'hexagonale et l'oignon.
+- **Les règles sont totalement indépendantes** de la technique, comme dans l'hexagonale et l'Onion.
 
 ## Ce que ça coûte
 

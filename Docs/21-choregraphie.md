@@ -1,5 +1,7 @@
 # 21. Chorégraphie (événementiel pur)
 
+**Nom anglais** : *Event-Driven Choreography*
+
 > **En une phrase** : aucun service ne conduit le processus ; chacun **réagit aux événements** des autres et publie les
 > siens, et le virement avance de réaction en réaction, comme des danseurs qui suivent la musique sans chef d'orchestre.
 

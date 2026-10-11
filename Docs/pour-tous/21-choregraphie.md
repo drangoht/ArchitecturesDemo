@@ -1,6 +1,8 @@
 # 21. La chorégraphie (tout par événements, sans chef)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le pipeline](20-pipeline.md) · ➡️ [Le figuier étrangleur](22-strangler-fig.md) · 🔧 [Version technique](../21-choregraphie.md)
+**Nom anglais** : *Event-Driven Choreography*
+
+🏠 [Sommaire](README.md) · ⬅️ [Le pipeline](20-pipeline.md) · ➡️ [Le Strangler Fig](22-strangler-fig.md) · 🔧 [Version technique](../21-choregraphie.md)
 
 <p align="center"><img src="images/21.jpg" alt="Illustration : une troupe de danseurs sans chef d'orchestre" width="480"></p>
 

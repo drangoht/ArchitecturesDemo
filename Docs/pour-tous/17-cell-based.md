@@ -1,5 +1,7 @@
 # 17. L'architecture cellulaire (« cell-based »)
 
+**Nom anglais** : *Cell-Based Architecture*
+
 🏠 [Sommaire](README.md) · ⬅️ [Le Backend for Frontend](16-bff.md) · ➡️ [Les acteurs](18-modele-acteurs.md) · 🔧 [Version technique](../17-cell-based.md)
 
 <p align="center"><img src="images/17.jpg" alt="Illustration : des serres identiques et indépendantes, côte à côte" width="480"></p>

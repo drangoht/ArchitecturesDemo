@@ -1,5 +1,7 @@
 # Hexagonale ou Cœur fonctionnel ?
 
+**En anglais** : *Hexagonal Architecture or Functional Core, Imperative Shell?*
+
 > **La différence en une phrase** : le centre hexagonal fait **encore des entrées/sorties**, à travers des ports ; le
 > cœur fonctionnel n'en fait **plus aucune** : il reçoit des valeurs et renvoie une décision, la coquille fait tout le
 > reste.

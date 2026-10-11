@@ -1,5 +1,7 @@
 # 0. Les couches
 
+**Nom anglais** : *Layered Architecture (N-tier)*
+
 🏠 [Sommaire](README.md) · ➡️ [L'hexagonale](01-hexagonale.md) · 🔧 [Version technique](../00-couches.md)
 
 <p align="center"><img src="images/00.jpg" alt="Illustration : un restaurant sur trois étages" width="480"></p>

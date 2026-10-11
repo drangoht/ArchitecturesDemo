@@ -14,33 +14,33 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 
 ⚖️ **Hexagonale ou Onion ? Saga ou chorégraphie ? Les différences, deux à deux : [`Docs/differences/`](Docs/differences/README.md)**.
 
-| # | Dossier | Architecture | Idée clé | Port |
-|---|---|---|---|---|
-| 0 | `00-Couches` | Couches / N-tiers (classique) | Présentation → Métier → Données : les dépendances descendent vers la base | 5100 |
-| 1 | `01-Hexagonale` | Ports & Adapters (Cockburn) | Le métier au centre, branché au monde par des ports (interfaces) et des adapters | 5101 |
-| 2 | `02-Onion` | Onion (Palermo) | Couches concentriques ; le centre distingue modèle et services de domaine | 5102 |
-| 3 | `03-Clean` | Clean Architecture (Uncle Bob) | Un interacteur par cas d'utilisation ; le résultat passe par un presenter | 5103 |
-| 4 | `04-CoeurFonctionnel` | Functional Core / Imperative Shell | Règles 100 % pures qui renvoient une décision ; la coquille fait les I/O | 5104 |
-| 5 | `05-VerticalSlice` | Vertical Slice (Bogard) | Un fichier par fonctionnalité, de la route à la base | 5105 |
-| 6 | `06-Composants` | Package by Component (Simon Brown) | Une interface publique par composant, tout le reste `internal` | 5106 |
-| 7 | `07-MonolitheModulaire` | Monolithe modulaire | Modules autonomes (API, base, événements), reliés par des contrats, dans un seul déploiement | 5107 |
-| 8 | `08-Microservices` | Microservices | Un processus par service, communication par HTTP et par messages, aucun code partagé | 5200 (passerelle) |
-| 9 | `09-CQRS` | CQRS | Un modèle pour écrire (règles), un autre pour lire (vues prêtes à servir), reliés par des événements | 5108 |
-| 10 | `10-EventSourcing` | Event Sourcing | On ne stocke pas l'état mais la suite des événements ; l'état se recalcule en les rejouant | 5109 |
-| 11 | `11-DDD` | Domain-Driven Design | Modéliser le métier dans son langage : objets-valeurs, agrégats, contextes délimités, anti-corruption | 5110 |
-| 12 | `12-Serverless` | Serverless (FaaS) | Des fonctions sans état déclenchées par des événements ; le fournisseur gère les serveurs et facture à l'usage | 5111 |
-| 13 | `13-Microkernel` | Microkernel (plugins) | Un noyau minimal ; contrôles, frais et formats de relevé sont des plugins chargés à chaud | 5112 |
-| 14 | `14-SagaOrchestree` | Saga orchestrée | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
-| 15 | `15-MultiTenant` | Multi-tenant (SaaS) | Une seule application pour plusieurs banques clientes : données isolées, règles et quotas par client | 5114 |
-| 16 | `16-BFF` | Backend for Frontend | Un backend par application cliente (site, mobile) : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | 5115 (web), 5116 (mobile) |
-| 17 | `17-CellBased` | Architecture cellulaire | Plusieurs copies complètes et indépendantes du système, chacune pour une partie des clients : rayon d'impact borné | 5117 (routeur) |
-| 18 | `18-ModeleActeurs` | Modèle d'acteurs | Un acteur par compte et par virement : état privé, messages traités un par un, aucun verrou ; un acteur qui plante est remplacé | 5118 |
-| 19 | `19-SpaceBased` | Architecture spatiale (space-based) | Toutes les données en mémoire, répliquées entre des unités de traitement ajoutées selon la charge ; la base hors du chemin des requêtes | 5119 |
-| 20 | `20-Pipeline` | Pipeline (pipes & filters) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent en même temps sur un fichier de virements | 5120 |
-| 21 | `21-Choregraphie` | Chorégraphie (événementiel pur) | Le virement de la démo 14 sans orchestrateur : chaque service réagit aux événements des autres | 5121 |
-| 22 | `22-StranglerFig` | Strangler Fig (migration progressive) | Une façade devant l'ancien système ; ses fonctions passent au nouveau une route à la fois, réversibles, jusqu'à pouvoir l'éteindre | 5122 (façade) |
-| 23 | `23-RestGrpcGraphQL` | REST, gRPC, GraphQL (styles d'API) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client : requêtes, octets, erreurs, flux et évolution comparés | 5123 (REST, GraphQL), 5250 (gRPC) |
-| 24 | `24-MvcMvvm` | MVC et MVVM (patterns de présentation) | Le même écran deux fois : MVC web (le contrôleur reçoit la requête et choisit une vue, jetée après rendu) et MVVM (un ViewModel vivant, testable sans écran, que des vues WPF et console observent) | 5124 (site MVC) |
+| # | Dossier | Architecture | Nom anglais | Idée clé | Port |
+|---|---|---|---|---|---|
+| 0 | `00-Couches` | Couches / N-tiers (classique) | Layered Architecture (N-tier) | Présentation → Métier → Données : les dépendances descendent vers la base | 5100 |
+| 1 | `01-Hexagonale` | Ports & Adapters (Cockburn) | Hexagonal Architecture (Ports & Adapters) | Le métier au centre, branché au monde par des ports (interfaces) et des adapters | 5101 |
+| 2 | `02-Onion` | Onion (Palermo) | Onion Architecture | Couches concentriques ; le centre distingue modèle et services de domaine | 5102 |
+| 3 | `03-Clean` | Clean Architecture (Uncle Bob) | Clean Architecture | Un interacteur par cas d'utilisation ; le résultat passe par un presenter | 5103 |
+| 4 | `04-CoeurFonctionnel` | Functional Core / Imperative Shell | Functional Core, Imperative Shell | Règles 100 % pures qui renvoient une décision ; la coquille fait les I/O | 5104 |
+| 5 | `05-VerticalSlice` | Vertical Slice (Bogard) | Vertical Slice Architecture | Un fichier par fonctionnalité, de la route à la base | 5105 |
+| 6 | `06-Composants` | Package by Component (Simon Brown) | Package by Component | Une interface publique par composant, tout le reste `internal` | 5106 |
+| 7 | `07-MonolitheModulaire` | Monolithe modulaire | Modular Monolith | Modules autonomes (API, base, événements), reliés par des contrats, dans un seul déploiement | 5107 |
+| 8 | `08-Microservices` | Microservices | Microservices | Un processus par service, communication par HTTP et par messages, aucun code partagé | 5200 (passerelle) |
+| 9 | `09-CQRS` | CQRS | CQRS (Command Query Responsibility Segregation) | Un modèle pour écrire (règles), un autre pour lire (vues prêtes à servir), reliés par des événements | 5108 |
+| 10 | `10-EventSourcing` | Event Sourcing | Event Sourcing | On ne stocke pas l'état mais la suite des événements ; l'état se recalcule en les rejouant | 5109 |
+| 11 | `11-DDD` | Domain-Driven Design | Domain-Driven Design (DDD) | Modéliser le métier dans son langage : objets-valeurs, agrégats, contextes délimités, anti-corruption | 5110 |
+| 12 | `12-Serverless` | Serverless (FaaS) | Serverless (Function as a Service) | Des fonctions sans état déclenchées par des événements ; le fournisseur gère les serveurs et facture à l'usage | 5111 |
+| 13 | `13-Microkernel` | Microkernel (plugins) | Microkernel (Plug-in Architecture) | Un noyau minimal ; contrôles, frais et formats de relevé sont des plugins chargés à chaud | 5112 |
+| 14 | `14-SagaOrchestree` | Saga orchestrée | Orchestrated Saga | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
+| 15 | `15-MultiTenant` | Multi-tenant (SaaS) | Multi-tenant Architecture (SaaS) | Une seule application pour plusieurs banques clientes : données isolées, règles et quotas par client | 5114 |
+| 16 | `16-BFF` | Backend for Frontend | Backend for Frontend (BFF) | Un backend par application cliente (site, mobile) : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | 5115 (web), 5116 (mobile) |
+| 17 | `17-CellBased` | Architecture cellulaire | Cell-Based Architecture | Plusieurs copies complètes et indépendantes du système, chacune pour une partie des clients : rayon d'impact borné | 5117 (routeur) |
+| 18 | `18-ModeleActeurs` | Modèle d'acteurs | Actor Model | Un acteur par compte et par virement : état privé, messages traités un par un, aucun verrou ; un acteur qui plante est remplacé | 5118 |
+| 19 | `19-SpaceBased` | Architecture spatiale (space-based) | Space-Based Architecture | Toutes les données en mémoire, répliquées entre des unités de traitement ajoutées selon la charge ; la base hors du chemin des requêtes | 5119 |
+| 20 | `20-Pipeline` | Pipeline (pipes & filters) | Pipes and Filters (Pipeline) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent en même temps sur un fichier de virements | 5120 |
+| 21 | `21-Choregraphie` | Chorégraphie (événementiel pur) | Event-Driven Choreography | Le virement de la démo 14 sans orchestrateur : chaque service réagit aux événements des autres | 5121 |
+| 22 | `22-StranglerFig` | Strangler Fig (migration progressive) | Strangler Fig | Une façade devant l'ancien système ; ses fonctions passent au nouveau une route à la fois, réversibles, jusqu'à pouvoir l'éteindre | 5122 (façade) |
+| 23 | `23-RestGrpcGraphQL` | REST, gRPC, GraphQL (styles d'API) | REST, gRPC, GraphQL (API Styles) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client : requêtes, octets, erreurs, flux et évolution comparés | 5123 (REST, GraphQL), 5250 (gRPC) |
+| 24 | `24-MvcMvvm` | MVC et MVVM (patterns de présentation) | MVC and MVVM (Presentation Patterns) | Le même écran deux fois : MVC web (le contrôleur reçoit la requête et choisit une vue, jetée après rendu) et MVVM (un ViewModel vivant, testable sans écran, que des vues WPF et console observent) | 5124 (site MVC) |
 
 Données de démo, identiques partout :
 - **Alice** `11111111-1111-1111-1111-111111111111` : 1 000 € (5 000 € dans la démo 4, pour tester le plafond)

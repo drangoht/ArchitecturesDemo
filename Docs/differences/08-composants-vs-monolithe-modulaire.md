@@ -1,5 +1,7 @@
 # Composants ou Monolithe modulaire ?
 
+**En anglais** : *Package by Component or Modular Monolith?*
+
 > **La différence en une phrase** : un composant, c'est **du métier et sa base derrière une interface** ; un module,
 > c'est **une mini-application** : il possède en plus ses routes HTTP et ses abonnements aux événements, et se branche
 > d'une ligne.

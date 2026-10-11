@@ -1,5 +1,7 @@
 # CQRS ou Event Sourcing ?
 
+**En anglais** : *Command Query Responsibility Segregation or Event Sourcing?*
+
 > **La différence en une phrase** : CQRS **sépare la lecture de l'écriture** ; l'Event Sourcing **change ce qu'on
 > stocke** (les faits, pas l'état). L'un ne suppose pas l'autre, même s'ils vont souvent ensemble.
 

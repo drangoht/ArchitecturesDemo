@@ -1,6 +1,6 @@
 # 23. REST, gRPC, GraphQL (trois façons de parler à une application)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le figuier étrangleur](22-strangler-fig.md) · ➡️ [MVC et MVVM](24-mvc-mvvm.md) · 🔧 [Version technique](../23-rest-grpc-graphql.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Strangler Fig](22-strangler-fig.md) · ➡️ [MVC et MVVM](24-mvc-mvvm.md) · 🔧 [Version technique](../23-rest-grpc-graphql.md)
 
 <p align="center"><img src="images/23.jpg" alt="Illustration : trois façons de passer commande au restaurant" width="480"></p>
 

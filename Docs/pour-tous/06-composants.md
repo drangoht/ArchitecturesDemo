@@ -1,6 +1,6 @@
-# 6. Les composants (« Package by Component »)
+# 6. Le « Package by Component » (ranger par composants)
 
-🏠 [Sommaire](README.md) · ⬅️ [Les tranches verticales](05-vertical-slice.md) · ➡️ [Le monolithe modulaire](07-monolithe-modulaire.md) · 🔧 [Version technique](../06-composants.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Vertical Slice](05-vertical-slice.md) · ➡️ [Le monolithe modulaire](07-monolithe-modulaire.md) · 🔧 [Version technique](../06-composants.md)
 
 <p align="center"><img src="images/06.jpg" alt="Illustration : les services d'une entreprise" width="480"></p>
 

@@ -1,5 +1,7 @@
 # Fiche 7 · Monolithe modulaire
 
+**Nom anglais** : *Modular Monolith*
+
 > **En une phrase** : des modules autonomes (API, base, événements) reliés par des **contrats**, déployés ensemble dans
 > un seul processus.
 

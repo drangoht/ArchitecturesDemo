@@ -1,5 +1,7 @@
 # Hexagonale ou Onion ?
 
+**En anglais** : *Hexagonal Architecture or Onion Architecture?*
+
 > **La différence en une phrase** : **la même règle de dépendance** (tout pointe vers le métier), mais l'hexagonale
 > structure **le pourtour** (ports et adapters) quand l'Onion structure **le centre** (modèle, services de domaine,
 > services applicatifs).

@@ -1,4 +1,4 @@
-# 22. Le figuier étrangleur (« Strangler Fig », remplacer pas à pas)
+# 22. Le « Strangler Fig » (le figuier étrangleur : remplacer pas à pas)
 
 🏠 [Sommaire](README.md) · ⬅️ [La chorégraphie](21-choregraphie.md) · ➡️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🔧 [Version technique](../22-strangler-fig.md)
 

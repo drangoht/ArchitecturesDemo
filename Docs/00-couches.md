@@ -1,5 +1,7 @@
 # 0. Architecture en couches (N-tiers)
 
+**Nom anglais** : *Layered Architecture (N-tier)*
+
 > **En une phrase** : on empile des couches techniques — présentation, métier, données — et chaque couche n'appelle
 > que celle du dessous.
 

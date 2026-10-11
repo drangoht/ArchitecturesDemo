@@ -1,6 +1,8 @@
 # 1. L'architecture hexagonale (« ports et adaptateurs »)
 
-🏠 [Sommaire](README.md) · ⬅️ [Les couches](00-couches.md) · ➡️ [L'oignon](02-onion.md) · 🔧 [Version technique](../01-hexagonale.md)
+**Nom anglais** : *Hexagonal Architecture (Ports & Adapters)*
+
+🏠 [Sommaire](README.md) · ⬅️ [Les couches](00-couches.md) · ➡️ [L'Onion](02-onion.md) · 🔧 [Version technique](../01-hexagonale.md)
 
 <p align="center"><img src="images/01.jpg" alt="Illustration : un ordinateur portable" width="480"></p>
 

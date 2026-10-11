@@ -1,5 +1,7 @@
 # Couches ou Hexagonale ?
 
+**En anglais** : *Layered Architecture or Hexagonal Architecture?*
+
 > **La différence en une phrase** : dans les couches, le métier **dépend de la base** ; dans l'hexagonale, c'est
 > l'inverse, la base **se branche sur le métier**. Tout le reste en découle.
 

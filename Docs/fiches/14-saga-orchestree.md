@@ -1,5 +1,7 @@
 # Fiche 14 · Saga orchestrée
 
+**Nom anglais** : *Orchestrated Saga*
+
 > **En une phrase** : un **orchestrateur** pilote un processus réparti sur plusieurs services, mémorise où il en est,
 > réessaie, attend, et **compense** en ordre inverse si besoin.
 

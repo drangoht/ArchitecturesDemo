@@ -1,6 +1,6 @@
 # 12. Le « serverless » (sans serveur à gérer)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le Domain-Driven Design](11-ddd.md) · ➡️ [Le micro-noyau](13-microkernel.md) · 🔧 [Version technique](../12-serverless.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Domain-Driven Design](11-ddd.md) · ➡️ [Le Microkernel](13-microkernel.md) · 🔧 [Version technique](../12-serverless.md)
 
 <p align="center"><img src="images/12.jpg" alt="Illustration : le taxi plutôt que la voiture" width="480"></p>
 

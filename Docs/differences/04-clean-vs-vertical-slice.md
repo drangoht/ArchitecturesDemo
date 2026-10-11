@@ -1,5 +1,7 @@
 # Clean ou Vertical Slice ?
 
+**En anglais** : *Clean Architecture or Vertical Slice Architecture?*
+
 > **La différence en une phrase** : Clean découpe le code **par couche technique** (un cas d'utilisation traverse
 > quatre cercles), Vertical Slice le découpe **par fonctionnalité** (un cas d'utilisation tient dans un fichier).
 

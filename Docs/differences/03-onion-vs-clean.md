@@ -1,5 +1,7 @@
 # Onion ou Clean ?
 
+**En anglais** : *Onion Architecture or Clean Architecture?*
+
 > **La différence en une phrase** : Clean garde les cercles de l'Onion mais **formalise chaque cas d'utilisation**
 > (une classe, une entrée, une sortie) et **inverse aussi la sortie** : l'interacteur ne renvoie rien, il pousse son
 > résultat vers un *presenter*.

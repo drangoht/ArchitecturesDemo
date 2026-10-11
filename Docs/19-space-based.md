@@ -1,5 +1,7 @@
 # 19. Architecture spatiale (space-based)
 
+**Nom anglais** : *Space-Based Architecture*
+
 > **En une phrase** : on retire la base de données du chemin des requêtes ; chaque **unité de traitement** garde
 > **toutes les données en mémoire**, dans une grille répliquée entre les unités, et la base n'est mise à jour qu'en
 > arrière-plan. On peut alors ajouter et retirer des unités à volonté pour absorber la charge.

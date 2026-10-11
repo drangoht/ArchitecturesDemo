@@ -1,5 +1,7 @@
 # DDD ou Hexagonale / Onion ?
 
+**En anglais** : *Domain-Driven Design or Hexagonal / Onion Architecture?*
+
 > **La différence en une phrase** : l'hexagonale et l'Onion disent **comment ranger** le code et dans quel sens vont
 > les dépendances ; le DDD dit **quoi modéliser** et **où couper**. Ce ne sont pas des concurrents : le DDD remplit le
 > centre que les deux autres protègent.

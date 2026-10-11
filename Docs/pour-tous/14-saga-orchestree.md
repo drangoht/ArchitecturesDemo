@@ -1,6 +1,8 @@
 # 14. La saga orchestrée
 
-🏠 [Sommaire](README.md) · ⬅️ [Le micro-noyau](13-microkernel.md) · ➡️ [Le multi-locataire](15-multi-tenant.md) · 🔧 [Version technique](../14-saga-orchestree.md)
+**Nom anglais** : *Orchestrated Saga*
+
+🏠 [Sommaire](README.md) · ⬅️ [Le Microkernel](13-microkernel.md) · ➡️ [Le multi-tenant](15-multi-tenant.md) · 🔧 [Version technique](../14-saga-orchestree.md)
 
 <p align="center"><img src="images/14.jpg" alt="Illustration : l'organisatrice d'un mariage" width="480"></p>
 

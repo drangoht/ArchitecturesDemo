@@ -1,5 +1,7 @@
 # Fiche 17 · Architecture cellulaire (cell-based)
 
+**Nom anglais** : *Cell-Based Architecture*
+
 > **En une phrase** : plusieurs **copies complètes et indépendantes** du système, chacune pour une partie des clients ;
 > une panne reste **enfermée dans sa cellule**.
 

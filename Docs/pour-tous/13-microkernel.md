@@ -1,4 +1,4 @@
-# 13. Le micro-noyau (« Microkernel », les extensions)
+# 13. Le « Microkernel » (un micro-noyau et ses extensions)
 
 🏠 [Sommaire](README.md) · ⬅️ [Le serverless](12-serverless.md) · ➡️ [La saga orchestrée](14-saga-orchestree.md) · 🔧 [Version technique](../13-microkernel.md)
 

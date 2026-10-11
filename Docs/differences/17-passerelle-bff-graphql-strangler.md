@@ -1,5 +1,7 @@
 # Passerelle, BFF, GraphQL ou façade Strangler ?
 
+**En anglais** : *API Gateway, Backend for Frontend, GraphQL or Strangler Fig façade?*
+
 > **La différence en une phrase** : quatre composants placés **devant** les services, qu'on confond parce qu'ils
 > relaient tous des requêtes ; mais la passerelle **aiguille** (pour tous), le BFF **adapte** (pour une application),
 > GraphQL **laisse le client décrire** sa réponse, et la façade du Strangler Fig **migre** (le temps de remplacer un

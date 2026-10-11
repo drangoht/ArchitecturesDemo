@@ -1,5 +1,7 @@
 # Fiche 0 · Couches (N-tiers)
 
+**Nom anglais** : *Layered Architecture (N-tier)*
+
 > **En une phrase** : Présentation → Métier → Données ; chaque couche n'appelle que celle du dessous.
 
 **Famille** : organisation du code · **Origine** : usage courant depuis les années 1990 ·

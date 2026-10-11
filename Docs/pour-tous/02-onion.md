@@ -1,4 +1,4 @@
-# 2. L'architecture en oignon
+# 2. L'« Onion Architecture » (l'architecture en oignon)
 
 🏠 [Sommaire](README.md) · ⬅️ [L'hexagonale](01-hexagonale.md) · ➡️ [La Clean Architecture](03-clean.md) · 🔧 [Version technique](../02-onion.md)
 

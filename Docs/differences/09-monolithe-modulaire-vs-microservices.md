@@ -1,5 +1,7 @@
 # Monolithe modulaire ou Microservices ?
 
+**En anglais** : *Modular Monolith or Microservices?*
+
 > **La différence en une phrase** : entre deux parties du système, un **appel de méthode** ou **le réseau**. Tout ce
 > qui était gratuit dans le monolithe (un appel qui aboutit, un événement qui ne se perd pas) devient du code dans les
 > microservices.

@@ -13,6 +13,9 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 > ⚖️ **Hexagonale ou Onion ? CQRS ou Event Sourcing ?** Les architectures qu'on confond, comparées deux à deux sur leurs
 > seules différences, code des démos à l'appui : [les différences entre architectures](differences/README.md).
 
+> 🌐 **Noms français et anglais** : une architecture connue sous un nom anglais le garde ; celles nommées en français
+> affichent leur nom anglais sous le titre de chaque page. Récapitulatif dans [la table des noms](noms-architectures.md).
+
 > **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
 > GitHub / GitLab / Azure DevOps, dans Rider et Visual Studio 2022 (aperçu Markdown), et dans VS Code avec l'extension
 > *Markdown Preview Mermaid Support*.
@@ -21,33 +24,33 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 
 ## Sommaire
 
-| # | Architecture | En une phrase | Doc | Code |
-|---|---|---|---|---|
-| 0 | **Couches (N-tiers)** | Présentation → Métier → Données : les dépendances descendent vers la base | [00-couches](00-couches.md) | [`00-Couches`](../00-Couches) |
-| 1 | **Hexagonale** (ports & adapters) | Le métier au centre, branché au monde par des ports et des adapters interchangeables | [01-hexagonale](01-hexagonale.md) | [`01-Hexagonale`](../01-Hexagonale) |
-| 2 | **Onion** | Des couches concentriques, toutes les dépendances pointent vers le domaine | [02-onion](02-onion.md) | [`02-Onion`](../02-Onion) |
-| 3 | **Clean Architecture** | Un interacteur par cas d'utilisation ; le résultat sort par un *presenter* | [03-clean](03-clean.md) | [`03-Clean`](../03-Clean) |
-| 4 | **Functional Core, Imperative Shell** | Des règles 100 % pures qui décident ; une coquille qui fait les entrées/sorties | [04-coeur-fonctionnel](04-coeur-fonctionnel.md) | [`04-CoeurFonctionnel`](../04-CoeurFonctionnel) |
-| 5 | **Vertical Slice** | Un fichier par fonctionnalité, de la route jusqu'à la base | [05-vertical-slice](05-vertical-slice.md) | [`05-VerticalSlice`](../05-VerticalSlice) |
-| 6 | **Package by Component** | Une interface publique par composant, tout le reste `internal` | [06-composants](06-composants.md) | [`06-Composants`](../06-Composants) |
-| 7 | **Monolithe modulaire** | Des modules autonomes, reliés par des contrats et des événements, dans un seul déploiement | [07-monolithe-modulaire](07-monolithe-modulaire.md) | [`07-MonolitheModulaire`](../07-MonolitheModulaire) |
-| 8 | **Microservices** | Un processus par service, HTTP + messages, aucun code partagé | [08-microservices](08-microservices.md) | [`08-Microservices`](../08-Microservices) |
-| 9 | **CQRS** | Un modèle pour écrire, un autre pour lire, reliés par des événements | [09-cqrs](09-cqrs.md) | [`09-CQRS`](../09-CQRS) |
-| 10 | **Event Sourcing** | On stocke les événements, l'état se recalcule en les rejouant | [10-event-sourcing](10-event-sourcing.md) | [`10-EventSourcing`](../10-EventSourcing) |
-| 11 | **Domain-Driven Design** | Modéliser le métier dans sa langue ; découper en contextes délimités | [11-ddd](11-ddd.md) | [`11-DDD`](../11-DDD) |
-| 12 | **Serverless** | Des fonctions sans état déclenchées par des événements, facturées à l'usage | [12-serverless](12-serverless.md) | [`12-Serverless`](../12-Serverless) |
-| 13 | **Microkernel** (plugins) | Un noyau minimal et des plugins chargés, déchargés et mis à jour à chaud | [13-microkernel](13-microkernel.md) | [`13-Microkernel`](../13-Microkernel) |
-| 14 | **Saga orchestrée** | Un orchestrateur pilote un processus multi-services : état persistant, réessais, attentes, compensation | [14-saga-orchestree](14-saga-orchestree.md) | [`14-SagaOrchestree`](../14-SagaOrchestree) |
-| 15 | **Multi-tenant** (SaaS) | Une seule application pour plusieurs clients : données isolées, règles et quotas par client | [15-multi-tenant](15-multi-tenant.md) | [`15-MultiTenant`](../15-MultiTenant) |
-| 16 | **Backend for Frontend** (BFF) | Un backend par application cliente : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | [16-bff](16-bff.md) | [`16-BFF`](../16-BFF) |
-| 17 | **Architecture cellulaire** (cell-based) | Plusieurs copies complètes du système, chacune pour une partie des clients : rayon d'impact borné | [17-cell-based](17-cell-based.md) | [`17-CellBased`](../17-CellBased) |
-| 18 | **Modèle d'acteurs** | Des milliers d'acteurs à l'état privé, qui ne se parlent que par messages traités un par un ; on remplace ceux qui plantent | [18-modele-acteurs](18-modele-acteurs.md) | [`18-ModeleActeurs`](../18-ModeleActeurs) |
-| 19 | **Architecture spatiale** (space-based) | Les données en mémoire, répliquées entre des unités qu'on ajoute à volonté ; la base mise à jour en arrière-plan | [19-space-based](19-space-based.md) | [`19-SpaceBased`](../19-SpaceBased) |
-| 20 | **Pipeline** (pipes & filters) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent tous en même temps sur un flux de données | [20-pipeline](20-pipeline.md) | [`20-Pipeline`](../20-Pipeline) |
-| 21 | **Chorégraphie** (événementiel pur) | Le même virement que la démo 14, sans orchestrateur : chaque service réagit aux événements des autres | [21-choregraphie](21-choregraphie.md) | [`21-Choregraphie`](../21-Choregraphie) |
-| 22 | **Strangler Fig** (migration progressive) | Une façade devant l'ancien système, qui lui retire ses fonctions une route à la fois au profit du nouveau | [22-strangler-fig](22-strangler-fig.md) | [`22-StranglerFig`](../22-StranglerFig) |
-| 23 | **REST, gRPC, GraphQL** (styles d'API) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client | [23-rest-grpc-graphql](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) |
-| 24 | **MVC et MVVM** (patterns de présentation) | Le même écran en MVC web (une requête, une vue jetée) et en MVVM (un ViewModel vivant, que la vue observe) | [24-mvc-mvvm](24-mvc-mvvm.md) | [`24-MvcMvvm`](../24-MvcMvvm) |
+| # | Architecture | Nom anglais | En une phrase | Doc | Code |
+|---|---|---|---|---|---|
+| 0 | **Couches (N-tiers)** | Layered Architecture (N-tier) | Présentation → Métier → Données : les dépendances descendent vers la base | [00-couches](00-couches.md) | [`00-Couches`](../00-Couches) |
+| 1 | **Hexagonale** (ports & adapters) | Hexagonal Architecture (Ports & Adapters) | Le métier au centre, branché au monde par des ports et des adapters interchangeables | [01-hexagonale](01-hexagonale.md) | [`01-Hexagonale`](../01-Hexagonale) |
+| 2 | **Onion** | Onion Architecture | Des couches concentriques, toutes les dépendances pointent vers le domaine | [02-onion](02-onion.md) | [`02-Onion`](../02-Onion) |
+| 3 | **Clean Architecture** | Clean Architecture | Un interacteur par cas d'utilisation ; le résultat sort par un *presenter* | [03-clean](03-clean.md) | [`03-Clean`](../03-Clean) |
+| 4 | **Functional Core, Imperative Shell** | Functional Core, Imperative Shell | Des règles 100 % pures qui décident ; une coquille qui fait les entrées/sorties | [04-coeur-fonctionnel](04-coeur-fonctionnel.md) | [`04-CoeurFonctionnel`](../04-CoeurFonctionnel) |
+| 5 | **Vertical Slice** | Vertical Slice Architecture | Un fichier par fonctionnalité, de la route jusqu'à la base | [05-vertical-slice](05-vertical-slice.md) | [`05-VerticalSlice`](../05-VerticalSlice) |
+| 6 | **Package by Component** | Package by Component | Une interface publique par composant, tout le reste `internal` | [06-composants](06-composants.md) | [`06-Composants`](../06-Composants) |
+| 7 | **Monolithe modulaire** | Modular Monolith | Des modules autonomes, reliés par des contrats et des événements, dans un seul déploiement | [07-monolithe-modulaire](07-monolithe-modulaire.md) | [`07-MonolitheModulaire`](../07-MonolitheModulaire) |
+| 8 | **Microservices** | Microservices | Un processus par service, HTTP + messages, aucun code partagé | [08-microservices](08-microservices.md) | [`08-Microservices`](../08-Microservices) |
+| 9 | **CQRS** | CQRS (Command Query Responsibility Segregation) | Un modèle pour écrire, un autre pour lire, reliés par des événements | [09-cqrs](09-cqrs.md) | [`09-CQRS`](../09-CQRS) |
+| 10 | **Event Sourcing** | Event Sourcing | On stocke les événements, l'état se recalcule en les rejouant | [10-event-sourcing](10-event-sourcing.md) | [`10-EventSourcing`](../10-EventSourcing) |
+| 11 | **Domain-Driven Design** | Domain-Driven Design (DDD) | Modéliser le métier dans sa langue ; découper en contextes délimités | [11-ddd](11-ddd.md) | [`11-DDD`](../11-DDD) |
+| 12 | **Serverless** | Serverless (Function as a Service) | Des fonctions sans état déclenchées par des événements, facturées à l'usage | [12-serverless](12-serverless.md) | [`12-Serverless`](../12-Serverless) |
+| 13 | **Microkernel** (plugins) | Microkernel (Plug-in Architecture) | Un noyau minimal et des plugins chargés, déchargés et mis à jour à chaud | [13-microkernel](13-microkernel.md) | [`13-Microkernel`](../13-Microkernel) |
+| 14 | **Saga orchestrée** | Orchestrated Saga | Un orchestrateur pilote un processus multi-services : état persistant, réessais, attentes, compensation | [14-saga-orchestree](14-saga-orchestree.md) | [`14-SagaOrchestree`](../14-SagaOrchestree) |
+| 15 | **Multi-tenant** (SaaS) | Multi-tenant Architecture (SaaS) | Une seule application pour plusieurs clients : données isolées, règles et quotas par client | [15-multi-tenant](15-multi-tenant.md) | [`15-MultiTenant`](../15-MultiTenant) |
+| 16 | **Backend for Frontend** (BFF) | Backend for Frontend (BFF) | Un backend par application cliente : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | [16-bff](16-bff.md) | [`16-BFF`](../16-BFF) |
+| 17 | **Architecture cellulaire** (cell-based) | Cell-Based Architecture | Plusieurs copies complètes du système, chacune pour une partie des clients : rayon d'impact borné | [17-cell-based](17-cell-based.md) | [`17-CellBased`](../17-CellBased) |
+| 18 | **Modèle d'acteurs** | Actor Model | Des milliers d'acteurs à l'état privé, qui ne se parlent que par messages traités un par un ; on remplace ceux qui plantent | [18-modele-acteurs](18-modele-acteurs.md) | [`18-ModeleActeurs`](../18-ModeleActeurs) |
+| 19 | **Architecture spatiale** (space-based) | Space-Based Architecture | Les données en mémoire, répliquées entre des unités qu'on ajoute à volonté ; la base mise à jour en arrière-plan | [19-space-based](19-space-based.md) | [`19-SpaceBased`](../19-SpaceBased) |
+| 20 | **Pipeline** (pipes & filters) | Pipes and Filters (Pipeline) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent tous en même temps sur un flux de données | [20-pipeline](20-pipeline.md) | [`20-Pipeline`](../20-Pipeline) |
+| 21 | **Chorégraphie** (événementiel pur) | Event-Driven Choreography | Le même virement que la démo 14, sans orchestrateur : chaque service réagit aux événements des autres | [21-choregraphie](21-choregraphie.md) | [`21-Choregraphie`](../21-Choregraphie) |
+| 22 | **Strangler Fig** (migration progressive) | Strangler Fig | Une façade devant l'ancien système, qui lui retire ses fonctions une route à la fois au profit du nouveau | [22-strangler-fig](22-strangler-fig.md) | [`22-StranglerFig`](../22-StranglerFig) |
+| 23 | **REST, gRPC, GraphQL** (styles d'API) | REST, gRPC, GraphQL (API Styles) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client | [23-rest-grpc-graphql](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) |
+| 24 | **MVC et MVVM** (patterns de présentation) | MVC and MVVM (Presentation Patterns) | Le même écran en MVC web (une requête, une vue jetée) et en MVVM (un ViewModel vivant, que la vue observe) | [24-mvc-mvvm](24-mvc-mvvm.md) | [`24-MvcMvvm`](../24-MvcMvvm) |
 | ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---

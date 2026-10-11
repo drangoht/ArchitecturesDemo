@@ -1,5 +1,7 @@
 # Acteurs ou Spatiale ?
 
+**En anglais** : *Actor Model or Space-Based Architecture?*
+
 > **La différence en une phrase** : les deux gardent l'état **en mémoire**, mais les acteurs donnent à chaque donnée
 > **un seul propriétaire** (aucune écriture ne se perd), quand l'architecture spatiale la **réplique** dans chaque
 > unité (des écritures simultanées peuvent se perdre).

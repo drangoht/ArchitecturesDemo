@@ -1,5 +1,7 @@
 # Fiche 1 · Hexagonale (Ports & Adapters)
 
+**Nom anglais** : *Hexagonal Architecture (Ports & Adapters)*
+
 > **En une phrase** : le métier au centre ne dépend de rien ; le monde s'y branche par des **ports** (interfaces) et des
 > **adapters** (implémentations) interchangeables.
 

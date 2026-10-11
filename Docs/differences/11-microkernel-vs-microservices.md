@@ -1,5 +1,7 @@
 # Microkernel ou Microservices ?
 
+**En anglais** : *Microkernel or Microservices?*
+
 > **La différence en une phrase** : malgré le préfixe commun, le microkernel **étend** une application (des plugins
 > chargés dans son processus), les microservices la **découpent** (des processus séparés). L'un répond à « comment
 > ajouter des variantes ? », l'autre à « comment déployer des parties séparément ? ».

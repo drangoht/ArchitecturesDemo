@@ -1,5 +1,7 @@
 # Microservices ou Serverless ?
 
+**En anglais** : *Microservices or Serverless?*
+
 > **La différence en une phrase** : un microservice est un **processus qui tourne en continu**, que vous exploitez ;
 > une fonction serverless **n'existe que le temps d'un événement**, sur des serveurs que gère le fournisseur.
 

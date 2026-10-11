@@ -1,5 +1,7 @@
 # 18. Le modèle d'acteurs
 
+**Nom anglais** : *Actor Model*
+
 🏠 [Sommaire](README.md) · ⬅️ [Les cellules](17-cell-based.md) · ➡️ [L'architecture spatiale](19-space-based.md) · 🔧 [Version technique](../18-modele-acteurs.md)
 
 <p align="center"><img src="images/18.jpg" alt="Illustration : un bureau de poste où chaque guichetier a sa propre boîte aux lettres et ses propres dossiers" width="480"></p>

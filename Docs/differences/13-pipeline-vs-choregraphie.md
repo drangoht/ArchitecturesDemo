@@ -1,5 +1,7 @@
 # Pipeline ou Chorégraphie ?
 
+**En anglais** : *Pipes and Filters or Event-Driven Choreography?*
+
 > **La différence en une phrase** : dans un pipeline, des **données** traversent une suite d'étapes **fixée à
 > l'assemblage**, dans un même processus ; dans une chorégraphie, des **faits** circulent entre services, et le chemin
 > **émerge** des abonnements.

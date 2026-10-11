@@ -1,6 +1,6 @@
-# 4. Le cœur fonctionnel et la coquille
+# 4. Le « Functional Core, Imperative Shell » (le cœur fonctionnel et la coquille)
 
-🏠 [Sommaire](README.md) · ⬅️ [La Clean Architecture](03-clean.md) · ➡️ [Les tranches verticales](05-vertical-slice.md) · 🔧 [Version technique](../04-coeur-fonctionnel.md)
+🏠 [Sommaire](README.md) · ⬅️ [La Clean Architecture](03-clean.md) · ➡️ [Le Vertical Slice](05-vertical-slice.md) · 🔧 [Version technique](../04-coeur-fonctionnel.md)
 
 <p align="center"><img src="images/04.jpg" alt="Illustration : le juge et l'huissier" width="480"></p>
 

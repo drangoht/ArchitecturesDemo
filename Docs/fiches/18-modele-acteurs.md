@@ -1,5 +1,7 @@
 # Fiche 18 · Modèle d'acteurs
 
+**Nom anglais** : *Actor Model*
+
 > **En une phrase** : des milliers d'acteurs à l'**état privé**, qui ne communiquent que **par messages** traités **un par
 > un** ; aucun verrou, et un acteur qui plante est **remplacé**.
 
