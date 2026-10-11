@@ -12,6 +12,8 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 
 🗂️ **Pressé ? Une fiche mémo d'une page par architecture : [`Docs/fiches/`](Docs/fiches/README.md)**, aussi en [PDF imprimable](Docs/fiches/pdf/fiches-architectures.pdf).
 
+⚖️ **Hexagonale ou Onion ? Saga ou chorégraphie ? Les différences, deux à deux : [`Docs/differences/`](Docs/differences/README.md)**.
+
 | # | Dossier | Architecture | Idée clé | Port |
 |---|---|---|---|---|
 | 0 | `00-Couches` | Couches / N-tiers (classique) | Présentation → Métier → Données : les dépendances descendent vers la base | 5100 |

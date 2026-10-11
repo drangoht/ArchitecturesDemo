@@ -10,6 +10,9 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 > 🗂️ **Besoin d'un résumé ?** Une fiche mémo d'une page par architecture (idée, schéma, règles, quand l'utiliser,
 > pièges) : [les fiches](fiches/README.md).
 
+> ⚖️ **Hexagonale ou Onion ? CQRS ou Event Sourcing ?** Les architectures qu'on confond, comparées deux à deux sur leurs
+> seules différences, code des démos à l'appui : [les différences entre architectures](differences/README.md).
+
 > **Lire les schémas.** Les diagrammes sont écrits en [Mermaid](https://mermaid.js.org/). Ils s'affichent directement sur
 > GitHub / GitLab / Azure DevOps, dans Rider et Visual Studio 2022 (aperçu Markdown), et dans VS Code avec l'extension
 > *Markdown Preview Mermaid Support*.

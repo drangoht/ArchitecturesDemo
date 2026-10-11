@@ -9,6 +9,7 @@ l'architecture, quand l'utiliser ou non, les pièges. Pour le code, les tests et
 
 📖 Documentation complète : [Docs](../README.md) · 📗 Version sans code : [pour tous](../pour-tous/README.md) ·
 ★ [Concepts transverses](../concepts-transverses.md) (idempotence, outbox, concurrence optimiste, compensation)
+· ⚖️ [Les différences, deux à deux](../differences/README.md)
 
 ---
 
