@@ -142,4 +142,10 @@
     <Project Path="20-Pipeline/Pipeline.Noyau/Pipeline.Noyau.csproj" />
     <Project Path="20-Pipeline/Pipeline.Tests/Pipeline.Tests.csproj" />
   </Folder>
+  <Folder Name="/21-Choregraphie/">
+    <Project Path="21-Choregraphie/Choreo.Api/Choreo.Api.csproj" />
+    <Project Path="21-Choregraphie/Choreo.Bus/Choreo.Bus.csproj" />
+    <Project Path="21-Choregraphie/Choreo.Services/Choreo.Services.csproj" />
+    <Project Path="21-Choregraphie/Choreo.Tests/Choreo.Tests.csproj" />
+  </Folder>
 </Solution>

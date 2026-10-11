@@ -8,11 +8,11 @@ mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 
 | Concept | Problème résolu | Démos |
 |---|---|---|
-| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17, 18, 20 |
+| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17, 18, 20, 21 |
 | [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9) |
 | [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 (et l'alternative : 18 ; le contre-exemple : 19) |
-| [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17, 18 |
-| [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18 |
+| [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17, 18, 21 |
+| [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18, 21 |
 | [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12, 19 |
 | [Événements de domaine vs d'intégration](#événements-de-domaine-vs-dintégration) | Ce qu'on publie aux autres | 7, 9, 11 |
 
@@ -42,6 +42,7 @@ flowchart LR
 | Opérations traitées, migrées avec le client | [Magasin.cs](../17-CellBased/Cell.Cellule/Magasin.cs) : `OperationsTraitees` suit le client d'une cellule à l'autre |
 | Clé de période sur l'opération | [ServiceBancaire.cs](../15-MultiTenant/Mt.Banque/ServiceBancaire.cs) : `var cle = $"frais-{mois}";` (frais mensuels prélevés une fois) |
 | L'identité de l'acteur | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) : rejouer `virement/facture-42` réveille le même acteur, qui connaît déjà la réponse |
+| Boîte de réception par service | [Autres.cs](../21-Choregraphie/Choreo.Services/Autres.cs) : `Reactif.UneSeuleFois`, testé avec un courtier qui livre chaque événement deux fois |
 | Référence de ligne, à deux niveaux | [Filtres.cs](../20-Pipeline/Pipeline.Banque/Filtres.cs) : `Dedupliquer` écarte tôt les références déjà exécutées ; le registre refuse en dernier recours. Un import interrompu se rejoue tel quel |
 
 ---
@@ -147,8 +148,9 @@ flowchart LR
 | 8 | [Micro.Virements/Endpoints.cs](../08-Microservices/Micro.Virements/Endpoints.cs) | saga à statut (`EnCours` → `Effectue` / `Refuse` / `Annule` / `AReprendre`), appels idempotents |
 | 14 | [MoteurSaga.cs](../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs) | saga **orchestrée** : processus décrit en un seul endroit, état persistant, attente d'un événement extérieur, point de non-retour |
 | 18 | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) | un **acteur par virement**, qui converse avec deux acteurs comptes ; son état stocké (`DebitFait`…) permet de reprendre après une panne |
+| 21 | [Comptes.cs](../21-Choregraphie/Choreo.Services/Comptes.cs) | saga **chorégraphiée** : pas de coordinateur ; Comptes compense en écoutant les échecs des autres, et une réservation qui expire débloque un processus resté en plan |
 
-Deux façons de coordonner une saga : la **chorégraphie** (chaque service réagit aux événements des autres, démos 7 et 8)
+Deux façons de coordonner une saga : la **chorégraphie** (chaque service réagit aux événements des autres, démos 7, 8 et [21](21-choregraphie.md))
 et l'**orchestration** (un chef d'orchestre explicite conduit les étapes, [démo 14](14-saga-orchestree.md)). Les étapes
 qui suivent le **point de non-retour** (par exemple le débit définitif) ne se compensent plus : on ne peut que les réessayer.
 

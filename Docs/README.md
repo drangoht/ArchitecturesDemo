@@ -1,6 +1,6 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **vingt et une façons d'organiser une application**, chacune illustrée par une solution .NET 10
+Cette documentation explique **vingt-deux façons d'organiser une application**, chacune illustrée par une solution .NET 10
 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
@@ -35,7 +35,8 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 18 | **Modèle d'acteurs** | Des milliers d'acteurs à l'état privé, qui ne se parlent que par messages traités un par un ; on remplace ceux qui plantent | [18-modele-acteurs](18-modele-acteurs.md) | [`18-ModeleActeurs`](../18-ModeleActeurs) |
 | 19 | **Architecture spatiale** (space-based) | Les données en mémoire, répliquées entre des unités qu'on ajoute à volonté ; la base mise à jour en arrière-plan | [19-space-based](19-space-based.md) | [`19-SpaceBased`](../19-SpaceBased) |
 | 20 | **Pipeline** (pipes & filters) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent tous en même temps sur un flux de données | [20-pipeline](20-pipeline.md) | [`20-Pipeline`](../20-Pipeline) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 20) |
+| 21 | **Chorégraphie** (événementiel pur) | Le même virement que la démo 14, sans orchestrateur : chaque service réagit aux événements des autres | [21-choregraphie](21-choregraphie.md) | [`21-Choregraphie`](../21-Choregraphie) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 21) |
 
 ---
 
@@ -69,6 +70,7 @@ flowchart LR
     Q2 --> D17["Cellules"]
     Q2 --> D18["Acteurs"]
     Q2 --> D19["Spatiale"]
+    Q2 --> D21["Chorégraphie"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -135,7 +137,7 @@ flowchart TD
     H --> T{"Processus en plusieurs étapes<br/>entre services, avec attentes<br/>et règles d'échec ?"}
     G --> T
     T -->|oui| U["<b>Saga orchestrée</b>"]
-    T -->|"non : simples notifications"| V["chorégraphie<br/>(événements)"]
+    T -->|"non : réactions, notifications"| V["<b>Chorégraphie</b><br/>(événements)"]
     G --> W{"Le même logiciel vendu à<br/>plusieurs organisations ?"}
     W -->|oui| X["<b>Multi-tenant</b><br/>(base partagée, puis dédiée<br/>pour qui la paie)"]
     H --> Y{"Plusieurs applications clientes<br/>(site, mobile) aux besoins<br/>différents ?"}
@@ -176,6 +178,7 @@ flowchart TD
 | [Acteurs](18-modele-acteurs.md) | rien (un acteur ne connaît que des adresses) | l'état, une ligne par acteur | 1 (ou une grappe de serveurs : Orleans, Akka) | **la boîte aux lettres** : un message à la fois ; le superviseur | pas de transaction entre acteurs, lectures transversales, cycles de demandes |
 | [Spatiale](19-space-based.md) | rien (seulement la réplique de son unité) | l'état, **en mémoire** dans chaque unité ; la base en différé | **N unités**, ajoutées et retirées selon la charge | versions + routage par affinité | collisions (écritures perdues), tout en mémoire, base en retard |
 | [Pipeline](20-pipeline.md) | rien (un filtre ne connaît que son entrée et sa sortie) | l'état ; les données ne font que passer | 1 | tuyaux bornés (contre-pression) ; types vérifiés à l'assemblage | traitements en flux seulement ; filtres à état uniques ; reprise idempotente |
+| [Chorégraphie](21-choregraphie.md) | des contrats d'événements, jamais des autres services | l'état de chaque service + le journal des événements | 1 par service + le courtier | test d'architecture : aucun service n'en référence un autre | processus écrit nulle part ; compensations et délais dispersés ; pannes silencieuses |
 
 ---
 
@@ -203,8 +206,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 326 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5120)
+dotnet test ArchitecturesDemo.slnx                          # les 342 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5121)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

@@ -42,7 +42,8 @@ flowchart LR
 | Outils | courtier de messages | Durable Functions, Temporal, Step Functions, MassTransit, NServiceBus |
 
 **Règle pratique** : chorégraphie pour **notifier** (« il s'est passé ceci »), orchestration pour **conduire** un
-processus métier à plusieurs étapes avec des règles d'échec.
+processus métier à plusieurs étapes avec des règles d'échec. La [démo 21](21-choregraphie.md) fait le **même virement**
+par chorégraphie, pour comparer sur pièces.
 
 ---
 

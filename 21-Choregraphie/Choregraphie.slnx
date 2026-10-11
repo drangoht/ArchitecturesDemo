@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Choreo.Api/Choreo.Api.csproj" />
+  <Project Path="Choreo.Bus/Choreo.Bus.csproj" />
+  <Project Path="Choreo.Services/Choreo.Services.csproj" />
+  <Project Path="Choreo.Tests/Choreo.Tests.csproj" />
+</Solution>

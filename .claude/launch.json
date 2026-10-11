@@ -138,6 +138,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "20-Pipeline/Pipeline.Api", "--launch-profile", "http"],
       "port": 5120
+    },
+    {
+      "name": "21-choregraphie",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "21-Choregraphie/Choreo.Api", "--launch-profile", "http"],
+      "port": 5121
     }
   ]
 }

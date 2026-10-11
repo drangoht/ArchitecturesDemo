@@ -4,7 +4,7 @@
 > des **tuyaux** ; les données coulent de l'un à l'autre, chaque filtre travaillant **en même temps** que les autres sur
 > un élément différent, comme une chaîne de montage.
 
-📁 Code : [`20-Pipeline`](../20-Pipeline) · ⬅️ [Architecture spatiale](19-space-based.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`20-Pipeline`](../20-Pipeline) · ⬅️ [Architecture spatiale](19-space-based.md) · ➡️ [Chorégraphie](21-choregraphie.md)
 
 ---
 
