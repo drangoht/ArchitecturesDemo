@@ -1,7 +1,6 @@
 # Software architectures in C# — documentation
 
-🌐 [Français](../README.md) · 🚧 English translation in progress: see [TRANSLATION.md](TRANSLATION.md). Until a page
-is translated, its link leads to the French version (marked *FR*).
+🌐 [Français](../README.md) · How this English version is maintained: [TRANSLATION.md](TRANSLATION.md).
 
 This documentation explains **twenty-two ways to organize an application**, **one way to get there** from an existing
 system, **three ways to expose it** to its clients and **two ways to organize its user interface**, each illustrated by
@@ -19,7 +18,7 @@ features.
 > pitfalls): [the cheat sheets](fiches/README.md).
 
 > ⚖️ **Hexagonal or Onion? CQRS or Event Sourcing?** The architectures people confuse, compared two by two on their
-> differences only, with code from the demos: [the differences between architectures](../differences/README.md) (*FR*).
+> differences only, with code from the demos: [the differences between architectures](differences/README.md).
 
 > 🌐 **French and English names**: an architecture known by an English name keeps it; those with a French name show
 > it under the title of each page. Summary in [the names table](noms-architectures.md).

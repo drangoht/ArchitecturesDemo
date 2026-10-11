@@ -5,7 +5,7 @@
 > **La différence en une phrase** : dans les couches, le métier **dépend de la base** ; dans l'hexagonale, c'est
 > l'inverse, la base **se branche sur le métier**. Tout le reste en découle.
 
-📁 Démos : [`00-Couches`](../../00-Couches) · [`01-Hexagonale`](../../01-Hexagonale) ·
+📁 Démos : [`00-Couches`](../../00-Couches) · [`01-Hexagonale`](../../01-Hexagonale) · · 🌐 [English](../en/differences/01-couches-vs-hexagonale.md)
 📖 Pages : [Couches](../00-couches.md) · [Hexagonale](../01-hexagonale.md) · 🗂️ Fiches : [0](../fiches/00-couches.md) · [1](../fiches/01-hexagonale.md)
 
 ⬅️ [Sommaire](README.md) · ➡️ [Hexagonale ou Onion ?](02-hexagonale-vs-onion.md)

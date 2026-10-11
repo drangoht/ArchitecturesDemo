@@ -6,7 +6,7 @@
 > c'est **une mini-application** : il possède en plus ses routes HTTP et ses abonnements aux événements, et se branche
 > d'une ligne.
 
-📁 Démos : [`06-Composants`](../../06-Composants) · [`07-MonolitheModulaire`](../../07-MonolitheModulaire) ·
+📁 Démos : [`06-Composants`](../../06-Composants) · [`07-MonolitheModulaire`](../../07-MonolitheModulaire) · · 🌐 [English](../en/differences/08-composants-vs-monolithe-modulaire.md)
 📖 Pages : [Composants](../06-composants.md) · [Monolithe modulaire](../07-monolithe-modulaire.md) ·
 🗂️ Fiches : [6](../fiches/06-composants.md) · [7](../fiches/07-monolithe-modulaire.md)
 

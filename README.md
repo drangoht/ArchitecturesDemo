@@ -1,6 +1,6 @@
 # Démos d'architectures en C#
 
-🌐 [English](README.en.md) (traduction en cours)
+🌐 [English](README.en.md)
 
 Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec vingt et une architectures,
 plus une démo de conception pilotée par le domaine (DDD), une démo de migration progressive d'un ancien système (Strangler Fig)

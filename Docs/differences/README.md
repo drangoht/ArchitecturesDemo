@@ -1,5 +1,7 @@
 # Les différences entre architectures
 
+🌐 [English](../en/differences/README.md)
+
 Hexagonale ou Onion ? CQRS ou Event Sourcing ? Saga ou chorégraphie ? Ces pages comparent, **deux à deux**, les
 architectures qu'on confond le plus, et seulement sur ce qui les **distingue**. Chacune s'appuie sur le code des démos :
 le même métier bancaire, le même virement, écrit dans les deux architectures.

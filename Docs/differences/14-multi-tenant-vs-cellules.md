@@ -6,7 +6,7 @@
 > afin de **mutualiser** ; les cellules en font tourner **plusieurs copies complètes**, chacune pour un groupe de
 > clients, afin de **borner le rayon d'impact**.
 
-📁 Démos : [`15-MultiTenant`](../../15-MultiTenant) · [`17-CellBased`](../../17-CellBased) ·
+📁 Démos : [`15-MultiTenant`](../../15-MultiTenant) · [`17-CellBased`](../../17-CellBased) · · 🌐 [English](../en/differences/14-multi-tenant-vs-cellules.md)
 📖 Pages : [Multi-tenant](../15-multi-tenant.md) · [Cellules](../17-cell-based.md) ·
 🗂️ Fiches : [15](../fiches/15-multi-tenant.md) · [17](../fiches/17-cell-based.md)
 

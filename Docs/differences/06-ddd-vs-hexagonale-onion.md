@@ -6,7 +6,7 @@
 > les dépendances ; le DDD dit **quoi modéliser** et **où couper**. Ce ne sont pas des concurrents : le DDD remplit le
 > centre que les deux autres protègent.
 
-📁 Démos : [`02-Onion`](../../02-Onion) · [`11-DDD`](../../11-DDD) (sur une base Onion) ·
+📁 Démos : [`02-Onion`](../../02-Onion) · [`11-DDD`](../../11-DDD) (sur une base Onion) · · 🌐 [English](../en/differences/06-ddd-vs-hexagonale-onion.md)
 📖 Pages : [Hexagonale](../01-hexagonale.md) · [Onion](../02-onion.md) · [DDD](../11-ddd.md) ·
 🗂️ Fiches : [1](../fiches/01-hexagonale.md) · [2](../fiches/02-onion.md) · [11](../fiches/11-ddd.md)
 

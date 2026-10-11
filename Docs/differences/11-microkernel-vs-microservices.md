@@ -6,7 +6,7 @@
 > chargés dans son processus), les microservices la **découpent** (des processus séparés). L'un répond à « comment
 > ajouter des variantes ? », l'autre à « comment déployer des parties séparément ? ».
 
-📁 Démos : [`13-Microkernel`](../../13-Microkernel) · [`08-Microservices`](../../08-Microservices) ·
+📁 Démos : [`13-Microkernel`](../../13-Microkernel) · [`08-Microservices`](../../08-Microservices) · · 🌐 [English](../en/differences/11-microkernel-vs-microservices.md)
 📖 Pages : [Microkernel](../13-microkernel.md) · [Microservices](../08-microservices.md) ·
 🗂️ Fiches : [13](../fiches/13-microkernel.md) · [8](../fiches/08-microservices.md)
 

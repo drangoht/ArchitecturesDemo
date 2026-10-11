@@ -5,7 +5,7 @@
 > **La différence en une phrase** : un microservice est un **processus qui tourne en continu**, que vous exploitez ;
 > une fonction serverless **n'existe que le temps d'un événement**, sur des serveurs que gère le fournisseur.
 
-📁 Démos : [`08-Microservices`](../../08-Microservices) · [`12-Serverless`](../../12-Serverless) (plateforme simulée) ·
+📁 Démos : [`08-Microservices`](../../08-Microservices) · [`12-Serverless`](../../12-Serverless) (plateforme simulée) · · 🌐 [English](../en/differences/10-microservices-vs-serverless.md)
 📖 Pages : [Microservices](../08-microservices.md) · [Serverless](../12-serverless.md) ·
 🗂️ Fiches : [8](../fiches/08-microservices.md) · [12](../fiches/12-serverless.md)
 

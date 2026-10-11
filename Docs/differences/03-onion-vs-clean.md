@@ -6,7 +6,7 @@
 > (une classe, une entrée, une sortie) et **inverse aussi la sortie** : l'interacteur ne renvoie rien, il pousse son
 > résultat vers un *presenter*.
 
-📁 Démos : [`02-Onion`](../../02-Onion) · [`03-Clean`](../../03-Clean) ·
+📁 Démos : [`02-Onion`](../../02-Onion) · [`03-Clean`](../../03-Clean) · · 🌐 [English](../en/differences/03-onion-vs-clean.md)
 📖 Pages : [Onion](../02-onion.md) · [Clean](../03-clean.md) · 🗂️ Fiches : [2](../fiches/02-onion.md) · [3](../fiches/03-clean.md)
 
 ⬅️ [Hexagonale ou Onion ?](02-hexagonale-vs-onion.md) · ➡️ [Clean ou Vertical Slice ?](04-clean-vs-vertical-slice.md)

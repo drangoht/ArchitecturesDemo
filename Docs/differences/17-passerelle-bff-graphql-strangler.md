@@ -7,7 +7,7 @@
 > GraphQL **laisse le client décrire** sa réponse, et la façade du Strangler Fig **migre** (le temps de remplacer un
 > système).
 
-📁 Démos : [`08-Microservices`](../../08-Microservices) (passerelle) · [`16-BFF`](../../16-BFF) ·
+📁 Démos : [`08-Microservices`](../../08-Microservices) (passerelle) · [`16-BFF`](../../16-BFF) · · 🌐 [English](../en/differences/17-passerelle-bff-graphql-strangler.md)
 [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) · [`22-StranglerFig`](../../22-StranglerFig) ·
 📖 Pages : [Microservices](../08-microservices.md) · [BFF](../16-bff.md) · [REST, gRPC, GraphQL](../23-rest-grpc-graphql.md) ·
 [Strangler Fig](../22-strangler-fig.md)

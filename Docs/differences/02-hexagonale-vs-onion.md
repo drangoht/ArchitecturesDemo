@@ -6,7 +6,7 @@
 > structure **le pourtour** (ports et adapters) quand l'Onion structure **le centre** (modèle, services de domaine,
 > services applicatifs).
 
-📁 Démos : [`01-Hexagonale`](../../01-Hexagonale) · [`02-Onion`](../../02-Onion) ·
+📁 Démos : [`01-Hexagonale`](../../01-Hexagonale) · [`02-Onion`](../../02-Onion) · · 🌐 [English](../en/differences/02-hexagonale-vs-onion.md)
 📖 Pages : [Hexagonale](../01-hexagonale.md) · [Onion](../02-onion.md) · 🗂️ Fiches : [1](../fiches/01-hexagonale.md) · [2](../fiches/02-onion.md)
 
 ⬅️ [Couches ou Hexagonale ?](01-couches-vs-hexagonale.md) · ➡️ [Onion ou Clean ?](03-onion-vs-clean.md)

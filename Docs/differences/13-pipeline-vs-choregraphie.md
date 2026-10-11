@@ -6,7 +6,7 @@
 > l'assemblage**, dans un même processus ; dans une chorégraphie, des **faits** circulent entre services, et le chemin
 > **émerge** des abonnements.
 
-📁 Démos : [`20-Pipeline`](../../20-Pipeline) · [`21-Choregraphie`](../../21-Choregraphie) ·
+📁 Démos : [`20-Pipeline`](../../20-Pipeline) · [`21-Choregraphie`](../../21-Choregraphie) · · 🌐 [English](../en/differences/13-pipeline-vs-choregraphie.md)
 📖 Pages : [Pipeline](../20-pipeline.md) · [Chorégraphie](../21-choregraphie.md) ·
 🗂️ Fiches : [20](../fiches/20-pipeline.md) · [21](../fiches/21-choregraphie.md)
 

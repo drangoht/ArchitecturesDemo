@@ -5,7 +5,7 @@
 > **La différence en une phrase** : le **même virement en plusieurs étapes**, écrit **en un seul endroit** (un
 > orchestrateur qui appelle chaque service) ou **nulle part** (chaque service réagit aux événements des autres).
 
-📁 Démos : [`14-SagaOrchestree`](../../14-SagaOrchestree) · [`21-Choregraphie`](../../21-Choregraphie) (mêmes données,
+📁 Démos : [`14-SagaOrchestree`](../../14-SagaOrchestree) · [`21-Choregraphie`](../../21-Choregraphie) (mêmes données, · 🌐 [English](../en/differences/12-saga-orchestree-vs-choregraphie.md)
 mêmes règles, pour comparer sur pièces) · 📖 Pages : [Saga orchestrée](../14-saga-orchestree.md) ·
 [Chorégraphie](../21-choregraphie.md) · 🗂️ Fiches : [14](../fiches/14-saga-orchestree.md) · [21](../fiches/21-choregraphie.md)
 

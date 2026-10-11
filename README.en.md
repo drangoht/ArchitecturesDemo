@@ -1,6 +1,6 @@
 # Architecture demos in C#
 
-🌐 [Français](README.md) · English version (translation in progress: [status](Docs/en/TRANSLATION.md))
+🌐 [Français](README.md) · English version ([how it is maintained](Docs/en/TRANSLATION.md))
 
 The **same banking business** (look up an account, withdraw money, make a transfer) implemented with twenty-one
 architectures, plus a Domain-Driven Design (DDD) demo, a demo of the progressive migration of a legacy system
@@ -18,7 +18,7 @@ Demo 0 (classic layers) is the baseline: every other one was born to fix one of 
 
 🗂️ **In a hurry? A one-page cheat sheet per architecture: [`Docs/en/fiches/`](Docs/en/fiches/README.md)**, also as a [printable PDF](Docs/en/fiches/pdf/architecture-cheat-sheets.pdf).
 
-⚖️ **Hexagonal or Onion? Saga or choreography? The differences, two by two: [`Docs/differences/`](Docs/differences/README.md)** (French).
+⚖️ **Hexagonal or Onion? Saga or choreography? The differences, two by two: [`Docs/en/differences/`](Docs/en/differences/README.md)**.
 
 | # | Folder | Architecture | French name | Key idea | Port |
 |---|---|---|---|---|---|

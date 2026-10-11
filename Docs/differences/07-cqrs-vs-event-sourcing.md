@@ -5,7 +5,7 @@
 > **La différence en une phrase** : CQRS **sépare la lecture de l'écriture** ; l'Event Sourcing **change ce qu'on
 > stocke** (les faits, pas l'état). L'un ne suppose pas l'autre, même s'ils vont souvent ensemble.
 
-📁 Démos : [`09-CQRS`](../../09-CQRS) · [`10-EventSourcing`](../../10-EventSourcing) ·
+📁 Démos : [`09-CQRS`](../../09-CQRS) · [`10-EventSourcing`](../../10-EventSourcing) · · 🌐 [English](../en/differences/07-cqrs-vs-event-sourcing.md)
 📖 Pages : [CQRS](../09-cqrs.md) · [Event Sourcing](../10-event-sourcing.md) · 🗂️ Fiches : [9](../fiches/09-cqrs.md) · [10](../fiches/10-event-sourcing.md)
 
 ⬅️ [DDD ou Hexagonale / Onion ?](06-ddd-vs-hexagonale-onion.md) · ➡️ [Composants ou Monolithe modulaire ?](08-composants-vs-monolithe-modulaire.md)

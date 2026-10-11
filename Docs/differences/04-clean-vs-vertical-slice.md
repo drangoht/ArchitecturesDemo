@@ -5,7 +5,7 @@
 > **La différence en une phrase** : Clean découpe le code **par couche technique** (un cas d'utilisation traverse
 > quatre cercles), Vertical Slice le découpe **par fonctionnalité** (un cas d'utilisation tient dans un fichier).
 
-📁 Démos : [`03-Clean`](../../03-Clean) · [`05-VerticalSlice`](../../05-VerticalSlice) ·
+📁 Démos : [`03-Clean`](../../03-Clean) · [`05-VerticalSlice`](../../05-VerticalSlice) · · 🌐 [English](../en/differences/04-clean-vs-vertical-slice.md)
 📖 Pages : [Clean](../03-clean.md) · [Vertical Slice](../05-vertical-slice.md) · 🗂️ Fiches : [3](../fiches/03-clean.md) · [5](../fiches/05-vertical-slice.md)
 
 ⬅️ [Onion ou Clean ?](03-onion-vs-clean.md) · ➡️ [Hexagonale ou Cœur fonctionnel ?](05-hexagonale-vs-coeur-fonctionnel.md)

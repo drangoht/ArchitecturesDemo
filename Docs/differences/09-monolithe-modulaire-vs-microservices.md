@@ -6,7 +6,7 @@
 > qui était gratuit dans le monolithe (un appel qui aboutit, un événement qui ne se perd pas) devient du code dans les
 > microservices.
 
-📁 Démos : [`07-MonolitheModulaire`](../../07-MonolitheModulaire) · [`08-Microservices`](../../08-Microservices) ·
+📁 Démos : [`07-MonolitheModulaire`](../../07-MonolitheModulaire) · [`08-Microservices`](../../08-Microservices) · · 🌐 [English](../en/differences/09-monolithe-modulaire-vs-microservices.md)
 📖 Pages : [Monolithe modulaire](../07-monolithe-modulaire.md) · [Microservices](../08-microservices.md) ·
 🗂️ Fiches : [7](../fiches/07-monolithe-modulaire.md) · [8](../fiches/08-microservices.md)
 

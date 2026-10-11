@@ -6,7 +6,7 @@
 > cœur fonctionnel n'en fait **plus aucune** : il reçoit des valeurs et renvoie une décision, la coquille fait tout le
 > reste.
 
-📁 Démos : [`01-Hexagonale`](../../01-Hexagonale) · [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) ·
+📁 Démos : [`01-Hexagonale`](../../01-Hexagonale) · [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) · · 🌐 [English](../en/differences/05-hexagonale-vs-coeur-fonctionnel.md)
 📖 Pages : [Hexagonale](../01-hexagonale.md) · [Cœur fonctionnel](../04-coeur-fonctionnel.md) · 🗂️ Fiches : [1](../fiches/01-hexagonale.md) · [4](../fiches/04-coeur-fonctionnel.md)
 
 ⬅️ [Clean ou Vertical Slice ?](04-clean-vs-vertical-slice.md) · ➡️ [DDD ou Hexagonale / Onion ?](06-ddd-vs-hexagonale-onion.md)

@@ -6,7 +6,7 @@
 > le même axe** : les microservices découpent **par fonction** (comptes, virements), les cellules **par groupe de
 > clients** (chaque cellule a toutes les fonctions).
 
-📁 Démos : [`08-Microservices`](../../08-Microservices) · [`17-CellBased`](../../17-CellBased) ·
+📁 Démos : [`08-Microservices`](../../08-Microservices) · [`17-CellBased`](../../17-CellBased) · · 🌐 [English](../en/differences/15-cellules-vs-microservices.md)
 📖 Pages : [Microservices](../08-microservices.md) · [Cellules](../17-cell-based.md) ·
 🗂️ Fiches : [8](../fiches/08-microservices.md) · [17](../fiches/17-cell-based.md)
 

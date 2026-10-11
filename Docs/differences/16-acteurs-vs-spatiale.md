@@ -6,7 +6,7 @@
 > **un seul propriétaire** (aucune écriture ne se perd), quand l'architecture spatiale la **réplique** dans chaque
 > unité (des écritures simultanées peuvent se perdre).
 
-📁 Démos : [`18-ModeleActeurs`](../../18-ModeleActeurs) · [`19-SpaceBased`](../../19-SpaceBased) ·
+📁 Démos : [`18-ModeleActeurs`](../../18-ModeleActeurs) · [`19-SpaceBased`](../../19-SpaceBased) · · 🌐 [English](../en/differences/16-acteurs-vs-spatiale.md)
 📖 Pages : [Acteurs](../18-modele-acteurs.md) · [Spatiale](../19-space-based.md) ·
 🗂️ Fiches : [18](../fiches/18-modele-acteurs.md) · [19](../fiches/19-space-based.md)
 
