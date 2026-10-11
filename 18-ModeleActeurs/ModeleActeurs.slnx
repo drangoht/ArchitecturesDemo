@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Acteurs.Api/Acteurs.Api.csproj" />
+  <Project Path="Acteurs.Banque/Acteurs.Banque.csproj" />
+  <Project Path="Acteurs.Noyau/Acteurs.Noyau.csproj" />
+  <Project Path="Acteurs.Tests/Acteurs.Tests.csproj" />
+</Solution>

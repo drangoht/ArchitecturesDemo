@@ -1,6 +1,6 @@
 # Démos d'architectures en C#
 
-Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec dix-sept architectures,
+Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec dix-huit architectures,
 plus une démo de conception pilotée par le domaine (DDD). On peut ainsi comparer la **forme** du code à fonctionnalités égales.
 La démo 0 (couches classiques) sert de point de comparaison : toutes les autres sont nées pour corriger l'une de ses limites.
 
@@ -26,6 +26,7 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 | 15 | `15-MultiTenant` | Multi-tenant (SaaS) | Une seule application pour plusieurs banques clientes : données isolées, règles et quotas par client | 5114 |
 | 16 | `16-BFF` | Backend for Frontend | Un backend par application cliente (site, mobile) : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | 5115 (web), 5116 (mobile) |
 | 17 | `17-CellBased` | Architecture cellulaire | Plusieurs copies complètes et indépendantes du système, chacune pour une partie des clients : rayon d'impact borné | 5117 (routeur) |
+| 18 | `18-ModeleActeurs` | Modèle d'acteurs | Un acteur par compte et par virement : état privé, messages traités un par un, aucun verrou ; un acteur qui plante est remplacé | 5118 |
 
 Données de démo, identiques partout :
 - **Alice** `11111111-1111-1111-1111-111111111111` : 1 000 € (5 000 € dans la démo 4, pour tester le plafond)
@@ -40,7 +41,7 @@ Tout tourne en mémoire (EF Core InMemory ou dictionnaires) : aucune base à ins
 ## Lancer
 
 ```powershell
-# Tout compiler et tester (251 tests)
+# Tout compiler et tester (281 tests)
 dotnet test ArchitecturesDemo.slnx
 
 # Lancer une API (chaque dossier a aussi sa propre solution .slnx)
@@ -598,22 +599,54 @@ adoptée notamment par Slack, et proche des « pods » de Salesforce.
   multi-tenant à l'intérieur. Ni avec les **microservices** (démo 8), qui découpent par fonction : une cellule contient
   toutes les fonctions, éventuellement sous forme de microservices.
 
+## 18. Modèle d'acteurs — `18-ModeleActeurs`
+
+```
+Acteurs.Noyau    le RUNTIME, écrit pour la démo (≈ 300 lignes, sans package) : Acteur, ReferenceActeur (une adresse),
+                 SystemeActeurs (une boîte aux lettres par acteur, activation, supervision, passivation)
+Acteurs.Banque   CompteActeur (un par compte), VirementActeur (un par virement), messages immuables,
+                 MagasinEtats (stockage durable, une ligne par acteur), Pieges (pannes et lenteurs à la demande)
+Acteurs.Api      :5118  une route = un message à un acteur ; /systeme pour observer et provoquer des pannes ; /demo
+```
+
+Chaque compte est un **acteur** : un objet qui a son propre état, ne le partage avec personne, et ne reçoit que des
+**messages**, traités **un par un** depuis sa boîte aux lettres. Plus besoin de verrou ni de transaction pour protéger
+le solde : personne d'autre ne peut y toucher. Le modèle d'Erlang, d'Akka et d'Orleans (Halo, Xbox) ; ici, des acteurs
+*virtuels* à la Orleans, activés au premier message et endormis après 30 s d'inactivité.
+
+**À observer** (détails : [Docs/18-modele-acteurs.md](Docs/18-modele-acteurs.md), requêtes dans `Acteurs.Api\Banque.http`)
+- **Concurrence sans verrou** : `POST /demo/retraits-simultanes` lance 1 000 retraits de 3 € **en même temps** sur le
+  compte d'Alice : exactement 333 acceptés, solde final 1 €, jamais négatif. `CompteActeur` lit, vérifie et modifie son
+  solde comme un programme séquentiel.
+- **Virements sans interblocage** : un acteur par virement converse avec les deux comptes (débit, crédit, compensation si
+  la cible refuse). `POST /demo/virements-croises` lance des virements Alice → Bob et Bob → Alice simultanés : le total
+  est conservé. L'identifiant du virement est l'adresse de son acteur : rejouer `facture-42` renvoie la même réponse.
+- **« Let it crash »** : `POST /systeme/pannes` fait planter un acteur au pire moment (solde modifié en mémoire, pas
+  encore écrit) → `500`, le superviseur le **remplace** par une incarnation neuve qui relit le stockage : le retrait n'a
+  pas eu lieu. Plus de 3 pannes par minute → l'acteur est arrêté (`503`) ; les autres comptes ne voient rien.
+- **Reprise d'un virement** : planté après le débit, il est noté `DebitFait` ; rejoué, il termine sans débiter deux fois.
+- **Activation et passivation** : `GET /systeme` liste les acteurs en mémoire ; `POST /systeme/passivation` les endort,
+  leur état reste dans `/systeme/stockage`, et le message suivant ne réveille que l'acteur concerné.
+- **Le prix** : pas de `GET /comptes` (il faudrait réveiller et interroger chaque acteur : on ajouterait une vue de
+  lecture, cf. CQRS) ; pas de transaction entre acteurs ; deux acteurs qui s'attendent mutuellement s'interbloquent.
+- En production : **Orleans**, **Akka.NET** ou **Proto.Actor**, qui répartissent les acteurs sur plusieurs serveurs.
+
 ---
 
 ## Comparatif
 
-| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée | Multi-tenant | BFF | Cellulaire |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants | par locataire (client), au niveau des données | un backend par application cliente | par groupe de clients : N copies complètes du système |
-| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur | de rien (le locataire est ambiant) | des services en aval (par HTTP) | de rien (chaque cellule est autonome) |
-| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga | l'état, étiqueté par locataire (base partagée ou dédiée) | rien, sauf les sessions (le métier est dans les services) | l'état, réparti entre les cellules (+ la table de placement) |
-| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 | 4 | 4 (dont les services simulés) | 4 (dont le lanceur) |
-| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants | **1 pour tous les clients** | 1 par application cliente (+ les services) | 1 routeur + **N cellules**, mises à jour par vagues |
-| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser | contexte de locataire, résolveurs, fabrique de bases | contrats recopiés, vues par écran | clé de partition, table de placement, plan de contrôle |
-| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs | appels directs | HTTP vers les services, en parallèle | routeur → cellule ; entre cellules, rare et idempotente |
-| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise | isolation : un locataire ne voit ni ne modifie l'autre ; quotas | BFF + vrais services en mémoire : agrégation, sécurité, dégradation | système complet en mémoire : rayon d'impact, vagues, migration |
-| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas | filtre global + estampillage + clé composite (+ test d'archi) | aucune référence entre BFF (test d'archi) ; droits vérifiés par les services | **la cellule** : une panne ou un bogue ne la quitte pas |
-| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter | fuite entre clients au moindre oubli, voisin bruyant, migrations sur N bases | un composant de plus par application, duplication entre BFF, tentation d'y mettre du métier | échanges inter-cellules, données réparties, N fois l'infrastructure, migrations de clients |
+| | Couches | Hexagonale | Onion | Clean | Cœur fonctionnel | Vertical Slice | Composants | Monolithe modulaire | Microservices | CQRS | Event Sourcing | Serverless | Microkernel | Saga orchestrée | Multi-tenant | BFF | Cellulaire | Acteurs |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Découpage | couches techniques empilées | intérieur / extérieur | couches concentriques | cercles + un use case par classe | pur / impur | par fonctionnalité | par sous-domaine | par sous-domaine, modules autonomes | par sous-domaine, processus séparés | écriture / lecture | décider / appliquer / projeter | par fonction déclenchée par un événement | noyau minimal + plugins | un orchestrateur, des participants | par locataire (client), au niveau des données | un backend par application cliente | par groupe de clients : N copies complètes du système | un acteur par entité (compte, virement), état privé |
+| Le métier dépend… | de la couche données | de rien | de rien | de rien | de rien | du DbContext | de rien (hors son composant) | des contrats des autres modules | du JSON des autres services | de rien (côté écriture) | de rien | des services gérés du fournisseur | de rien (les plugins dépendent du SDK) | des participants, via l'orchestrateur | de rien (le locataire est ambiant) | des services en aval (par HTTP) | de rien (chaque cellule est autonome) | de rien (un acteur ne connaît que des adresses) |
+| Ce qu'on stocke | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état | l'état + des vues | **les événements** | l'état, dans des services gérés | l'état | l'état + l'état de chaque saga | l'état, étiqueté par locataire (base partagée ou dédiée) | rien, sauf les sessions (le métier est dans les services) | l'état, réparti entre les cellules (+ la table de placement) | l'état, une ligne par acteur |
+| Projets | 4 | 6 | 5 | 5 | 3 | 2 | 4 | 8 | 7 | 5 | 5 | 4 (dont la plateforme simulée) | 8 (dont 4 plugins) | 4 | 4 | 4 (dont les services simulés) | 4 (dont le lanceur) | 4 (dont le runtime) |
+| Déploiements | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **5** | 1 | 1 | **1 par fonction** (12) | 1 (+ plugins déposés à chaud) | 1 orchestrateur + N participants | **1 pour tous les clients** | 1 par application cliente (+ les services) | 1 routeur + **N cellules**, mises à jour par vagues | 1 (ou une grappe de serveurs avec Orleans, Akka) |
+| Abstractions | DAO défini par les données | ports | repository + UoW | boundaries + presenters + gateway | aucune dans le cœur | aucune | 1 interface par composant | contrats + événements + `IModule` | API HTTP + messages | commandes, requêtes, événements, projections | magasin d'événements, flux, projections | déclencheurs + contexte + manifeste | points d'extension (SDK) | étapes : exécuter / compenser | contexte de locataire, résolveurs, fabrique de bases | contrats recopiés, vues par écran | clé de partition, table de placement, plan de contrôle | acteur, adresse, message, superviseur |
+| Communication | appels directs | appels de ports | appels directs | boundaries | appels directs | appels directs | interface | interface **et** événements | HTTP **et** courtier de messages | événements (écriture → lecture) | flux d'événements | événements : HTTP, files, stockage, minuterie | appels du noyau vers les plugins | commandes de l'orchestrateur + événements extérieurs | appels directs | HTTP vers les services, en parallèle | routeur → cellule ; entre cellules, rare et idempotente | messages : envoyer (sans réponse) ou demander (avec délai) |
+| Tests typiques | service + faux DAO (entités de persistance) | unitaires + adapters de test | unitaires avec faux | interacteur + espion de sortie | fonctions pures, sans mock | intégration HTTP | boîte noire par composant | parcours inter-modules + module isolé | chaque service seul, faux serveurs HTTP | événements produits / vues obtenues à partir d'événements | Given / When / Then sur des événements | fonctions appelées comme des méthodes + système complet | noyau + plugins en mémoire, vraies DLL, déchargement | horloge manuelle : réessais, échéances, reprise | isolation : un locataire ne voit ni ne modifie l'autre ; quotas | BFF + vrais services en mémoire : agrégation, sécurité, dégradation | système complet en mémoire : rayon d'impact, vagues, migration | acteur-jouet instrumenté : 1 000 messages simultanés, pannes, passivation |
+| Garde-fou | références non transitives | discipline (+ test d'archi) | références de projets | références de projets | séparation des projets | discipline | **compilateur** (`internal`) | `internal` + projets Contrats + test d'archi | **le réseau** : impossible de tricher | références de projets (+ test d'archi) | magasin en ajout seul + versions | **la plateforme** : pas d'état possible entre deux appels | un contexte de chargement par plugin | le moteur : état enregistré à chaque pas | filtre global + estampillage + clé composite (+ test d'archi) | aucune référence entre BFF (test d'archi) ; droits vérifiés par les services | **la cellule** : une panne ou un bogue ne la quitte pas | **la boîte aux lettres** : un message à la fois ; le superviseur remplace l'acteur fautif |
+| Coût caché | — | — | — | cérémonie | — | duplication possible | — | — | pannes réseau, idempotence, cohérence à terme, exploitation | données dupliquées, cohérence à terme, projections à maintenir | événements immuables à versionner, effacement RGPD, courbe d'apprentissage | démarrages à froid, idempotence partout, dépendance au fournisseur, débogage distribué | SDK à versionner, plugins dans le processus | participants idempotents, orchestrateur à exploiter | fuite entre clients au moindre oubli, voisin bruyant, migrations sur N bases | un composant de plus par application, duplication entre BFF, tentation d'y mettre du métier | échanges inter-cellules, données réparties, N fois l'infrastructure, migrations de clients | pas de transaction entre acteurs, lectures transversales, cycles de demandes, débogage asynchrone |
 
 La progression 6 → 7 → 8 montre un même découpage par sous-domaine de plus en plus isolé : visibilité `internal`, puis
 modules autonomes dans un processus, puis services séparés par le réseau. Chaque étape apporte de l'indépendance
@@ -644,3 +677,10 @@ L'**architecture cellulaire** (démo 17) est le dernier cran de l'isolation : ap
 fonctions, on duplique le système **entier** pour que chaque copie ne serve qu'une partie des clients. Elle se pose
 au-dessus de n'importe quelle architecture interne (une cellule peut être un monolithe modulaire ou des microservices)
 et ne se justifie qu'à grande échelle, quand une panne générale coûte plus cher que N fois l'infrastructure.
+
+Le **modèle d'acteurs** (démo 18) répond à une autre question : non pas comment découper ou déployer, mais **comment
+gérer la concurrence**. Au lieu de protéger un état partagé (transactions, verrous), il n'en partage aucun : chaque
+entité est un acteur, propriétaire de son état. Il se loge à l'intérieur d'un service ou d'un module, se combine avec
+l'**Event Sourcing** (un acteur peut stocker ses événements plutôt que son état, comme Akka Persistence) et avec le
+**CQRS** pour les lectures transversales qu'il rend difficiles ; un processus entre acteurs s'écrit comme une petite
+**saga** (démo 14).

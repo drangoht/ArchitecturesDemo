@@ -8,11 +8,11 @@ mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 
 | Concept | Problème résolu | Démos |
 |---|---|---|
-| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17 |
+| [Idempotence](#idempotence) | Un même appel ou message traité deux fois | 8, 10, 12, 14, 15, 17, 18 |
 | [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9) |
-| [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 |
-| [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17 |
-| [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14 |
+| [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 (et l'alternative : 18) |
+| [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17, 18 |
+| [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18 |
 | [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12 |
 | [Événements de domaine vs d'intégration](#événements-de-domaine-vs-dintégration) | Ce qu'on publie aux autres | 7, 9, 11 |
 
@@ -41,6 +41,7 @@ flowchart LR
 | Point de reprise | [Projecteur.cs](../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs) : `if (sequence <= DerniereSequence) return;` |
 | Opérations traitées, migrées avec le client | [Magasin.cs](../17-CellBased/Cell.Cellule/Magasin.cs) : `OperationsTraitees` suit le client d'une cellule à l'autre |
 | Clé de période sur l'opération | [ServiceBancaire.cs](../15-MultiTenant/Mt.Banque/ServiceBancaire.cs) : `var cle = $"frais-{mois}";` (frais mensuels prélevés une fois) |
+| L'identité de l'acteur | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) : rejouer `virement/facture-42` réveille le même acteur, qui connaît déjà la réponse |
 
 ---
 
@@ -109,6 +110,11 @@ sequenceDiagram
 
 « Optimiste » : on ne verrouille rien, on parie qu'il n'y aura pas de conflit, et on le détecte s'il y en a un.
 
+**L'alternative : un seul écrivain.** Plutôt que de détecter les conflits, le [modèle d'acteurs](18-modele-acteurs.md)
+les rend impossibles : chaque compte a un seul propriétaire, qui traite ses messages un par un. Les deux retraits de
+80 € arrivent dans sa boîte et sont traités l'un après l'autre ; le second voit 20 € et est refusé, sans version ni
+nouvel essai.
+
 ---
 
 ## Compensation et saga
@@ -134,6 +140,7 @@ flowchart LR
 | 7 | [VirementsEndpoints.cs](../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs) | entre deux modules, via `IComptesApi` |
 | 8 | [Micro.Virements/Endpoints.cs](../08-Microservices/Micro.Virements/Endpoints.cs) | saga à statut (`EnCours` → `Effectue` / `Refuse` / `Annule` / `AReprendre`), appels idempotents |
 | 14 | [MoteurSaga.cs](../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs) | saga **orchestrée** : processus décrit en un seul endroit, état persistant, attente d'un événement extérieur, point de non-retour |
+| 18 | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) | un **acteur par virement**, qui converse avec deux acteurs comptes ; son état stocké (`DebitFait`…) permet de reprendre après une panne |
 
 Deux façons de coordonner une saga : la **chorégraphie** (chaque service réagit aux événements des autres, démos 7 et 8)
 et l'**orchestration** (un chef d'orchestre explicite conduit les étapes, [démo 14](14-saga-orchestree.md)). Les étapes
@@ -163,6 +170,10 @@ flowchart LR
 |---|---|---|
 | Appels HTTP | [`AddStandardResilienceHandler`](../08-Microservices/Micro.Virements/Program.cs) : 3 retries + timeout + circuit breaker | — |
 | Messages | [Courtier](../08-Microservices/Micro.Courtier/Courtier.cs) : 8 tentatives puis lettres mortes | [ServiceFiles](../12-Serverless/Sls.Plateforme/ServicesGeres.cs) : 3 tentatives puis `-poison`, rejouable |
+
+Le [modèle d'acteurs](18-modele-acteurs.md) applique la même idée aux acteurs eux-mêmes : un acteur qui plante est
+redémarré (jusqu'à 3 fois par minute), puis arrêté et mis en quarantaine ; les messages qu'on lui envoie pendant ce temps
+sont des « lettres mortes », comptées par le runtime.
 
 À distinguer : un **refus métier** (solde insuffisant) n'est **pas** une panne. Il ne doit pas déclencher de nouvel essai
 (voir `VirementsFonctions.Executer`, qui marque le virement « Refusé » sans lever d'exception).

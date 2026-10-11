@@ -120,6 +120,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "17-CellBased/Cell.Lanceur"],
       "port": 5117
+    },
+    {
+      "name": "18-modele-acteurs",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "18-ModeleActeurs/Acteurs.Api", "--launch-profile", "http"],
+      "port": 5118
     }
   ]
 }

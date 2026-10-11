@@ -4,7 +4,7 @@
 > de l'application, les *cellules*, chacune pour une partie des clients ; une panne, un mauvais déploiement ou un client
 > trop gourmand reste **enfermé dans sa cellule**.
 
-📁 Code : [`17-CellBased`](../17-CellBased) · ⬅️ [BFF](16-bff.md) · ➡️ [Concepts transverses](concepts-transverses.md)
+📁 Code : [`17-CellBased`](../17-CellBased) · ⬅️ [BFF](16-bff.md) · ➡️ [Modèle d'acteurs](18-modele-acteurs.md)
 
 ---
 

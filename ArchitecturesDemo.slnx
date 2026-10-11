@@ -124,4 +124,10 @@
     <Project Path="17-CellBased/Cell.Routeur/Cell.Routeur.csproj" />
     <Project Path="17-CellBased/Cell.Tests/Cell.Tests.csproj" />
   </Folder>
+  <Folder Name="/18-ModeleActeurs/">
+    <Project Path="18-ModeleActeurs/Acteurs.Api/Acteurs.Api.csproj" />
+    <Project Path="18-ModeleActeurs/Acteurs.Banque/Acteurs.Banque.csproj" />
+    <Project Path="18-ModeleActeurs/Acteurs.Noyau/Acteurs.Noyau.csproj" />
+    <Project Path="18-ModeleActeurs/Acteurs.Tests/Acteurs.Tests.csproj" />
+  </Folder>
 </Solution>
