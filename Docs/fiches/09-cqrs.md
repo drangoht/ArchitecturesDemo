@@ -4,7 +4,8 @@
 > par des événements.
 
 **Famille** : modélisation · **Origine** : Greg Young, vers 2010, d'après le CQS de Bertrand Meyer ·
-**Démo** : [`09-CQRS`](../../09-CQRS) (port 5108) · 📖 [Page complète](../09-cqrs.md)
+**Démo** : [`09-CQRS`](../../09-CQRS) (port 5108) · 📖 [Page complète](../09-cqrs.md) ·
+🌐 [English](../en/fiches/09-cqrs.md)
 
 ```mermaid
 flowchart LR

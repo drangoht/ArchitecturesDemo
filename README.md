@@ -1,5 +1,7 @@
 # Démos d'architectures en C#
 
+🌐 [English](README.en.md) (traduction en cours)
+
 Le **même métier bancaire** (consulter un compte, retirer de l'argent, faire un virement) implémenté avec vingt et une architectures,
 plus une démo de conception pilotée par le domaine (DDD), une démo de migration progressive d'un ancien système (Strangler Fig)
 une démo qui expose le même métier de trois façons (REST, gRPC, GraphQL) et une démo qui construit le même écran en

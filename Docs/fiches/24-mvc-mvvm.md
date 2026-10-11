@@ -4,7 +4,8 @@
 > et en **MVVM** (un ViewModel vivant que la vue observe par liaisons).
 
 **Famille** : présentation · **Démo** : [`24-MvcMvvm`](../../24-MvcMvvm) (site MVC 5124 ; vues WPF, Windows seulement,
-et console sur les mêmes ViewModels) · 📖 [Page complète](../24-mvc-mvvm.md)
+et console sur les mêmes ViewModels) · 📖 [Page complète](../24-mvc-mvvm.md) ·
+🌐 [English](../en/fiches/24-mvc-mvvm.md)
 
 ```mermaid
 flowchart LR

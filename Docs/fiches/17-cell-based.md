@@ -6,7 +6,8 @@
 > une panne reste **enfermée dans sa cellule**.
 
 **Famille** : découpage du système · **Démo** : [`17-CellBased`](../../17-CellBased) (routeur 5117, cellules 5231–5234 ;
-tout démarrer avec `Cell.Lanceur`) · 📖 [Page complète](../17-cell-based.md)
+tout démarrer avec `Cell.Lanceur`) · 📖 [Page complète](../17-cell-based.md) ·
+🌐 [English](../en/fiches/17-cell-based.md)
 
 ```mermaid
 flowchart LR

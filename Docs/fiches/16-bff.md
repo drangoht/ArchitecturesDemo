@@ -4,7 +4,8 @@
 > en réponses taillées pour ses écrans et gère la sécurité à sa façon.
 
 **Famille** : découpage du système · **Origine** : SoundCloud, popularisé par Sam Newman ·
-**Démo** : [`16-BFF`](../../16-BFF) (BFF web 5115, BFF mobile 5116, services 5210 ; `alice / demo`) · 📖 [Page complète](../16-bff.md)
+**Démo** : [`16-BFF`](../../16-BFF) (BFF web 5115, BFF mobile 5116, services 5210 ; `alice / demo`) · 📖 [Page complète](../16-bff.md) ·
+🌐 [English](../en/fiches/16-bff.md)
 
 ```mermaid
 flowchart LR

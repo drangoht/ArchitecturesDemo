@@ -1,5 +1,7 @@
 # Architectures logicielles en C# — documentation
 
+🌐 [English](en/README.md) (traduction en cours : [état](en/TRANSLATION.md))
+
 Cette documentation explique **vingt-deux façons d'organiser une application**, **une façon d'y arriver** depuis un
 système existant, **trois façons de l'exposer** à ses clients et **deux façons d'organiser son interface**, chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.

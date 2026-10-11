@@ -4,6 +4,7 @@ Construit une page HTML (Markdown converti par marked.js, schémas rendus par Me
 jsDelivr), puis l'imprime en PDF avec Edge (ou Chrome) sans interface.
 
     python generer-pdf.py            # écrit fiches-architectures.html puis fiches-architectures.pdf
+    python generer-pdf.py --en       # version anglaise (Docs/en/fiches) → architecture-cheat-sheets.pdf
 """
 import json
 import re
@@ -12,10 +13,34 @@ import subprocess
 import sys
 from pathlib import Path
 
-ICI = Path(__file__).resolve().parent
+ANGLAIS = "--en" in sys.argv
+if ANGLAIS:
+    ICI = Path(__file__).resolve().parents[2] / "en" / "fiches" / "pdf"
+    HTML = ICI / "architecture-cheat-sheets.html"
+    PDF = ICI / "architecture-cheat-sheets.pdf"
+else:
+    ICI = Path(__file__).resolve().parent
+    HTML = ICI / "fiches-architectures.html"
+    PDF = ICI / "fiches-architectures.pdf"
 FICHES = ICI.parent
-HTML = ICI / "fiches-architectures.html"
-PDF = ICI / "fiches-architectures.pdf"
+
+# Textes de la page qui dépendent de la langue
+TEXTES = {
+    False: {"lang": "fr", "titre": "Architectures logicielles · fiches mémo", "pied": "ArchitecturesDemo · fiches mémo",
+            "h1": "Architectures logicielles<br>Fiches mémo",
+            "p1": "25 démos, une page chacune : l'idée en une phrase, un schéma, les règles qui font l'architecture, "
+                  "quand l'utiliser, les pièges.",
+            "p2": "Le même métier partout : une petite banque où Alice vire 250 € à Bob.",
+            "p3": "Le détail (code, tests, déroulements) est dans <code>Docs/</code> du dépôt, une page complète par "
+                  "architecture ; la version sans code dans <code>Docs/pour-tous/</code>."},
+    True: {"lang": "en", "titre": "Software architectures · cheat sheets", "pied": "ArchitecturesDemo · cheat sheets",
+           "h1": "Software architectures<br>Cheat sheets",
+           "p1": "25 demos, one page each: the idea in one sentence, a diagram, the rules that make the architecture, "
+                 "when to use it, the pitfalls.",
+           "p2": "The same business everywhere: a small bank where Alice transfers €250 to Bob.",
+           "p3": "The details (code, tests, walkthroughs) are in the repository's <code>Docs/</code>, one full page per "
+                 "architecture; the no-code version is in <code>Docs/pour-tous/</code>."},
+}[ANGLAIS]
 
 # Chrome d'abord : lancé depuis l'app Claude Desktop (MSIX), Edge sans interface se termine sans rien écrire.
 NAVIGATEURS = [
@@ -31,21 +56,23 @@ def lire_fiches():
         texte = f.read_text(encoding="utf-8")
         # La ligne de navigation finale (⬅️ · index · ➡️) n'a pas de sens sur papier.
         texte = re.sub(r"\n---\n[^\n]*\n?$", "\n", texte.rstrip() + "\n")
+        # Ni le lien vers l'autre langue.
+        texte = re.sub(r" ·\s*🌐 \[[^\]]*\]\([^)]*\)", "", texte)
         fiches.append({"id": "f" + f.name[:2], "md": texte})
-    index = (FICHES / "README.md").read_text(encoding="utf-8")
+    index = re.sub(r" ·\s*🌐 \[[^\]]*\]\([^)]*\)", "", (FICHES / "README.md").read_text(encoding="utf-8"))
     return index, fiches
 
 
 PAGE = """<!doctype html>
-<html lang="fr">
+<html lang="__LANG__">
 <head>
 <meta charset="utf-8">
-<title>Architectures logicielles · fiches mémo</title>
+<title>__TITRE__</title>
 <style>
   @page {
     size: A4;
     margin: 11mm 13mm 13mm 13mm;
-    @bottom-left { content: "ArchitecturesDemo · fiches mémo"; font: 7.5pt "Segoe UI", sans-serif; color: #6e7781; }
+    @bottom-left { content: "__PIED__"; font: 7.5pt "Segoe UI", sans-serif; color: #6e7781; }
     @bottom-right { content: counter(page) " / " counter(pages); font: 7.5pt "Segoe UI", sans-serif; color: #6e7781; }
   }
   @page :first { @bottom-left { content: none; } @bottom-right { content: none; } }
@@ -92,13 +119,11 @@ PAGE = """<!doctype html>
 <body>
 <section class="couverture">
   <div class="sur">ArchitecturesDemo · .NET 10</div>
-  <h1>Architectures logicielles<br>Fiches mémo</h1>
+  <h1>__H1__</h1>
   <div class="filet"></div>
-  <p>25 démos, une page chacune : l'idée en une phrase, un schéma, les règles qui font l'architecture, quand l'utiliser,
-     les pièges.</p>
-  <p>Le même métier partout : une petite banque où Alice vire 250 € à Bob.</p>
-  <p class="pied">Le détail (code, tests, déroulements) est dans <code>Docs/</code> du dépôt, une page complète par
-     architecture ; la version sans code dans <code>Docs/pour-tous/</code>.</p>
+  <p>__P1__</p>
+  <p>__P2__</p>
+  <p class="pied">__P3__</p>
 </section>
 <main id="contenu"></main>
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
@@ -151,7 +176,10 @@ construire().catch(e => { document.title = "ERREUR " + e.message; console.error(
 
 def main():
     index, fiches = lire_fiches()
-    page = (PAGE.replace("__INDEX__", json.dumps(index, ensure_ascii=False))
+    page = PAGE
+    for cle, valeur in TEXTES.items():
+        page = page.replace(f"__{cle.upper()}__", valeur)
+    page = (page.replace("__INDEX__", json.dumps(index, ensure_ascii=False))
                 .replace("__FICHES__", json.dumps(fiches, ensure_ascii=False)))
     HTML.write_text(page, encoding="utf-8")
     print(f"{HTML.name} : {len(fiches)} fiches")

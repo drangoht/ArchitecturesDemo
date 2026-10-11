@@ -3,7 +3,8 @@
 > **En une phrase** : des couches concentriques ; le domaine au centre, **toutes les dépendances pointent vers lui**.
 
 **Famille** : organisation du code · **Origine** : Jeffrey Palermo, 2008 ·
-**Démo** : [`02-Onion`](../../02-Onion) (port 5102) · 📖 [Page complète](../02-onion.md)
+**Démo** : [`02-Onion`](../../02-Onion) (port 5102) · 📖 [Page complète](../02-onion.md) ·
+🌐 [English](../en/fiches/02-onion.md)
 
 ```mermaid
 flowchart LR

@@ -6,7 +6,8 @@
 > réessaie, attend, et **compense** en ordre inverse si besoin.
 
 **Famille** : découpage du système · **Origine** : sagas, Garcia-Molina et Salem, 1987 ·
-**Démo** : [`14-SagaOrchestree`](../../14-SagaOrchestree) (port 5113) · 📖 [Page complète](../14-saga-orchestree.md)
+**Démo** : [`14-SagaOrchestree`](../../14-SagaOrchestree) (port 5113) · 📖 [Page complète](../14-saga-orchestree.md) ·
+🌐 [English](../en/fiches/14-saga-orchestree.md)
 
 ```mermaid
 flowchart LR

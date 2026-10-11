@@ -7,7 +7,8 @@
 
 **Famille** : découpage du système · **Origine** : Carl Hewitt, 1973 ; popularisé par Erlang ·
 **Démo** : [`18-ModeleActeurs`](../../18-ModeleActeurs) (port 5118 ; `/systeme` pour observer et provoquer des pannes) ·
-📖 [Page complète](../18-modele-acteurs.md)
+📖 [Page complète](../18-modele-acteurs.md) ·
+🌐 [English](../en/fiches/18-modele-acteurs.md)
 
 ```mermaid
 flowchart LR

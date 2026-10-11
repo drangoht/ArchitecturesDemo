@@ -6,7 +6,8 @@
 > siens.
 
 **Famille** : découpage du système · **Démo** : [`21-Choregraphie`](../../21-Choregraphie) (port 5121 ; `/bus` et
-`/chaos` pour observer et casser) · 📖 [Page complète](../21-choregraphie.md)
+`/chaos` pour observer et casser) · 📖 [Page complète](../21-choregraphie.md) ·
+🌐 [English](../en/fiches/21-choregraphie.md)
 
 ```mermaid
 flowchart TB

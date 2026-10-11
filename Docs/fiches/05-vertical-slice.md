@@ -3,7 +3,8 @@
 > **En une phrase** : le code rangé **par fonctionnalité** ; chaque tranche contient tout, de la route HTTP jusqu'à la base.
 
 **Famille** : organisation du code · **Origine** : Jimmy Bogard, vers 2018 ·
-**Démo** : [`05-VerticalSlice`](../../05-VerticalSlice) (port 5105) · 📖 [Page complète](../05-vertical-slice.md)
+**Démo** : [`05-VerticalSlice`](../../05-VerticalSlice) (port 5105) · 📖 [Page complète](../05-vertical-slice.md) ·
+🌐 [English](../en/fiches/05-vertical-slice.md)
 
 ```mermaid
 flowchart TB

@@ -4,7 +4,8 @@
 > profit du nouveau, jusqu'à pouvoir l'éteindre.
 
 **Famille** : migration · **Origine** : Martin Fowler, 2004 ·
-**Démo** : [`22-StranglerFig`](../../22-StranglerFig) (façade 5122, ancien 5240, nouveau 5241) · 📖 [Page complète](../22-strangler-fig.md)
+**Démo** : [`22-StranglerFig`](../../22-StranglerFig) (façade 5122, ancien 5240, nouveau 5241) · 📖 [Page complète](../22-strangler-fig.md) ·
+🌐 [English](../en/fiches/22-strangler-fig.md)
 
 ```mermaid
 flowchart LR

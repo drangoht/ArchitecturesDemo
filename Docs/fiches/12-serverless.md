@@ -4,7 +4,8 @@
 > serveurs gérés par le fournisseur, facturées à l'usage.
 
 **Famille** : découpage du système · **Origine** : AWS Lambda, 2014 ·
-**Démo** : [`12-Serverless`](../../12-Serverless) (port 5111, plateforme **simulée**) · 📖 [Page complète](../12-serverless.md)
+**Démo** : [`12-Serverless`](../../12-Serverless) (port 5111, plateforme **simulée**) · 📖 [Page complète](../12-serverless.md) ·
+🌐 [English](../en/fiches/12-serverless.md)
 
 ```mermaid
 flowchart LR

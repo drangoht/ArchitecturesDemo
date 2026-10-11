@@ -4,7 +4,8 @@
 > (tactique) comme entre contextes (stratégique).
 
 **Famille** : modélisation · **Origine** : Eric Evans, *Domain-Driven Design*, 2003 ·
-**Démo** : [`11-DDD`](../../11-DDD) (port 5110, base Onion) · 📖 [Page complète](../11-ddd.md)
+**Démo** : [`11-DDD`](../../11-DDD) (port 5110, base Onion) · 📖 [Page complète](../11-ddd.md) ·
+🌐 [English](../en/fiches/11-ddd.md)
 
 ```mermaid
 flowchart TB

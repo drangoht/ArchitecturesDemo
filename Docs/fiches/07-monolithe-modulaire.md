@@ -6,7 +6,8 @@
 > un seul processus.
 
 **Famille** : découpage du système · **Origine** : popularisé notamment par Shopify ·
-**Démo** : [`07-MonolitheModulaire`](../../07-MonolitheModulaire) (port 5107) · 📖 [Page complète](../07-monolithe-modulaire.md)
+**Démo** : [`07-MonolitheModulaire`](../../07-MonolitheModulaire) (port 5107) · 📖 [Page complète](../07-monolithe-modulaire.md) ·
+🌐 [English](../en/fiches/07-monolithe-modulaire.md)
 
 ```mermaid
 flowchart LR

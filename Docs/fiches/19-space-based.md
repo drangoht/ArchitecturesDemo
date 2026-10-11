@@ -7,7 +7,8 @@
 
 **Famille** : découpage du système · **Origine** : *tuple spaces* ; décrite notamment par Mark Richards ·
 **Démo** : [`19-SpaceBased`](../../19-SpaceBased) (port 5119 ; `/grille` pour observer et provoquer des pannes) ·
-📖 [Page complète](../19-space-based.md)
+📖 [Page complète](../19-space-based.md) ·
+🌐 [English](../en/fiches/19-space-based.md)
 
 ```mermaid
 flowchart LR

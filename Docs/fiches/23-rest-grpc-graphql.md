@@ -4,7 +4,8 @@
 > client interroge** (GraphQL).
 
 **Famille** : exposition · **Démo** : [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) (REST et GraphQL 5123 en
-HTTP/1.1, gRPC 5250 en HTTP/2 ; Protobuf, gRPC et GraphQL écrits à la main) · 📖 [Page complète](../23-rest-grpc-graphql.md)
+HTTP/1.1, gRPC 5250 en HTTP/2 ; Protobuf, gRPC et GraphQL écrits à la main) · 📖 [Page complète](../23-rest-grpc-graphql.md) ·
+🌐 [English](../en/fiches/23-rest-grpc-graphql.md)
 
 ```mermaid
 flowchart LR

@@ -6,7 +6,8 @@
 > **adapters** (implémentations) interchangeables.
 
 **Famille** : organisation du code · **Origine** : Alistair Cockburn, 2005 ·
-**Démo** : [`01-Hexagonale`](../../01-Hexagonale) (port 5101, + une CLI) · 📖 [Page complète](../01-hexagonale.md)
+**Démo** : [`01-Hexagonale`](../../01-Hexagonale) (port 5101, + une CLI) · 📖 [Page complète](../01-hexagonale.md) ·
+🌐 [English](../en/fiches/01-hexagonale.md)
 
 ```mermaid
 flowchart LR

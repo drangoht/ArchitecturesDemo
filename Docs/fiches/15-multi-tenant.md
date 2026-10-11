@@ -4,7 +4,8 @@
 > données, ses règles et ses quotas, sans jamais voir ceux des autres.
 
 **Famille** : découpage du système · **Démo** : [`15-MultiTenant`](../../15-MultiTenant) (port 5114 ; locataire par
-sous-domaine `beta.localhost:5114` ou en-tête `X-Locataire`) · 📖 [Page complète](../15-multi-tenant.md)
+sous-domaine `beta.localhost:5114` ou en-tête `X-Locataire`) · 📖 [Page complète](../15-multi-tenant.md) ·
+🌐 [English](../en/fiches/15-multi-tenant.md)
 
 ```mermaid
 flowchart LR

@@ -4,7 +4,8 @@
 > résultat vers un *presenter*.
 
 **Famille** : organisation du code · **Origine** : Robert C. Martin, 2012 ·
-**Démo** : [`03-Clean`](../../03-Clean) (port 5103) · 📖 [Page complète](../03-clean.md)
+**Démo** : [`03-Clean`](../../03-Clean) (port 5103) · 📖 [Page complète](../03-clean.md) ·
+🌐 [English](../en/fiches/03-clean.md)
 
 ```mermaid
 flowchart TB

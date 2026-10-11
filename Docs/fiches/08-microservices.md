@@ -4,7 +4,8 @@
 > (HTTP + messages), aucun code partagé.
 
 **Famille** : découpage du système · **Démo** : [`08-Microservices`](../../08-Microservices) (passerelle 5200,
-services 5201–5203, courtier 5209 ; tout démarrer avec `Micro.Lanceur`) · 📖 [Page complète](../08-microservices.md)
+services 5201–5203, courtier 5209 ; tout démarrer avec `Micro.Lanceur`) · 📖 [Page complète](../08-microservices.md) ·
+🌐 [English](../en/fiches/08-microservices.md)
 
 ```mermaid
 flowchart LR

@@ -3,7 +3,8 @@
 > **En une phrase** : des règles **pures** qui renvoient une décision ; une fine **coquille** autour fait toutes les entrées/sorties.
 
 **Famille** : organisation du code · **Origine** : Gary Bernhardt, « Boundaries », 2012 ·
-**Démo** : [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) (port 5104) · 📖 [Page complète](../04-coeur-fonctionnel.md)
+**Démo** : [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) (port 5104) · 📖 [Page complète](../04-coeur-fonctionnel.md) ·
+🌐 [English](../en/fiches/04-coeur-fonctionnel.md)
 
 ```mermaid
 flowchart LR

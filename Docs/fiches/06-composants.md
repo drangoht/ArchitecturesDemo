@@ -4,7 +4,8 @@
 > respecter l'architecture.
 
 **Famille** : découpage du système · **Origine** : Simon Brown, « The Missing Chapter » (*Clean Architecture*) ·
-**Démo** : [`06-Composants`](../../06-Composants) (port 5106) · 📖 [Page complète](../06-composants.md)
+**Démo** : [`06-Composants`](../../06-Composants) (port 5106) · 📖 [Page complète](../06-composants.md) ·
+🌐 [English](../en/fiches/06-composants.md)
 
 ```mermaid
 flowchart TB
