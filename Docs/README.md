@@ -1,6 +1,6 @@
 # Architectures logicielles en C# — documentation
 
-Cette documentation explique **dix-sept façons d'organiser une application**, chacune illustrée par une solution .NET 10
+Cette documentation explique **dix-huit façons d'organiser une application**, chacune illustrée par une solution .NET 10
 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
@@ -31,7 +31,8 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 14 | **Saga orchestrée** | Un orchestrateur pilote un processus multi-services : état persistant, réessais, attentes, compensation | [14-saga-orchestree](14-saga-orchestree.md) | [`14-SagaOrchestree`](../14-SagaOrchestree) |
 | 15 | **Multi-tenant** (SaaS) | Une seule application pour plusieurs clients : données isolées, règles et quotas par client | [15-multi-tenant](15-multi-tenant.md) | [`15-MultiTenant`](../15-MultiTenant) |
 | 16 | **Backend for Frontend** (BFF) | Un backend par application cliente : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | [16-bff](16-bff.md) | [`16-BFF`](../16-BFF) |
-| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 16) |
+| 17 | **Architecture cellulaire** (cell-based) | Plusieurs copies complètes du système, chacune pour une partie des clients : rayon d'impact borné | [17-cell-based](17-cell-based.md) | [`17-CellBased`](../17-CellBased) |
+| ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 17) |
 
 ---
 
@@ -61,6 +62,7 @@ flowchart LR
     Q2 --> D14["Saga orchestrée"]
     Q2 --> D15["Multi-tenant"]
     Q2 --> D16["BFF"]
+    Q2 --> D17["Cellules"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -73,7 +75,7 @@ flowchart LR
 | Famille | Question | Granularité | Exemples de combinaison |
 |---|---|---|---|
 | **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau |
-| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices |
+| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
 
 ### Les deux grands axes de l'organisation du code
@@ -130,6 +132,8 @@ flowchart TD
     W -->|oui| X["<b>Multi-tenant</b><br/>(base partagée, puis dédiée<br/>pour qui la paie)"]
     H --> Y{"Plusieurs applications clientes<br/>(site, mobile) aux besoins<br/>différents ?"}
     Y -->|oui| Z["<b>BFF</b><br/>(un par application)"]
+    H --> CA{"Très grande échelle :<br/>une panne générale coûte<br/>plus que N copies ?"}
+    CA -->|oui| CB["<b>Cellules</b><br/>(partition par client)"]
 ```
 
 ---
@@ -155,6 +159,7 @@ flowchart TD
 | [Saga orchestrée](14-saga-orchestree.md) | des participants, via l'orchestrateur | l'état + l'état de chaque saga | 1 orchestrateur + N participants | moteur : réessais, échéances, compensation | participants idempotents, orchestrateur à exploiter |
 | [Multi-tenant](15-multi-tenant.md) | rien (le locataire est ambiant) | l'état, étiqueté par locataire | **1 pour tous les clients** | filtre global + estampillage + clé composite | fuite entre clients au moindre oubli, voisin bruyant |
 | [BFF](16-bff.md) | des services en aval (HTTP) | rien, sauf les sessions | 1 par application cliente | aucune référence entre BFF ; droits vérifiés par les services | un composant par application, duplication, métier qui s'y glisse |
+| [Cellules](17-cell-based.md) | rien (chaque cellule est autonome) | l'état, réparti entre cellules | 1 routeur + **N cellules**, par vagues | **la cellule** : rayon d'impact borné | échanges inter-cellules, N fois l'infrastructure, migrations |
 
 ---
 
@@ -182,8 +187,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 232 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5116)
+dotnet test ArchitecturesDemo.slnx                          # les 251 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5117)
 dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 

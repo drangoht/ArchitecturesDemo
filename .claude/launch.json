@@ -114,6 +114,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "16-BFF/Bff.Mobile", "--launch-profile", "http"],
       "port": 5116
+    },
+    {
+      "name": "17-cell-based",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "17-CellBased/Cell.Lanceur"],
+      "port": 5117
     }
   ]
 }

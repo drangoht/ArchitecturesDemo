@@ -118,4 +118,10 @@
     <Project Path="16-BFF/Bff.Tests/Bff.Tests.csproj" />
     <Project Path="16-BFF/Bff.Web/Bff.Web.csproj" />
   </Folder>
+  <Folder Name="/17-CellBased/">
+    <Project Path="17-CellBased/Cell.Cellule/Cell.Cellule.csproj" />
+    <Project Path="17-CellBased/Cell.Lanceur/Cell.Lanceur.csproj" />
+    <Project Path="17-CellBased/Cell.Routeur/Cell.Routeur.csproj" />
+    <Project Path="17-CellBased/Cell.Tests/Cell.Tests.csproj" />
+  </Folder>
 </Solution>

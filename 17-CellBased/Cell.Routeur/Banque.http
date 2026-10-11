@@ -1,0 +1,86 @@
+# Lancer d'abord : dotnet run --project 17-CellBased\Cell.Lanceur   (routeur :5117 + cellules c1, c2, c3)
+# Les clients ne parlent qu'au routeur ; la réponse indique la cellule qui a servi (en-tête X-Cellule).
+@routeur = http://localhost:5117
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+@david = 55555555-5555-5555-5555-555555555555
+
+### Qui est où : alice et david en c1, bob et emma en c2, carla en c3
+GET {{routeur}}/plateforme/placement
+
+### État des cellules : capacité, clients, version, santé
+GET {{routeur}}/plateforme/cellules
+
+### Le compte de Bob (X-Cellule: c2)
+GET {{routeur}}/clients/bob/comptes
+
+### Virement Alice → David : même cellule, transaction locale ("interCellules": false)
+POST {{routeur}}/clients/alice/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "clientCible": "david", "cible": "{{david}}", "montant": 50 }
+
+### Virement Alice → Bob : deux cellules, débit local puis crédit via le routeur ("interCellules": true)
+POST {{routeur}}/clients/alice/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "clientCible": "bob", "cible": "{{bob}}", "montant": 100 }
+
+### ─── Rayon d'impact : la cellule c2 tombe en panne (ou arrêter son processus) ───
+PUT http://localhost:5232/admin/panne
+Content-Type: application/json
+
+{ "enPanne": true }
+
+### Bob et Emma : 503. Alice, Carla et David : 200.
+GET {{routeur}}/clients/bob/comptes
+
+###
+GET {{routeur}}/clients/alice/comptes
+
+### Un virement vers Bob est annulé, et le débit d'Alice compensé
+POST {{routeur}}/clients/alice/virements
+Content-Type: application/json
+
+{ "source": "{{alice}}", "clientCible": "bob", "cible": "{{bob}}", "montant": 100 }
+
+###
+PUT http://localhost:5232/admin/panne
+Content-Type: application/json
+
+{ "enPanne": false }
+
+### ─── Déploiement par vagues ───
+### La 1.1 contient un bogue : la sonde de la cellule canari (c1) le détecte, retour arrière, c2 et c3 n'ont rien reçu
+POST {{routeur}}/plateforme/deploiements
+Content-Type: application/json
+
+{ "version": "1.1" }
+
+### La 1.2 corrige : c1 d'abord, puis c2 et c3
+POST {{routeur}}/plateforme/deploiements
+Content-Type: application/json
+
+{ "version": "1.2" }
+
+### ─── Capacité : on ajoute des cellules, on ne les agrandit pas ───
+### Nouveaux clients : chacun va dans la cellule la moins chargée (3 places par cellule, 9 en tout)
+POST {{routeur}}/clients
+Content-Type: application/json
+
+{ "id": "farid", "nom": "Farid", "depotInitial": 20 }
+
+### Provisionner la cellule c4 (dotnet run --project 17-CellBased\Cell.Lanceur -- c4), puis l'enregistrer
+POST {{routeur}}/plateforme/cellules
+Content-Type: application/json
+
+{ "id": "c4", "url": "http://localhost:5234", "capacite": 3 }
+
+### Déplacer Carla dans c4 (rééquilibrage) : ses données et son routage suivent
+POST {{routeur}}/plateforme/clients/carla/migrer
+Content-Type: application/json
+
+{ "vers": "c4" }
+
+### Fermer c1 aux nouveaux clients (avant de la vider, par exemple)
+POST {{routeur}}/plateforme/cellules/c1/fermer
