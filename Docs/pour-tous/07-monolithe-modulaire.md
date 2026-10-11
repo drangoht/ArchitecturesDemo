@@ -2,7 +2,7 @@
 
 **Nom anglais** : *Modular Monolith*
 
-🏠 [Sommaire](README.md) · ⬅️ [Le Package by Component](06-composants.md) · ➡️ [Les microservices](08-microservices.md) · 🔧 [Version technique](../07-monolithe-modulaire.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Package by Component](06-composants.md) · ➡️ [Les microservices](08-microservices.md) · 🔧 [Version technique](../07-monolithe-modulaire.md) · 🌐 [English](../en/pour-tous/07-monolithe-modulaire.md)
 
 <p align="center"><img src="images/07.jpg" alt="Illustration : un centre commercial" width="480"></p>
 

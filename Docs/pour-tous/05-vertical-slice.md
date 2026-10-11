@@ -1,6 +1,6 @@
 # 5. Le « Vertical Slice » (ranger par tranches verticales)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le Functional Core](04-coeur-fonctionnel.md) · ➡️ [Le Package by Component](06-composants.md) · 🔧 [Version technique](../05-vertical-slice.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Functional Core](04-coeur-fonctionnel.md) · ➡️ [Le Package by Component](06-composants.md) · 🔧 [Version technique](../05-vertical-slice.md) · 🌐 [English](../en/pour-tous/05-vertical-slice.md)
 
 <p align="center"><img src="images/05.jpg" alt="Illustration : un livre de recettes" width="480"></p>
 

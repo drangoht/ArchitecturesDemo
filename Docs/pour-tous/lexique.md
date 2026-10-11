@@ -1,6 +1,6 @@
 # Petit lexique
 
-🏠 [Sommaire](README.md)
+🏠 [Sommaire](README.md) · 🌐 [English](../en/pour-tous/lexique.md)
 
 Les mots qui reviennent dans ces pages, expliqués simplement.
 

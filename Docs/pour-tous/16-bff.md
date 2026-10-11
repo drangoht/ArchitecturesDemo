@@ -1,6 +1,6 @@
 # 16. Le « Backend for Frontend » (un assistant par application)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le multi-tenant](15-multi-tenant.md) · ➡️ [Les cellules](17-cell-based.md) · 🔧 [Version technique](../16-bff.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le multi-tenant](15-multi-tenant.md) · ➡️ [Les cellules](17-cell-based.md) · 🔧 [Version technique](../16-bff.md) · 🌐 [English](../en/pour-tous/16-bff.md)
 
 <p align="center"><img src="images/16.jpg" alt="Illustration : un grand hôtel avec un majordome par client" width="480"></p>
 

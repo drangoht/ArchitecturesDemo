@@ -1,6 +1,6 @@
 # 11. Le « Domain-Driven Design » (concevoir à partir du métier)
 
-🏠 [Sommaire](README.md) · ⬅️ [L'Event Sourcing](10-event-sourcing.md) · ➡️ [Le serverless](12-serverless.md) · 🔧 [Version technique](../11-ddd.md)
+🏠 [Sommaire](README.md) · ⬅️ [L'Event Sourcing](10-event-sourcing.md) · ➡️ [Le serverless](12-serverless.md) · 🔧 [Version technique](../11-ddd.md) · 🌐 [English](../en/pour-tous/11-ddd.md)
 
 <p align="center"><img src="images/11.jpg" alt="Illustration : un architecte qui, avant de dessiner la maison, passe du temps avec la famille" width="480"></p>
 

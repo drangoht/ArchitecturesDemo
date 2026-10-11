@@ -1,6 +1,6 @@
 # 24. MVC et MVVM (organiser l'écran)
 
-🏠 [Sommaire](README.md) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🔧 [Version technique](../24-mvc-mvvm.md)
+🏠 [Sommaire](README.md) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🔧 [Version technique](../24-mvc-mvvm.md) · 🌐 [English](../en/pour-tous/24-mvc-mvvm.md)
 
 <p align="center"><img src="images/24.jpg" alt="Illustration : le courrier qu'on envoie et qu'on reçoit, et le tableau de bord d'une voiture" width="480"></p>
 

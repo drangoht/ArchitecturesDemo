@@ -1,6 +1,6 @@
 # 3. La « Clean Architecture » (architecture propre)
 
-🏠 [Sommaire](README.md) · ⬅️ [L'Onion](02-onion.md) · ➡️ [Le Functional Core](04-coeur-fonctionnel.md) · 🔧 [Version technique](../03-clean.md)
+🏠 [Sommaire](README.md) · ⬅️ [L'Onion](02-onion.md) · ➡️ [Le Functional Core](04-coeur-fonctionnel.md) · 🔧 [Version technique](../03-clean.md) · 🌐 [English](../en/pour-tous/03-clean.md)
 
 <p align="center"><img src="images/03.jpg" alt="Illustration : une mairie bien organisée" width="480"></p>
 

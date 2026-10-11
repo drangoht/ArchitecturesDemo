@@ -1,6 +1,6 @@
 # 8. Les microservices
 
-🏠 [Sommaire](README.md) · ⬅️ [Le monolithe modulaire](07-monolithe-modulaire.md) · ➡️ [CQRS](09-cqrs.md) · 🔧 [Version technique](../08-microservices.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le monolithe modulaire](07-monolithe-modulaire.md) · ➡️ [CQRS](09-cqrs.md) · 🔧 [Version technique](../08-microservices.md) · 🌐 [English](../en/pour-tous/08-microservices.md)
 
 <p align="center"><img src="images/08.jpg" alt="Illustration : un village de petites boutiques, chacune dans sa propre maison" width="480"></p>
 

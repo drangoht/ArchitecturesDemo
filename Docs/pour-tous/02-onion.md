@@ -1,6 +1,6 @@
 # 2. L'« Onion Architecture » (l'architecture en oignon)
 
-🏠 [Sommaire](README.md) · ⬅️ [L'hexagonale](01-hexagonale.md) · ➡️ [La Clean Architecture](03-clean.md) · 🔧 [Version technique](../02-onion.md)
+🏠 [Sommaire](README.md) · ⬅️ [L'hexagonale](01-hexagonale.md) · ➡️ [La Clean Architecture](03-clean.md) · 🔧 [Version technique](../02-onion.md) · 🌐 [English](../en/pour-tous/02-onion.md)
 
 <p align="center"><img src="images/02.jpg" alt="Illustration : un oignon, ou une ville fortifiée" width="480"></p>
 

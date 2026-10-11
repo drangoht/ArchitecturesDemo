@@ -1,6 +1,6 @@
 # 10. L'« Event Sourcing » (garder l'historique plutôt que le résultat)
 
-🏠 [Sommaire](README.md) · ⬅️ [CQRS](09-cqrs.md) · ➡️ [Le Domain-Driven Design](11-ddd.md) · 🔧 [Version technique](../10-event-sourcing.md)
+🏠 [Sommaire](README.md) · ⬅️ [CQRS](09-cqrs.md) · ➡️ [Le Domain-Driven Design](11-ddd.md) · 🔧 [Version technique](../10-event-sourcing.md) · 🌐 [English](../en/pour-tous/10-event-sourcing.md)
 
 <p align="center"><img src="images/10.jpg" alt="Illustration : le carnet de comptes d'autrefois" width="480"></p>
 

@@ -1,6 +1,6 @@
 # 20. Le pipeline (« pipes and filters », tuyaux et filtres)
 
-🏠 [Sommaire](README.md) · ⬅️ [L'architecture spatiale](19-space-based.md) · ➡️ [La chorégraphie](21-choregraphie.md) · 🔧 [Version technique](../20-pipeline.md)
+🏠 [Sommaire](README.md) · ⬅️ [L'architecture spatiale](19-space-based.md) · ➡️ [La chorégraphie](21-choregraphie.md) · 🔧 [Version technique](../20-pipeline.md) · 🌐 [English](../en/pour-tous/20-pipeline.md)
 
 <p align="center"><img src="images/20.jpg" alt="Illustration : une chaîne de montage" width="480"></p>
 

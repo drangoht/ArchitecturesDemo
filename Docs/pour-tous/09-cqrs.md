@@ -1,6 +1,6 @@
 # 9. CQRS (séparer l'écriture et la lecture)
 
-🏠 [Sommaire](README.md) · ⬅️ [Les microservices](08-microservices.md) · ➡️ [L'Event Sourcing](10-event-sourcing.md) · 🔧 [Version technique](../09-cqrs.md)
+🏠 [Sommaire](README.md) · ⬅️ [Les microservices](08-microservices.md) · ➡️ [L'Event Sourcing](10-event-sourcing.md) · 🔧 [Version technique](../09-cqrs.md) · 🌐 [English](../en/pour-tous/09-cqrs.md)
 
 <p align="center"><img src="images/09.jpg" alt="Illustration : la cuisine d'un restaurant et l'ardoise des plats du jour" width="480"></p>
 

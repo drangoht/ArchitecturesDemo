@@ -1,5 +1,7 @@
 # Les architectures logicielles, expliquées à tout le monde
 
+🌐 [English](../en/pour-tous/README.md)
+
 Pas besoin de savoir programmer pour lire ces pages. Elles expliquent avec des mots simples, et des images de la vie de
 tous les jours, les **25 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
 schémas, tests), chaque page renvoie à sa version pour développeurs.

@@ -13,7 +13,7 @@ features.
 > `ComptesService` (accounts service) or `IRetirerArgent` (withdraw money) are quoted as they are.
 
 > 📗 **Not a developer?** A no-code version, with simple words and everyday images:
-> [architectures explained to everyone](../pour-tous/README.md) (*FR*).
+> [architectures explained to everyone](pour-tous/README.md).
 
 > 🗂️ **Need a summary?** A one-page cheat sheet per architecture (idea, diagram, rules, when to use it,
 > pitfalls): [the cheat sheets](fiches/README.md).

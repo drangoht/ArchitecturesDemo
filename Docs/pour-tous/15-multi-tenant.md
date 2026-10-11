@@ -1,6 +1,6 @@
 # 15. Le « multi-tenant » (multi-locataire : plusieurs clients, une seule application)
 
-🏠 [Sommaire](README.md) · ⬅️ [La saga orchestrée](14-saga-orchestree.md) · ➡️ [Le Backend for Frontend](16-bff.md) · 🔧 [Version technique](../15-multi-tenant.md)
+🏠 [Sommaire](README.md) · ⬅️ [La saga orchestrée](14-saga-orchestree.md) · ➡️ [Le Backend for Frontend](16-bff.md) · 🔧 [Version technique](../15-multi-tenant.md) · 🌐 [English](../en/pour-tous/15-multi-tenant.md)
 
 <p align="center"><img src="images/15.jpg" alt="Illustration : un immeuble d'appartements" width="480"></p>
 

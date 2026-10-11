@@ -14,7 +14,7 @@ Demo 0 (classic layers) is the baseline: every other one was born to fix one of 
 
 📘 **Full documentation, with diagrams: [`Docs/en/`](Docs/en/README.md)** (French original: 🌐 [Français](Docs/README.md)).
 
-📗 **Not a developer? The same thing explained with simple words and pictures: [`Docs/pour-tous/`](Docs/pour-tous/README.md)** (French).
+📗 **Not a developer? The same thing explained with simple words and pictures: [`Docs/en/pour-tous/`](Docs/en/pour-tous/README.md)**.
 
 🗂️ **In a hurry? A one-page cheat sheet per architecture: [`Docs/en/fiches/`](Docs/en/fiches/README.md)**, also as a [printable PDF](Docs/en/fiches/pdf/architecture-cheat-sheets.pdf).
 

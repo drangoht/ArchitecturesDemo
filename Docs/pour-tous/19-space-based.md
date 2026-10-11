@@ -2,7 +2,7 @@
 
 **Nom anglais** : *Space-Based Architecture*
 
-🏠 [Sommaire](README.md) · ⬅️ [Les acteurs](18-modele-acteurs.md) · ➡️ [Le pipeline](20-pipeline.md) · 🔧 [Version technique](../19-space-based.md)
+🏠 [Sommaire](README.md) · ⬅️ [Les acteurs](18-modele-acteurs.md) · ➡️ [Le pipeline](20-pipeline.md) · 🔧 [Version technique](../19-space-based.md) · 🌐 [English](../en/pour-tous/19-space-based.md)
 
 <p align="center"><img src="images/19.jpg" alt="Illustration : un supermarché un samedi après-midi" width="480"></p>
 

@@ -1,6 +1,6 @@
 # 22. Le « Strangler Fig » (le figuier étrangleur : remplacer pas à pas)
 
-🏠 [Sommaire](README.md) · ⬅️ [La chorégraphie](21-choregraphie.md) · ➡️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🔧 [Version technique](../22-strangler-fig.md)
+🏠 [Sommaire](README.md) · ⬅️ [La chorégraphie](21-choregraphie.md) · ➡️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🔧 [Version technique](../22-strangler-fig.md) · 🌐 [English](../en/pour-tous/22-strangler-fig.md)
 
 <p align="center"><img src="images/22.jpg" alt="Illustration : rénover sa maison pièce par pièce, en continuant d'y habiter" width="480"></p>
 

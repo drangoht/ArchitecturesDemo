@@ -12,7 +12,7 @@ decided once the documentation is done.
 | 2 | Full pages 0 to 8 (`Docs/0x-*.md`) | ~8,800 | ✅ done (2026-10-11) |
 | 3 | Full pages 9 to 16 + `concepts-transverses.md` + `noms-architectures.md` | ~17,000 | ✅ done (2026-10-11) |
 | 4 | Full pages 17 to 24 | ~19,000 | ✅ done (2026-10-11) |
-| 5 | `pour-tous/` (25 pages, index, glossary `lexique.md`; images shared) | ~12,600 | ⏳ to do |
+| 5 | `pour-tous/` (25 pages, index, glossary `lexique.md`; images shared) | ~12,600 | ✅ done (2026-10-11) |
 | 6 | `differences/` (17 comparisons + index) | ~14,700 | ⏳ to do |
 | 7 | Code (identifiers, comments, routes, tests) — strategy to be decided | 28,000 lines | ⏸ later |
 

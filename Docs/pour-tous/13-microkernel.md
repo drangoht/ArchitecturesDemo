@@ -1,6 +1,6 @@
 # 13. Le « Microkernel » (un micro-noyau et ses extensions)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le serverless](12-serverless.md) · ➡️ [La saga orchestrée](14-saga-orchestree.md) · 🔧 [Version technique](../13-microkernel.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le serverless](12-serverless.md) · ➡️ [La saga orchestrée](14-saga-orchestree.md) · 🔧 [Version technique](../13-microkernel.md) · 🌐 [English](../en/pour-tous/13-microkernel.md)
 
 <p align="center"><img src="images/13.jpg" alt="Illustration : une perceuse et sa mallette d'embouts" width="480"></p>
 
