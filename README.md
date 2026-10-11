@@ -462,7 +462,7 @@ Les démos 7 et 8 coordonnent par **chorégraphie** (chacun réagit aux événem
 explicite conduit le processus : ① réserver les fonds, ② contrôle de conformité, ③ change, ④ crédit, ⑤ débit définitif
 (point de non-retour), ⑥ notification.
 
-**À observer** (détails : [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md))
+**À observer** (détails : [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md), requêtes dans `Saga.Api\Banque.http`)
 - `GET /sagas/{id}` : l'état de chaque étape et le journal complet de la saga.
 - **Panne passagère** : `PUT /chaos {"echecsChangeRestants":2}` puis un virement Alice → Carla (USD) : 2 nouveaux essais, puis succès.
 - **Panne durable** : `{"changeHorsService":true}` : abandon au 4e échec, puis compensation en ordre inverse (fonds libérés).
