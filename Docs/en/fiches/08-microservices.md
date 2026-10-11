@@ -4,7 +4,7 @@
 > **network** (HTTP + messages), no shared code.
 
 **Family**: system decomposition · **Demo**: [`08-Microservices`](../../../08-Microservices) (gateway 5200,
-services 5201–5203, broker 5209; start everything with `Micro.Lanceur`) · 📖 [Full page (French)](../../08-microservices.md) ·
+services 5201–5203, broker 5209; start everything with `Micro.Lanceur`) · 📖 [Full page](../08-microservices.md) ·
 🌐 [Français](../../fiches/08-microservices.md)
 
 ```mermaid

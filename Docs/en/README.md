@@ -34,15 +34,15 @@ features.
 
 | # | Architecture | French name | In one sentence | Cheat sheet | Full page | Code |
 |---|---|---|---|---|---|---|
-| 0 | **Layered (N-tier)** | Couches | Presentation → Business → Data: dependencies flow down to the database | [0](fiches/00-couches.md) | [*FR*](../00-couches.md) | [`00-Couches`](../../00-Couches) |
-| 1 | **Hexagonal** (ports & adapters) | Hexagonale | The business at the center, plugged into the world through ports and interchangeable adapters | [1](fiches/01-hexagonale.md) | [*FR*](../01-hexagonale.md) | [`01-Hexagonale`](../../01-Hexagonale) |
-| 2 | **Onion** | — | Concentric layers, every dependency points toward the domain | [2](fiches/02-onion.md) | [*FR*](../02-onion.md) | [`02-Onion`](../../02-Onion) |
-| 3 | **Clean Architecture** | — | One interactor per use case; the result goes out through a *presenter* | [3](fiches/03-clean.md) | [*FR*](../03-clean.md) | [`03-Clean`](../../03-Clean) |
-| 4 | **Functional Core, Imperative Shell** | — | 100% pure rules that decide; a shell that does the input/output | [4](fiches/04-coeur-fonctionnel.md) | [*FR*](../04-coeur-fonctionnel.md) | [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) |
-| 5 | **Vertical Slice** | — | One file per feature, from the route down to the database | [5](fiches/05-vertical-slice.md) | [*FR*](../05-vertical-slice.md) | [`05-VerticalSlice`](../../05-VerticalSlice) |
-| 6 | **Package by Component** | — | One public interface per component, everything else `internal` | [6](fiches/06-composants.md) | [*FR*](../06-composants.md) | [`06-Composants`](../../06-Composants) |
-| 7 | **Modular Monolith** | Monolithe modulaire | Autonomous modules, connected by contracts and events, in a single deployment | [7](fiches/07-monolithe-modulaire.md) | [*FR*](../07-monolithe-modulaire.md) | [`07-MonolitheModulaire`](../../07-MonolitheModulaire) |
-| 8 | **Microservices** | — | One process per service, HTTP + messages, no shared code | [8](fiches/08-microservices.md) | [*FR*](../08-microservices.md) | [`08-Microservices`](../../08-Microservices) |
+| 0 | **Layered (N-tier)** | Couches | Presentation → Business → Data: dependencies flow down to the database | [0](fiches/00-couches.md) | [EN](00-couches.md) | [`00-Couches`](../../00-Couches) |
+| 1 | **Hexagonal** (ports & adapters) | Hexagonale | The business at the center, plugged into the world through ports and interchangeable adapters | [1](fiches/01-hexagonale.md) | [EN](01-hexagonale.md) | [`01-Hexagonale`](../../01-Hexagonale) |
+| 2 | **Onion** | — | Concentric layers, every dependency points toward the domain | [2](fiches/02-onion.md) | [EN](02-onion.md) | [`02-Onion`](../../02-Onion) |
+| 3 | **Clean Architecture** | — | One interactor per use case; the result goes out through a *presenter* | [3](fiches/03-clean.md) | [EN](03-clean.md) | [`03-Clean`](../../03-Clean) |
+| 4 | **Functional Core, Imperative Shell** | — | 100% pure rules that decide; a shell that does the input/output | [4](fiches/04-coeur-fonctionnel.md) | [EN](04-coeur-fonctionnel.md) | [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) |
+| 5 | **Vertical Slice** | — | One file per feature, from the route down to the database | [5](fiches/05-vertical-slice.md) | [EN](05-vertical-slice.md) | [`05-VerticalSlice`](../../05-VerticalSlice) |
+| 6 | **Package by Component** | — | One public interface per component, everything else `internal` | [6](fiches/06-composants.md) | [EN](06-composants.md) | [`06-Composants`](../../06-Composants) |
+| 7 | **Modular Monolith** | Monolithe modulaire | Autonomous modules, connected by contracts and events, in a single deployment | [7](fiches/07-monolithe-modulaire.md) | [EN](07-monolithe-modulaire.md) | [`07-MonolitheModulaire`](../../07-MonolitheModulaire) |
+| 8 | **Microservices** | — | One process per service, HTTP + messages, no shared code | [8](fiches/08-microservices.md) | [EN](08-microservices.md) | [`08-Microservices`](../../08-Microservices) |
 | 9 | **CQRS** | — | One model to write, another to read, connected by events | [9](fiches/09-cqrs.md) | [*FR*](../09-cqrs.md) | [`09-CQRS`](../../09-CQRS) |
 | 10 | **Event Sourcing** | — | Store the events, recompute the state by replaying them | [10](fiches/10-event-sourcing.md) | [*FR*](../10-event-sourcing.md) | [`10-EventSourcing`](../../10-EventSourcing) |
 | 11 | **Domain-Driven Design** | — | Model the business in its own language; split it into bounded contexts | [11](fiches/11-ddd.md) | [*FR*](../11-ddd.md) | [`11-DDD`](../../11-DDD) |
@@ -258,9 +258,9 @@ Shared demo data: **Alice** `11111111-1111-1111-1111-111111111111` (€1,000) an
 ## Running the demos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 489 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # one API (ports 5100 to 5124)
-dotnet run --project 08-Microservices\Micro.Lanceur         # the 5 microservices
+dotnet test ArchitecturesDemo.slnx                          # les 489 tests
+dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5124)
+dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
 ```
 
 Each API contains a **`Banque.http`** file with the scenario's requests, to run from Visual Studio, Rider or VS Code

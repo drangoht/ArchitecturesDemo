@@ -3,7 +3,7 @@
 > **En une phrase** : chaque composant regroupe métier et données derrière **une seule interface publique** ;
 > tout le reste est `internal`, et c'est le compilateur qui fait respecter l'architecture.
 
-📁 Code : [`06-Composants`](../06-Composants) · ⬅️ [Vertical Slice](05-vertical-slice.md) · ➡️ [Monolithe modulaire](07-monolithe-modulaire.md)
+📁 Code : [`06-Composants`](../06-Composants) · ⬅️ [Vertical Slice](05-vertical-slice.md) · ➡️ [Monolithe modulaire](07-monolithe-modulaire.md) · 🌐 [English](en/06-composants.md)
 
 ---
 

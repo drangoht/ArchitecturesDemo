@@ -2,7 +2,7 @@
 
 > **En une phrase** : des couches concentriques ; le domaine est au centre, et **toutes les dépendances pointent vers lui**.
 
-📁 Code : [`02-Onion`](../02-Onion) · ⬅️ [Hexagonale](01-hexagonale.md) · ➡️ [Clean](03-clean.md)
+📁 Code : [`02-Onion`](../02-Onion) · ⬅️ [Hexagonale](01-hexagonale.md) · ➡️ [Clean](03-clean.md) · 🌐 [English](en/02-onion.md)
 
 ---
 

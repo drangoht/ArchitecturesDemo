@@ -3,7 +3,7 @@
 > **En une phrase** : chaque cas d'utilisation est une classe (*interactor*) avec des frontières explicites
 > (*boundaries*) ; il ne renvoie rien et pousse son résultat vers un *presenter*.
 
-📁 Code : [`03-Clean`](../03-Clean) · ⬅️ [Onion](02-onion.md) · ➡️ [Cœur fonctionnel](04-coeur-fonctionnel.md)
+📁 Code : [`03-Clean`](../03-Clean) · ⬅️ [Onion](02-onion.md) · ➡️ [Cœur fonctionnel](04-coeur-fonctionnel.md) · 🌐 [English](en/03-clean.md)
 
 ---
 

@@ -6,7 +6,7 @@
 > a single process.
 
 **Family**: system decomposition · **Origin**: popularized notably by Shopify ·
-**Demo**: [`07-MonolitheModulaire`](../../../07-MonolitheModulaire) (port 5107) · 📖 [Full page (French)](../../07-monolithe-modulaire.md) ·
+**Demo**: [`07-MonolitheModulaire`](../../../07-MonolitheModulaire) (port 5107) · 📖 [Full page](../07-monolithe-modulaire.md) ·
 🌐 [Français](../../fiches/07-monolithe-modulaire.md)
 
 ```mermaid

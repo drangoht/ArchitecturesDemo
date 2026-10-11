@@ -3,7 +3,7 @@
 > **In one sentence**: code organized **by feature**; each slice contains everything, from the HTTP route down to the database.
 
 **Family**: code organization · **Origin**: Jimmy Bogard, around 2018 ·
-**Demo**: [`05-VerticalSlice`](../../../05-VerticalSlice) (port 5105) · 📖 [Full page (French)](../../05-vertical-slice.md) ·
+**Demo**: [`05-VerticalSlice`](../../../05-VerticalSlice) (port 5105) · 📖 [Full page](../05-vertical-slice.md) ·
 🌐 [Français](../../fiches/05-vertical-slice.md)
 
 ```mermaid

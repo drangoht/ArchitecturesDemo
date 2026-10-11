@@ -5,7 +5,7 @@
 > **In one sentence**: Presentation → Business → Data; each layer only calls the one below it.
 
 **Family**: code organization · **Origin**: common practice since the 1990s ·
-**Demo**: [`00-Couches`](../../../00-Couches) (port 5100) · 📖 [Full page (French)](../../00-couches.md) ·
+**Demo**: [`00-Couches`](../../../00-Couches) (port 5100) · 📖 [Full page](../00-couches.md) ·
 🌐 [Français](../../fiches/00-couches.md)
 
 ```mermaid

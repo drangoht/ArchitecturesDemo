@@ -3,7 +3,7 @@
 > **In one sentence**: **pure** rules that return a decision; a thin **shell** around them does all the input/output.
 
 **Family**: code organization · **Origin**: Gary Bernhardt, "Boundaries", 2012 ·
-**Demo**: [`04-CoeurFonctionnel`](../../../04-CoeurFonctionnel) (port 5104) · 📖 [Full page (French)](../../04-coeur-fonctionnel.md) ·
+**Demo**: [`04-CoeurFonctionnel`](../../../04-CoeurFonctionnel) (port 5104) · 📖 [Full page](../04-coeur-fonctionnel.md) ·
 🌐 [Français](../../fiches/04-coeur-fonctionnel.md)
 
 ```mermaid

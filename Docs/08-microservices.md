@@ -3,7 +3,7 @@
 > **En une phrase** : chaque service est un **processus séparé**, avec sa propre base, déployable seul ; les services
 > communiquent uniquement par le **réseau** (HTTP et messages) et ne partagent aucun code.
 
-📁 Code : [`08-Microservices`](../08-Microservices) · ⬅️ [Monolithe modulaire](07-monolithe-modulaire.md) · ➡️ [CQRS](09-cqrs.md)
+📁 Code : [`08-Microservices`](../08-Microservices) · ⬅️ [Monolithe modulaire](07-monolithe-modulaire.md) · ➡️ [CQRS](09-cqrs.md) · 🌐 [English](en/08-microservices.md)
 
 ---
 

@@ -9,7 +9,7 @@ decided once the documentation is done.
 | Batch | Content | Words (FR) | Status |
 |---|---|---|---|
 | 1 | Structure, this file, `Docs/en/README.md`, the 25 cheat sheets + index, English PDF, root `README.en.md` | ~23,000 | ✅ done (2026-10-11) |
-| 2 | Full pages 0 to 8 (`Docs/0x-*.md`) | ~15,000 | ⏳ to do |
+| 2 | Full pages 0 to 8 (`Docs/0x-*.md`) | ~8,800 | ✅ done (2026-10-11) |
 | 3 | Full pages 9 to 16 + `concepts-transverses.md` + `noms-architectures.md` | ~17,000 | ⏳ to do |
 | 4 | Full pages 17 to 24 | ~16,000 | ⏳ to do |
 | 5 | `pour-tous/` (25 pages, index, glossary `lexique.md`; images shared) | ~12,600 | ⏳ to do |
@@ -27,6 +27,22 @@ decided once the documentation is done.
 - **Code references stay in French**: folder, project, class, method, route and JSON field names (`ComptesService`,
   `/virements`, `Micro.Lanceur`) are quoted exactly as in the code. In Mermaid diagrams, identifiers stay as they are;
   descriptive labels are translated.
+- **Code blocks are never translated** (the code itself is in French): every `csharp`, `xml`, `json`, `powershell`,
+  `http`… block is a byte-for-byte copy of the French page's block, comments and messages included. When a French
+  comment carries the point, the surrounding English prose paraphrases it. Only the annotations of project trees
+  (blocks without a language) are translated; names stay as they are.
+
+## Tools (`Docs/en/outils/`)
+
+Run after each batch:
+
+- `python Docs/en/outils/liens-lot.py`: links the English pages that now exist (cheat sheets' "Full page", index
+  "Full page" column, links between pages), points the missing ones to the French page marked *(FR)*, and adds the
+  `🌐 English` link to the French twins.
+- `python Docs/en/outils/verif-code.py`: checks that every code block is identical to the French one (expected: 0 gaps).
+- `python Docs/en/outils/verif-mermaid.py Docs/en/*.md`: renders every Mermaid diagram in headless Chrome and lists
+  syntax errors (expected: 0 errors).
+- `python Docs/fiches/pdf/generer-pdf.py --en`, then check the PDF still has 27 pages.
 - **Architecture names**: English names follow [the names table](../noms-architectures.md). The 8 architectures with a
   French name show it under the title (`**French name**: *…*`), the mirror of the French pages' `**Nom anglais**` line.
 - **Amounts**: `€250`, `€1,000` (English number format).

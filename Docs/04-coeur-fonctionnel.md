@@ -3,7 +3,7 @@
 > **En une phrase** : les règles métier sont des **fonctions pures** qui renvoient une décision ; une fine **coquille**
 > autour fait toutes les entrées/sorties.
 
-📁 Code : [`04-CoeurFonctionnel`](../04-CoeurFonctionnel) · ⬅️ [Clean](03-clean.md) · ➡️ [Vertical Slice](05-vertical-slice.md)
+📁 Code : [`04-CoeurFonctionnel`](../04-CoeurFonctionnel) · ⬅️ [Clean](03-clean.md) · ➡️ [Vertical Slice](05-vertical-slice.md) · 🌐 [English](en/04-coeur-fonctionnel.md)
 
 ---
 

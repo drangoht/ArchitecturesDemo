@@ -3,7 +3,7 @@
 > **In one sentence**: concentric layers; the domain at the center, **every dependency points toward it**.
 
 **Family**: code organization · **Origin**: Jeffrey Palermo, 2008 ·
-**Demo**: [`02-Onion`](../../../02-Onion) (port 5102) · 📖 [Full page (French)](../../02-onion.md) ·
+**Demo**: [`02-Onion`](../../../02-Onion) (port 5102) · 📖 [Full page](../02-onion.md) ·
 🌐 [Français](../../fiches/02-onion.md)
 
 ```mermaid

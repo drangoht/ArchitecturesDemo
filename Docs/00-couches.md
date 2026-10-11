@@ -5,7 +5,7 @@
 > **En une phrase** : on empile des couches techniques — présentation, métier, données — et chaque couche n'appelle
 > que celle du dessous.
 
-📁 Code : [`00-Couches`](../00-Couches) · ⬅️ [Sommaire](README.md) · ➡️ [Hexagonale](01-hexagonale.md)
+📁 Code : [`00-Couches`](../00-Couches) · ⬅️ [Sommaire](README.md) · ➡️ [Hexagonale](01-hexagonale.md) · 🌐 [English](en/00-couches.md)
 
 ---
 

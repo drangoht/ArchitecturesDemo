@@ -3,7 +3,7 @@
 > **En une phrase** : on range le code **par fonctionnalité** et non par couche technique ; chaque tranche contient
 > tout ce qu'il faut, de la route HTTP jusqu'à la base.
 
-📁 Code : [`05-VerticalSlice`](../05-VerticalSlice) · ⬅️ [Cœur fonctionnel](04-coeur-fonctionnel.md) · ➡️ [Composants](06-composants.md)
+📁 Code : [`05-VerticalSlice`](../05-VerticalSlice) · ⬅️ [Cœur fonctionnel](04-coeur-fonctionnel.md) · ➡️ [Composants](06-composants.md) · 🌐 [English](en/05-vertical-slice.md)
 
 ---
 

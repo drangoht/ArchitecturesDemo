@@ -65,10 +65,10 @@ Everything runs in memory (EF Core InMemory or dictionaries): no database to ins
 ## Running
 
 ```powershell
-# Build and test everything (489 tests)
+# Tout compiler et tester (489 tests)
 dotnet test ArchitecturesDemo.slnx
 
-# Run an API (each folder also has its own .slnx solution)
+# Lancer une API (chaque dossier a aussi sa propre solution .slnx)
 dotnet run --project 01-Hexagonale\Hexa.Adapters.Web
 ```
 
@@ -263,8 +263,8 @@ Micro.Lanceur               demo tool: starts the services the way an orchestrat
 
 ```powershell
 dotnet build 08-Microservices\Microservices.slnx
-dotnet run --project 08-Microservices\Micro.Lanceur                          # all the services
-dotnet run --project 08-Microservices\Micro.Lanceur -- comptes passerelle    # only some of them
+dotnet run --project 08-Microservices\Micro.Lanceur                          # tous les services
+dotnet run --project 08-Microservices\Micro.Lanceur -- comptes passerelle    # seulement certains
 ```
 
 This is demo 7 cut into separate processes. Everything that was free in the monolith (method call, transaction,
@@ -569,7 +569,7 @@ Bff.Mobile    :5116  the MOBILE APP's BFF: compact responses, one call per scree
 ```
 
 ```powershell
-dotnet run --project 16-BFF\Bff.Services     # then, in two other terminals:
+dotnet run --project 16-BFF\Bff.Services     # puis, dans deux autres terminaux :
 dotnet run --project 16-BFF\Bff.Web          # http://localhost:5115 (alice / demo)
 dotnet run --project 16-BFF\Bff.Mobile
 ```
@@ -612,8 +612,8 @@ Cell.Lanceur          starts the router and the cells (the same program, run thr
 
 ```powershell
 dotnet build 17-CellBased\CellBased.slnx
-dotnet run --project 17-CellBased\Cell.Lanceur            # router + c1, c2, c3
-dotnet run --project 17-CellBased\Cell.Lanceur -- c4      # later: a 4th cell, to register
+dotnet run --project 17-CellBased\Cell.Lanceur            # routeur + c1, c2, c3
+dotnet run --project 17-CellBased\Cell.Lanceur -- c4      # plus tard : une 4e cellule, à enregistrer
 ```
 
 Instead of a single system that keeps growing, you run **several complete, independent copies** of the application,
@@ -767,7 +767,7 @@ Fig.Facade   :5122  the clients' only entry point: routing table (Legacy / Shado
 ```
 
 ```powershell
-dotnet run --project 22-StranglerFig\Fig.Ancien     # then, in two other terminals:
+dotnet run --project 22-StranglerFig\Fig.Ancien     # puis, dans deux autres terminaux :
 dotnet run --project 22-StranglerFig\Fig.Nouveau
 dotnet run --project 22-StranglerFig\Fig.Facade     # http://localhost:5122
 ```
@@ -809,8 +809,8 @@ Styles.Client     the same application written three times; plays the same scena
 ```
 
 ```powershell
-dotnet run --project 23-RestGrpcGraphQL\Styles.Serveur    # then, in another terminal:
-dotnet run --project 23-RestGrpcGraphQL\Styles.Client     # (-- --latence 0 to not simulate a mobile network)
+dotnet run --project 23-RestGrpcGraphQL\Styles.Serveur    # puis, dans un autre terminal :
+dotnet run --project 23-RestGrpcGraphQL\Styles.Client     # (-- --latence 0 pour ne pas simuler de réseau mobile)
 ```
 
 The other demos change the inside of the system; this one keeps a single inside and changes its **surface**. What
@@ -841,9 +841,9 @@ Ihm.Console       a second view on the SAME ViewModels; Liaison.cs = a {Binding}
 ```
 
 ```powershell
-dotnet run --project 24-MvcMvvm\Ihm.Mvc        # then http://localhost:5124
-dotnet run --project 24-MvcMvvm\Ihm.Wpf        # the window; 400 ms per call, to see the screen wait
-dotnet run --project 24-MvcMvvm\Ihm.Console    # the same logic from the keyboard ("aide" for help)
+dotnet run --project 24-MvcMvvm\Ihm.Mvc        # puis http://localhost:5124
+dotnet run --project 24-MvcMvvm\Ihm.Wpf        # la fenêtre ; 400 ms par appel, pour voir l'écran attendre
+dotnet run --project 24-MvcMvvm\Ihm.Console    # la même logique au clavier (« aide »)
 ```
 
 The other demos organize the system or its API; this one organizes the **last mile**, between the model and the user.

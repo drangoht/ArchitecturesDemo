@@ -4,7 +4,7 @@
 > to a *presenter*.
 
 **Family**: code organization · **Origin**: Robert C. Martin, 2012 ·
-**Demo**: [`03-Clean`](../../../03-Clean) (port 5103) · 📖 [Full page (French)](../../03-clean.md) ·
+**Demo**: [`03-Clean`](../../../03-Clean) (port 5103) · 📖 [Full page](../03-clean.md) ·
 🌐 [Français](../../fiches/03-clean.md)
 
 ```mermaid

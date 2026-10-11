@@ -5,7 +5,7 @@
 > **En une phrase** : le métier est au centre et ne dépend de rien ; le monde extérieur s'y branche par des **ports**
 > (interfaces) et des **adapters** (implémentations) interchangeables.
 
-📁 Code : [`01-Hexagonale`](../01-Hexagonale) · ⬅️ [Couches](00-couches.md) · ➡️ [Onion](02-onion.md)
+📁 Code : [`01-Hexagonale`](../01-Hexagonale) · ⬅️ [Couches](00-couches.md) · ➡️ [Onion](02-onion.md) · 🌐 [English](en/01-hexagonale.md)
 
 ---
 

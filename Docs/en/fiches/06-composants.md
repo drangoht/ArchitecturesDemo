@@ -4,7 +4,7 @@
 > the architecture.
 
 **Family**: system decomposition · **Origin**: Simon Brown, "The Missing Chapter" (*Clean Architecture*) ·
-**Demo**: [`06-Composants`](../../../06-Composants) (port 5106) · 📖 [Full page (French)](../../06-composants.md) ·
+**Demo**: [`06-Composants`](../../../06-Composants) (port 5106) · 📖 [Full page](../06-composants.md) ·
 🌐 [Français](../../fiches/06-composants.md)
 
 ```mermaid

@@ -6,7 +6,7 @@
 > (interfaces) and interchangeable **adapters** (implementations).
 
 **Family**: code organization · **Origin**: Alistair Cockburn, 2005 ·
-**Demo**: [`01-Hexagonale`](../../../01-Hexagonale) (port 5101, + a CLI) · 📖 [Full page (French)](../../01-hexagonale.md) ·
+**Demo**: [`01-Hexagonale`](../../../01-Hexagonale) (port 5101, + a CLI) · 📖 [Full page](../01-hexagonale.md) ·
 🌐 [Français](../../fiches/01-hexagonale.md)
 
 ```mermaid

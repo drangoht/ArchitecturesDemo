@@ -5,7 +5,7 @@
 > **En une phrase** : des modules autonomes — chacun avec son API, sa base, ses événements — reliés uniquement par des
 > **contrats**, et déployés ensemble dans un seul processus.
 
-📁 Code : [`07-MonolitheModulaire`](../07-MonolitheModulaire) · ⬅️ [Composants](06-composants.md) · ➡️ [Microservices](08-microservices.md)
+📁 Code : [`07-MonolitheModulaire`](../07-MonolitheModulaire) · ⬅️ [Composants](06-composants.md) · ➡️ [Microservices](08-microservices.md) · 🌐 [English](en/07-monolithe-modulaire.md)
 
 ---
 
