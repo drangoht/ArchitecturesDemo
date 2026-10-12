@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Outbound persistence adapters: two implementations of the same IAccounts port. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hexa.Hexagon\Hexa.Hexagon.csproj" />
+  </ItemGroup>
+
+</Project>

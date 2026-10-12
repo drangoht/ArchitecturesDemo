@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Second inbound adapter: the command line. Same hexagon as the web API. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hexa.Hexagon\Hexa.Hexagon.csproj" />
+    <ProjectReference Include="..\Hexa.Adapters.Persistence\Hexa.Adapters.Persistence.csproj" />
+    <ProjectReference Include="..\Hexa.Adapters.Notifications\Hexa.Adapters.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>

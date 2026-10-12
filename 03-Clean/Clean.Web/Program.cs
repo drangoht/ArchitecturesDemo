@@ -1,54 +1,54 @@
-using Clean.AdaptateursInterface.Controleurs;
-using Clean.AdaptateursInterface.Passerelles;
-using Clean.AdaptateursInterface.Presenters;
-using Clean.CasUtilisation.Consultation;
-using Clean.CasUtilisation.Passerelles;
-using Clean.CasUtilisation.Retrait;
-using Clean.CasUtilisation.Virement;
+using Clean.InterfaceAdapters.Controllers;
+using Clean.InterfaceAdapters.Gateways;
+using Clean.InterfaceAdapters.Presenters;
+using Clean.UseCases.Lookup;
+using Clean.UseCases.Gateways;
+using Clean.UseCases.Withdrawal;
+using Clean.UseCases.Transfer;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<IComptesPasserelle>(ComptesPasserelleEnMemoire.AvecDonneesDeDemo());
-builder.Services.AddScoped<IConsultationEntree, ConsultationInteracteur>();
-builder.Services.AddScoped<IRetraitEntree, RetraitInteracteur>();
-builder.Services.AddScoped<IVirementEntree, VirementInteracteur>();
-builder.Services.AddScoped<ComptesControleur>();
+builder.Services.AddSingleton<IAccountsGateway>(InMemoryAccountsGateway.WithDemoData());
+builder.Services.AddScoped<ILookupInput, LookupInteractor>();
+builder.Services.AddScoped<IWithdrawalInput, WithdrawalInteractor>();
+builder.Services.AddScoped<ITransferInput, TransferInteractor>();
+builder.Services.AddScoped<AccountsController>();
 
 var app = builder.Build();
 
-// Chaque route : créer le presenter → appeler le contrôleur → écrire la vue produite par le presenter.
+// Each route: create the presenter → call the controller → write the view produced by the presenter.
 
-app.MapGet("/comptes/{id:guid}", async (Guid id, string? format, ComptesControleur controleur) =>
+app.MapGet("/accounts/{id:guid}", async (Guid id, string? format, AccountsController controller) =>
 {
-    if (format == "texte")
+    if (format == "text")
     {
-        var texte = new ConsultationPresenterTexte();
-        await controleur.Consulter(id, texte);
-        return Results.Text(texte.Texte, "text/plain; charset=utf-8", statusCode: texte.Statut);
+        var text = new LookupTextPresenter();
+        await controller.Get(id, text);
+        return Results.Text(text.Text, "text/plain; charset=utf-8", statusCode: text.Status);
     }
 
-    var presenter = new ConsultationPresenterHttp();
-    await controleur.Consulter(id, presenter);
-    return EnHttp(presenter.Vue);
+    var presenter = new LookupHttpPresenter();
+    await controller.Get(id, presenter);
+    return ToHttp(presenter.View);
 });
 
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete requete, ComptesControleur controleur) =>
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalBody body, AccountsController controller) =>
 {
-    var presenter = new RetraitPresenterHttp();
-    await controleur.Retirer(id, requete.Montant, presenter);
-    return EnHttp(presenter.Vue);
+    var presenter = new WithdrawalHttpPresenter();
+    await controller.Withdraw(id, body.Amount, presenter);
+    return ToHttp(presenter.View);
 });
 
-app.MapPost("/virements", async (VirementRequete requete, ComptesControleur controleur) =>
+app.MapPost("/transfers", async (TransferBody body, AccountsController controller) =>
 {
-    var presenter = new VirementPresenterHttp();
-    await controleur.Virer(requete.Source, requete.Cible, requete.Montant, presenter);
-    return EnHttp(presenter.Vue);
+    var presenter = new TransferHttpPresenter();
+    await controller.Transfer(body.Source, body.Target, body.Amount, presenter);
+    return ToHttp(presenter.View);
 });
 
 app.Run();
 
-static IResult EnHttp(VueHttp vue) => Results.Json(vue.Corps, statusCode: vue.Statut);
+static IResult ToHttp(HttpView view) => Results.Json(view.Body, statusCode: view.Status);
 
-record RetraitRequete(decimal Montant);
-record VirementRequete(Guid Source, Guid Cible, decimal Montant);
+record WithdrawalBody(decimal Amount);
+record TransferBody(Guid Source, Guid Target, decimal Amount);

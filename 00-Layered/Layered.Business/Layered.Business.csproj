@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Middle layer — Business logic (BLL).
+    It DEPENDS on the data layer: dependencies point downwards, without inversion.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Layered.Data\Layered.Data.csproj" />
+  </ItemGroup>
+
+</Project>

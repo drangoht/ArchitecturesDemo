@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- Cercle 4 — Frameworks & Drivers : ASP.NET Core, simple « tuyauterie » vers les cercles intérieurs. -->
+  <!-- Circle 4 — Frameworks & Drivers: ASP.NET Core, mere "plumbing" towards the inner circles. -->
 
   <ItemGroup>
-    <ProjectReference Include="..\Clean.AdaptateursInterface\Clean.AdaptateursInterface.csproj" />
+    <ProjectReference Include="..\Clean.InterfaceAdapters\Clean.InterfaceAdapters.csproj" />
   </ItemGroup>
 
 </Project>

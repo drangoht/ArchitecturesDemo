@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- Couche externe (UI) + composition root. -->
+  <!-- Outer layer (UI) + composition root. -->
 
   <ItemGroup>
     <ProjectReference Include="..\Onion.Application\Onion.Application.csproj" />

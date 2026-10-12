@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Layered.Data/Layered.Data.csproj" />
+  <Project Path="Layered.Business/Layered.Business.csproj" />
+  <Project Path="Layered.Presentation/Layered.Presentation.csproj" />
+  <Project Path="Layered.Tests/Layered.Tests.csproj" />
+</Solution>

@@ -1,33 +1,33 @@
 using System.Reflection;
-using Clean.AdaptateursInterface.Presenters;
-using Clean.CasUtilisation.Retrait;
-using Clean.Entites;
+using Clean.InterfaceAdapters.Presenters;
+using Clean.UseCases.Withdrawal;
+using Clean.Entities;
 
 namespace Clean.Tests;
 
-// La règle de dépendance : chaque cercle ne connaît que les cercles plus intérieurs.
+// The dependency rule: each circle only knows the circles further inside.
 public class ArchitectureTests
 {
-    private static string[] DependancesInternes(Assembly assembly) =>
-        assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(nom => nom.StartsWith("Clean.")).Order().ToArray();
+    private static string[] InternalDependencies(Assembly assembly) =>
+        assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(name => name.StartsWith("Clean.")).Order().ToArray();
 
     [Fact]
-    public void Les_entites_ne_dependent_de_rien()
+    public void The_entities_depend_on_nothing()
     {
-        Assert.Empty(DependancesInternes(typeof(Compte).Assembly));
+        Assert.Empty(InternalDependencies(typeof(Account).Assembly));
     }
 
     [Fact]
-    public void Les_cas_d_utilisation_ne_dependent_que_des_entites()
+    public void The_use_cases_depend_only_on_the_entities()
     {
-        Assert.Equal(["Clean.Entites"], DependancesInternes(typeof(RetraitInteracteur).Assembly));
+        Assert.Equal(["Clean.Entities"], InternalDependencies(typeof(WithdrawalInteractor).Assembly));
     }
 
     [Fact]
-    public void Les_adaptateurs_ne_dependent_pas_d_AspNetCore()
+    public void The_adapters_do_not_depend_on_AspNetCore()
     {
-        var references = typeof(VueHttp).Assembly.GetReferencedAssemblies().Select(a => a.Name!);
+        var references = typeof(HttpView).Assembly.GetReferencedAssemblies().Select(a => a.Name!);
 
-        Assert.DoesNotContain(references, nom => nom.StartsWith("Microsoft.AspNetCore"));
+        Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.AspNetCore"));
     }
 }

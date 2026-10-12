@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Couche externe : implémente les interfaces du domaine avec EF Core (base en mémoire pour la démo). -->
+  <!-- Outer layer: implements the domain interfaces with EF Core (in-memory database for the demo). -->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />

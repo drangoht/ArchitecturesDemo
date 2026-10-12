@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="Clean.AdaptateursInterface/Clean.AdaptateursInterface.csproj" />
-  <Project Path="Clean.CasUtilisation/Clean.CasUtilisation.csproj" />
-  <Project Path="Clean.Entites/Clean.Entites.csproj" />
+  <Project Path="Clean.InterfaceAdapters/Clean.InterfaceAdapters.csproj" />
+  <Project Path="Clean.UseCases/Clean.UseCases.csproj" />
+  <Project Path="Clean.Entities/Clean.Entities.csproj" />
   <Project Path="Clean.Tests/Clean.Tests.csproj" />
   <Project Path="Clean.Web/Clean.Web.csproj" />
 </Solution>

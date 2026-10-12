@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Clean.AdaptateursInterface\Clean.AdaptateursInterface.csproj" />
+    <ProjectReference Include="..\Clean.InterfaceAdapters\Clean.InterfaceAdapters.csproj" />
   </ItemGroup>
 
 </Project>

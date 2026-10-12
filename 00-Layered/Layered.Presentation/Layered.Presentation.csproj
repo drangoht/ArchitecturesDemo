@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Top layer — Presentation (MVC controllers).
+    DisableTransitiveProjectReferences: without this setting, the presentation could use
+    BankDbContext directly (transitive reference through Layered.Business) and skip the business layer.
+  -->
+
+  <PropertyGroup>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Layered.Business\Layered.Business.csproj" />
+  </ItemGroup>
+
+</Project>

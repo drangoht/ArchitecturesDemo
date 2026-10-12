@@ -5,43 +5,43 @@ using Onion.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Composition root : chaque couche est branchée ici.
+// Composition root: each layer is wired here.
 builder.Services.AddInfrastructure();
-builder.Services.AddSingleton<ServiceVirement>();
-builder.Services.AddScoped<ComptesAppService>();
-builder.Services.AddScoped<VirementsAppService>();
+builder.Services.AddSingleton<TransferService>();
+builder.Services.AddScoped<AccountsAppService>();
+builder.Services.AddScoped<TransfersAppService>();
 
 var app = builder.Build();
-await app.Services.InitialiserDonneesDeDemo();
+await app.Services.SeedDemoData();
 
-// Les erreurs du domaine sont traduites en HTTP une seule fois, par un middleware.
-app.Use(async (contexte, suivant) =>
+// Domain errors are translated into HTTP once, by a middleware.
+app.Use(async (context, next) =>
 {
     try
     {
-        await suivant(contexte);
+        await next(context);
     }
-    catch (CompteIntrouvableException e)
+    catch (AccountNotFoundException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status404NotFound;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
-    catch (RegleMetierException e)
+    catch (BusinessRuleException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
 });
 
-app.MapGet("/comptes/{id:guid}", (Guid id, ComptesAppService comptes) => comptes.Consulter(id));
+app.MapGet("/accounts/{id:guid}", (Guid id, AccountsAppService accounts) => accounts.Get(id));
 
-app.MapPost("/comptes/{id:guid}/retrait", (Guid id, RetraitRequete requete, ComptesAppService comptes) =>
-    comptes.Retirer(id, requete.Montant));
+app.MapPost("/accounts/{id:guid}/withdrawal", (Guid id, WithdrawalRequest request, AccountsAppService accounts) =>
+    accounts.Withdraw(id, request.Amount));
 
-app.MapPost("/virements", (VirementRequete requete, VirementsAppService virements) =>
-    virements.Virer(requete.Source, requete.Cible, requete.Montant));
+app.MapPost("/transfers", (TransferRequest request, TransfersAppService transfers) =>
+    transfers.Transfer(request.Source, request.Target, request.Amount));
 
 app.Run();
 
-record RetraitRequete(decimal Montant);
-record VirementRequete(Guid Source, Guid Cible, decimal Montant);
+record WithdrawalRequest(decimal Amount);
+record TransferRequest(Guid Source, Guid Target, decimal Amount);

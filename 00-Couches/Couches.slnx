@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="Couches.Donnees/Couches.Donnees.csproj" />
-  <Project Path="Couches.Metier/Couches.Metier.csproj" />
-  <Project Path="Couches.Presentation/Couches.Presentation.csproj" />
-  <Project Path="Couches.Tests/Couches.Tests.csproj" />
-</Solution>

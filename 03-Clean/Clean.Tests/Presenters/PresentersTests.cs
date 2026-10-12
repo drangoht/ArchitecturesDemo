@@ -1,43 +1,43 @@
-using Clean.AdaptateursInterface.Presenters;
-using Clean.CasUtilisation.Consultation;
-using Clean.CasUtilisation.Retrait;
+using Clean.InterfaceAdapters.Presenters;
+using Clean.UseCases.Lookup;
+using Clean.UseCases.Withdrawal;
 
 namespace Clean.Tests.Presenters;
 
-// Les presenters se testent seuls, sans interacteur : on leur donne une réponse, on lit la vue.
+// Presenters are tested alone, without an interactor: we give them a response and read the view.
 public class PresentersTests
 {
     private static readonly Guid Id = Guid.NewGuid();
 
     [Fact]
-    public void Le_presenter_texte_produit_un_releve_lisible()
+    public void The_text_presenter_produces_a_readable_statement()
     {
-        var presenter = new ConsultationPresenterTexte();
+        var presenter = new LookupTextPresenter();
 
-        presenter.Succes(new ReponseConsultation(Id, "Alice", 1234.5m));
+        presenter.Success(new LookupResponse(Id, "Alice", 1234.5m));
 
-        Assert.Equal(200, presenter.Statut);
-        Assert.Contains("Titulaire : Alice", presenter.Texte);
-        Assert.Contains("234,50 €", presenter.Texte);
+        Assert.Equal(200, presenter.Status);
+        Assert.Contains("Owner   : Alice", presenter.Text);
+        Assert.Contains("1,234.50 €", presenter.Text);
     }
 
     [Fact]
-    public void Le_presenter_http_traduit_un_refus_en_400()
+    public void The_http_presenter_translates_a_refusal_into_400()
     {
-        var presenter = new RetraitPresenterHttp();
+        var presenter = new WithdrawalHttpPresenter();
 
-        ((IRetraitSortie)presenter).Refus("Solde insuffisant.");
+        ((IWithdrawalOutput)presenter).Refused("Insufficient balance.");
 
-        Assert.Equal(400, presenter.Vue.Statut);
+        Assert.Equal(400, presenter.View.Status);
     }
 
     [Fact]
-    public void Le_presenter_http_traduit_un_compte_introuvable_en_404()
+    public void The_http_presenter_translates_an_unknown_account_into_404()
     {
-        var presenter = new ConsultationPresenterHttp();
+        var presenter = new LookupHttpPresenter();
 
-        presenter.CompteIntrouvable(Id);
+        presenter.AccountNotFound(Id);
 
-        Assert.Equal(404, presenter.Vue.Statut);
+        Assert.Equal(404, presenter.View.Status);
     }
 }

@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    L'hexagone : domaine + ports + cas d'utilisation.
-    Aucune référence de projet ni de package : il ne connaît ni le web, ni la base, ni la console.
-  -->
-
-</Project>

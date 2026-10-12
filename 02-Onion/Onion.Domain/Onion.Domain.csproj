@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Centre de l'oignon : modèle du domaine (Model), services de domaine (Services)
-    et interfaces dont le domaine a besoin (Interfaces). Aucune dépendance.
+    Center of the onion: domain model (Model), domain services (Services)
+    and the interfaces the domain needs (Interfaces). No dependency.
   -->
 
 </Project>

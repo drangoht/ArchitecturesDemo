@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The hexagon: domain + ports + use cases.
+    No project or package reference: it knows neither the web, nor the database, nor the console.
+  -->
+
+</Project>

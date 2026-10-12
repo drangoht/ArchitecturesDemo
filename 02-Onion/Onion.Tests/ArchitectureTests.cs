@@ -4,21 +4,21 @@ using Onion.Domain.Model;
 
 namespace Onion.Tests;
 
-// Les dépendances pointent toujours vers le centre de l'oignon.
+// Dependencies always point towards the center of the onion.
 public class ArchitectureTests
 {
-    private static IEnumerable<string> DependancesInternes(Assembly assembly) =>
-        assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(nom => nom.StartsWith("Onion."));
+    private static IEnumerable<string> InternalDependencies(Assembly assembly) =>
+        assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(name => name.StartsWith("Onion."));
 
     [Fact]
-    public void Le_domaine_ne_depend_de_rien()
+    public void The_domain_depends_on_nothing()
     {
-        Assert.Empty(DependancesInternes(typeof(Compte).Assembly));
+        Assert.Empty(InternalDependencies(typeof(Account).Assembly));
     }
 
     [Fact]
-    public void L_application_ne_depend_que_du_domaine()
+    public void The_application_depends_only_on_the_domain()
     {
-        Assert.Equal(["Onion.Domain"], DependancesInternes(typeof(ComptesAppService).Assembly));
+        Assert.Equal(["Onion.Domain"], InternalDependencies(typeof(AccountsAppService).Assembly));
     }
 }

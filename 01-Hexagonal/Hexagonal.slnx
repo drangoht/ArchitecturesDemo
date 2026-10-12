@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Hexa.Adapters.Cli/Hexa.Adapters.Cli.csproj" />
+  <Project Path="Hexa.Adapters.Notifications/Hexa.Adapters.Notifications.csproj" />
+  <Project Path="Hexa.Adapters.Persistence/Hexa.Adapters.Persistence.csproj" />
+  <Project Path="Hexa.Adapters.Web/Hexa.Adapters.Web.csproj" />
+  <Project Path="Hexa.Hexagon/Hexa.Hexagon.csproj" />
+  <Project Path="Hexa.Tests/Hexa.Tests.csproj" />
+</Solution>
