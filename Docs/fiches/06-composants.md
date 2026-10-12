@@ -4,17 +4,17 @@
 > respecter l'architecture.
 
 **Famille** : découpage du système · **Origine** : Simon Brown, « The Missing Chapter » (*Clean Architecture*) ·
-**Démo** : [`06-Composants`](../../06-Composants) (port 5106) · 📖 [Page complète](../06-composants.md) ·
+**Démo** : [`06-Components`](../../06-Components) (port 5106) · 📖 [Page complète](../06-composants.md) ·
 🌐 [English](../en/fiches/06-composants.md)
 
 ```mermaid
 flowchart TB
-    Api["Composants.Api"] --> IC["IComptesComposant<br/>(public)"]
-    Api --> IV["IVirementsComposant<br/>(public)"]
+    Api["Components.Api"] --> IC["IAccountsComponent<br/>(public)"]
+    Api --> IV["ITransfersComponent<br/>(public)"]
     IV -.- VI["Virements internes"] -->|"par l'interface seulement"| IC
     IC -.- CI["Comptes internes"]
-    CI --> DB1[("base Comptes")]
-    VI --> DB2[("base Virements")]
+    CI --> DB1[("base Accounts")]
+    VI --> DB2[("base Transfers")]
 ```
 
 ## L'essentiel

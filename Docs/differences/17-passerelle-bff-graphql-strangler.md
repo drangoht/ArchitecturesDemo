@@ -40,7 +40,7 @@ aucune règle métier (elles restent dans les services). Et ils se combinent : o
 flowchart TB
     subgraph P["PASSERELLE"]
         direction LR
-        C1(["Tous"]) --> G["/comptes → Comptes<br/>/virements → Virements"]
+        C1(["Tous"]) --> G["/accounts → Accounts<br/>/transfers → Transfers"]
     end
     subgraph B["BFF"]
         direction LR
@@ -53,7 +53,7 @@ flowchart TB
     end
     subgraph F["FAÇADE STRANGLER"]
         direction LR
-        C5(["Clients"]) --> FA["route → Ancien,<br/>Ombre ou Nouveau"]
+        C5(["Clients"]) --> FA["route → Legacy,<br/>Shadow ou Modern"]
     end
     P ~~~ B ~~~ Q ~~~ F
 ```
@@ -61,7 +61,7 @@ flowchart TB
 ## Dans le code des démos
 
 **Passerelle** : une table « préfixe → service » ; ce qui n'y est pas reste invisible
-([Micro.Passerelle/Program.cs](../../08-Microservices/Micro.Passerelle/Program.cs)) :
+([Micro.Gateway/Program.cs](../../08-Microservices/Micro.Gateway/Program.cs)) :
 
 ```csharp
 // Routing table: public prefix → service. Anything not listed (e.g. /internal/…) stays invisible.
@@ -69,7 +69,7 @@ var routes = app.Configuration.GetSection("Routes").Get<Dictionary<string, strin
 ```
 
 **BFF** : un écran, une requête du navigateur, et derrière, des appels en parallèle
-([TableauDeBord.cs](../../16-BFF/Bff.Web/TableauDeBord.cs)) :
+([Dashboard.cs](../../16-BFF/Bff.Web/Dashboard.cs)) :
 
 ```csharp
 // ② Then all the rest IN PARALLEL: the total duration is that of the slowest call, not the sum.
@@ -98,7 +98,7 @@ Résultat mesuré pour l'écran d'accueil mobile : **1 requête** en GraphQL, co
 gain, mais avec **une route écrite pour cet écran** ; GraphQL l'obtient sans route dédiée.
 
 **Façade Strangler** : même mécanique qu'une passerelle, plus un **mode** par route, modifiable à chaud ; ce qui n'est
-pas déclaré reste à l'ancien ([Relais.cs](../../22-StranglerFig/Fig.Facade/Relais.cs)) :
+pas déclaré reste à l'ancien ([Relay.cs](../../22-StranglerFig/Fig.Facade/Relay.cs)) :
 
 ```csharp
 var route = table.Find(http.Request.Method, path);
@@ -118,7 +118,7 @@ var mode = route?.Mode ?? Mode.Legacy;   // what nobody took over stays with the
 
 L'empilement le plus courant : **passerelle** en entrée (sécurité, quotas), **BFF** derrière elle pour chaque
 application, et un BFF peut exposer **du GraphQL** à son application. Pendant une migration, la façade Strangler
-**est** la passerelle ; à la fin, elle le reste, avec toutes ses routes en `Nouveau`.
+**est** la passerelle ; à la fin, elle le reste, avec toutes ses routes en `Modern`.
 
 ## Idées reçues
 

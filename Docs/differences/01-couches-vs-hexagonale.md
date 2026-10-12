@@ -5,7 +5,7 @@
 > **La différence en une phrase** : dans les couches, le métier **dépend de la base** ; dans l'hexagonale, c'est
 > l'inverse, la base **se branche sur le métier**. Tout le reste en découle.
 
-📁 Démos : [`00-Couches`](../../00-Couches) · [`01-Hexagonale`](../../01-Hexagonale) · · 🌐 [English](../en/differences/01-couches-vs-hexagonale.md)
+📁 Démos : [`00-Layered`](../../00-Layered) · [`01-Hexagonal`](../../01-Hexagonal) · · 🌐 [English](../en/differences/01-couches-vs-hexagonale.md)
 📖 Pages : [Couches](../00-couches.md) · [Hexagonale](../01-hexagonale.md) · 🗂️ Fiches : [0](../fiches/00-couches.md) · [1](../fiches/01-hexagonale.md)
 
 ⬅️ [Sommaire](README.md) · ➡️ [Hexagonale ou Onion ?](02-hexagonale-vs-onion.md)
@@ -22,13 +22,13 @@ métier a les mêmes règles (montant positif, solde suffisant), le scénario es
 | | Couches | Hexagonale |
 |---|---|---|
 | Image | une pile : haut → bas | un centre et un pourtour : intérieur / extérieur |
-| Le métier référence… | `Couches.Donnees` | **aucun projet** |
-| L'interface d'accès aux données est définie par… | la couche données (`IComptesDao`) | le métier (port sortant `IComptes`) |
-| …dans le vocabulaire de… | la persistance (`CompteEntite`, `Enregistrer`) | le métier (`Compte`, `Charger`, `Sauvegarder`) |
-| L'entité | **anémique** (setters publics) ; la règle est dans le service | **riche** : `Compte.Retirer` protège son solde |
+| Le métier référence… | `Layered.Data` | **aucun projet** |
+| L'interface d'accès aux données est définie par… | la couche données (`IAccountsDao`) | le métier (port sortant `IAccounts`) |
+| …dans le vocabulaire de… | la persistance (`AccountEntity`, `Save`) | le métier (`Account`, `Load`, `Save`) |
+| L'entité | **anémique** (setters publics) ; la règle est dans le service | **riche** : `Account.Withdraw` protège son solde |
 | Canaux d'entrée | un : la présentation | plusieurs, à égalité : API, CLI, tests |
 | Remplacer le stockage | touche le métier (il manipule les entités de persistance) | écrire un adapter ; les **tests de contrat** prouvent l'équivalence |
-| Tester le métier | avec un faux DAO… qui renvoie des `CompteEntite` | avec un adapter de test, sans base |
+| Tester le métier | avec un faux DAO… qui renvoie des `AccountEntity` | avec un adapter de test, sans base |
 | Garde-fou | références non transitives | hexagone sans référence + test d'architecture |
 
 ## Côte à côte
@@ -37,11 +37,11 @@ métier a les mêmes règles (montant positif, solde suffisant), le scénario es
 flowchart LR
     subgraph C["COUCHES"]
         direction TB
-        P0["Présentation"] --> M0["Métier<br/>ComptesService"] -->|"dépend de"| D0["Données<br/>définit IComptesDao"]
+        P0["Présentation"] --> M0["Métier<br/>AccountsService"] -->|"dépend de"| D0["Données<br/>définit IAccountsDao"]
     end
     subgraph H["HEXAGONALE"]
         direction TB
-        W1["Adapter Web"] --> M1["Hexagone<br/>définit IComptes"]
+        W1["Adapter Web"] --> M1["Hexagone<br/>définit IAccounts"]
         J1["Adapter JSON"] -->|"dépend de"| M1
     end
     C ~~~ H
@@ -52,7 +52,7 @@ La flèche entre le métier et les données **change de sens** : c'est l'inversi
 ## Dans le code des démos
 
 **Qui définit le contrat d'accès aux données.** Dans les couches, c'est la couche données, avec ses propres types
-([ComptesDao.cs](../../00-Couches/Couches.Donnees/ComptesDao.cs)) :
+([AccountsDao.cs](../../00-Layered/Layered.Data/AccountsDao.cs)) :
 
 ```csharp
 // The interface is defined BY the data layer, in ITS vocabulary (AccountEntity).
@@ -66,7 +66,7 @@ public interface IAccountsDao
 ```
 
 Dans l'hexagonale, c'est le métier, qui dit ce dont il a besoin
-([PortsSortants.cs](../../01-Hexagonale/Hexa.Hexagone/Ports/Sortants/PortsSortants.cs)) :
+([OutboundPorts.cs](../../01-Hexagonal/Hexa.Hexagon/Ports/Outbound/OutboundPorts.cs)) :
 
 ```csharp
 public interface IAccounts
@@ -77,7 +77,7 @@ public interface IAccounts
 ```
 
 **Où vit la règle.** Couches : dans le service, sur une entité que n'importe qui peut modifier
-([ComptesService.cs](../../00-Couches/Couches.Metier/ComptesService.cs)) :
+([AccountsService.cs](../../00-Layered/Layered.Business/AccountsService.cs)) :
 
 ```csharp
 // Since the entity is anemic, nothing stops another class from doing "account.Balance -= x"
@@ -86,7 +86,7 @@ private static void CheckWithdrawalAllowed(AccountEntity account, decimal amount
 ```
 
 Hexagonale : dans l'entité elle-même, dont le solde n'a pas de setter public
-([Compte.cs](../../01-Hexagonale/Hexa.Hexagone/Domaine/Compte.cs)) :
+([Account.cs](../../01-Hexagonal/Hexa.Hexagon/Domain/Account.cs)) :
 
 ```csharp
 public decimal Balance { get; private set; }
@@ -104,11 +104,11 @@ public void Withdraw(decimal amount)
 
 | Étape | Couches | Hexagonale |
 |---|---|---|
-| Entrée | `ComptesController` (seule entrée possible) | adapter Web **ou** adapter CLI, même cas d'utilisation |
-| Charger | `dao.ParId` → `CompteEntite` | `comptes.Charger` → `Compte` du domaine |
-| Décider | `ComptesService.VerifierRetraitPossible` | `Compte.Retirer` |
-| Modifier | `compte.Solde -= montant` dans le service | dans `Compte.Retirer` |
-| Enregistrer | `dao.Enregistrer()` (le `SaveChanges` d'EF) | `comptes.Sauvegarder(compte)` : mémoire ou fichier JSON selon la configuration |
+| Entrée | `AccountsController` (seule entrée possible) | adapter Web **ou** adapter CLI, même cas d'utilisation |
+| Charger | `dao.ById` → `AccountEntity` | `accounts.Load` → `Account` du domaine |
+| Décider | `AccountsService.CheckWithdrawalAllowed` | `Account.Withdraw` |
+| Modifier | `account.Balance -= amount` dans le service | dans `Account.Withdraw` |
+| Enregistrer | `dao.Save()` (le `SaveChanges` d'EF) | `accounts.Save(account)` : mémoire ou fichier JSON selon la configuration |
 
 ## Comment choisir
 

@@ -14,7 +14,7 @@
 
 ## Ce qu'elles partagent
 
-Les deux font du **cas d'utilisation** l'unité de base du code : `RetraitInteracteur` d'un côté, `RetirerArgent` de
+Les deux font du **cas d'utilisation** l'unité de base du code : `WithdrawalInteractor` d'un côté, `WithdrawMoney` de
 l'autre. On trouve facilement « ce qui se passe quand on retire de l'argent ». Elles divergent sur tout le reste.
 
 ## Les différences point par point
@@ -36,11 +36,11 @@ l'autre. On trouve facilement « ce qui se passe quand on retire de l'argent ».
 flowchart LR
     subgraph C["CLEAN : un retrait traverse 4 projets"]
         direction TB
-        W["Clean.Web<br/>route"] --> A["AdaptateursInterface<br/>contrôleur, presenter"] --> U["CasUtilisation<br/>interacteur"] --> E["Entites<br/>Compte"]
+        W["Clean.Web<br/>route"] --> A["InterfaceAdapters<br/>contrôleur, presenter"] --> U["UseCases<br/>interacteur"] --> E["Entities<br/>Account"]
     end
     subgraph V["VERTICAL SLICE : un retrait = 1 fichier"]
         direction TB
-        R["RetirerArgent.cs<br/>route, validation,<br/>règle, accès BD"] --> D["Domain/Compte<br/>règle partagée"]
+        R["WithdrawMoney.cs<br/>route, validation,<br/>règle, accès BD"] --> D["Domain/Account<br/>règle partagée"]
     end
     C ~~~ V
 ```
@@ -48,7 +48,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Vertical Slice** : la tranche complète, de la route à la base
-([RetirerArgent.cs](../../05-VerticalSlice/Vertical.Api/Features/Comptes/RetirerArgent.cs)) :
+([WithdrawMoney.cs](../../05-VerticalSlice/Vertical.Api/Features/Accounts/WithdrawMoney.cs)) :
 
 ```csharp
 public static void Map(IEndpointRouteBuilder app) => app.MapPost("/accounts/{id:guid}/withdrawal", Execute);
@@ -71,8 +71,8 @@ private static async Task<IResult> Execute(Guid id, Request request, BankDbConte
 ```
 
 **Clean** : le même retrait réparti entre la route ([Program.cs](../../03-Clean/Clean.Web/Program.cs)), le contrôleur,
-l'interacteur ([Retrait.cs](../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs)), le presenter
-([PresentersHttp.cs](../../03-Clean/Clean.AdaptateursInterface/Presenters/PresentersHttp.cs)) et la passerelle :
+l'interacteur ([Withdrawal.cs](../../03-Clean/Clean.UseCases/Withdrawal/Withdrawal.cs)), le presenter
+([HttpPresenters.cs](../../03-Clean/Clean.InterfaceAdapters/Presenters/HttpPresenters.cs)) et la passerelle :
 
 ```csharp
 public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
@@ -86,7 +86,7 @@ public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
 ```
 
 **La lecture** montre le mieux l'écart. Vertical Slice projette directement vers la réponse, en lecture seule, sans
-passer par le domaine ([ConsulterCompte.cs](../../05-VerticalSlice/Vertical.Api/Features/Comptes/ConsulterCompte.cs)) :
+passer par le domaine ([GetAccount.cs](../../05-VerticalSlice/Vertical.Api/Features/Accounts/GetAccount.cs)) :
 
 ```csharp
 var account = await db.Accounts

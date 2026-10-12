@@ -29,13 +29,13 @@ centre, l'accès aux données derrière une interface déclarée à l'intérieur
 
 | | Onion | Clean |
 |---|---|---|
-| Un cas d'utilisation, c'est… | une **méthode** d'un service applicatif | une **classe** : `RetraitInteracteur` |
-| Entrée | des paramètres | un *request model* (`DemandeRetrait`) via une *input boundary* (`IRetraitEntree`) |
-| Sortie | une **valeur renvoyée** (`VirementResultat`) ou une exception | **rien n'est renvoyé** : appel d'une *output boundary* (`IRetraitSortie`) |
-| Erreurs métier | exceptions, traduites par un middleware | méthodes de sortie : `Refus`, `CompteIntrouvable` |
+| Un cas d'utilisation, c'est… | une **méthode** d'un service applicatif | une **classe** : `WithdrawalInteractor` |
+| Entrée | des paramètres | un *request model* (`WithdrawalRequest`) via une *input boundary* (`IWithdrawalInput`) |
+| Sortie | une **valeur renvoyée** (`TransferResult`) ou une exception | **rien n'est renvoyé** : appel d'une *output boundary* (`IWithdrawalOutput`) |
+| Erreurs métier | exceptions, traduites par un middleware | méthodes de sortie : `Refused`, `AccountNotFound` |
 | Mise en forme de la réponse | l'API, à partir du DTO | un **presenter** par format (HTTP, texte) |
 | Types pour un retrait | 1 ou 2 | ≈ 6 |
-| Accès aux données | repository + unit of work | *gateway* (`IComptesPasserelle`) |
+| Accès aux données | repository + unit of work | *gateway* (`IAccountsGateway`) |
 | Coût principal | nombre de projets | **cérémonie** |
 
 ## Côte à côte : le flux de la réponse
@@ -59,7 +59,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Onion** : le service applicatif renvoie son résultat ; les erreurs remontent en exceptions
-([VirementsAppService.cs](../../02-Onion/Onion.Application/VirementsAppService.cs)) :
+([TransfersAppService.cs](../../02-Onion/Onion.Application/TransfersAppService.cs)) :
 
 ```csharp
 transferService.Transfer(source, target, amount);
@@ -68,7 +68,7 @@ return new TransferResult(AccountDto.From(source), AccountDto.From(target));
 ```
 
 **Clean** : l'interacteur ne renvoie rien ; chaque issue est une méthode de l'output boundary
-([Retrait.cs](../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs)) :
+([Withdrawal.cs](../../03-Clean/Clean.UseCases/Withdrawal/Withdrawal.cs)) :
 
 ```csharp
 public interface IWithdrawalOutput

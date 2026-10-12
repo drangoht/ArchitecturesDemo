@@ -6,7 +6,7 @@
 > c'est **une mini-application** : il possède en plus ses routes HTTP et ses abonnements aux événements, et se branche
 > d'une ligne.
 
-📁 Démos : [`06-Composants`](../../06-Composants) · [`07-MonolitheModulaire`](../../07-MonolitheModulaire) · · 🌐 [English](../en/differences/08-composants-vs-monolithe-modulaire.md)
+📁 Démos : [`06-Components`](../../06-Components) · [`07-ModularMonolith`](../../07-ModularMonolith) · · 🌐 [English](../en/differences/08-composants-vs-monolithe-modulaire.md)
 📖 Pages : [Composants](../06-composants.md) · [Monolithe modulaire](../07-monolithe-modulaire.md) ·
 🗂️ Fiches : [6](../fiches/06-composants.md) · [7](../fiches/07-monolithe-modulaire.md)
 
@@ -24,8 +24,8 @@ transaction commune**, avec une compensation si le crédit échoue.
 
 | | Composants | Monolithe modulaire |
 |---|---|---|
-| Surface publique | une interface (`IComptesComposant`) + DTO + `AddComposantComptes()` | une classe `IModule` ; le contrat vit dans un **projet séparé** (`Modulaire.Comptes.Contrats`) |
-| Routes HTTP | dans la **couche web commune** (`Composants.Api`), qui appelle les composants | dans **chaque module** (`MapEndpoints`) |
+| Surface publique | une interface (`IAccountsComponent`) + DTO + `AddAccountsComponent()` | une classe `IModule` ; le contrat vit dans un **projet séparé** (`Modular.Accounts.Contracts`) |
+| Routes HTTP | dans la **couche web commune** (`Components.Api`), qui appelle les composants | dans **chaque module** (`MapEndpoints`) |
 | Communication | appels d'interface, synchrones | appels de contrat **et événements** publiés sur un bus |
 | Ajouter une réaction (notifier…) | modifier l'appelant | ajouter un module abonné, sans toucher aux autres |
 | Ajouter / retirer une fonctionnalité | modifier l'API et l'injection | une ligne dans `IModule[] modules = [...]` |
@@ -39,16 +39,16 @@ transaction commune**, avec une compensation si le crédit échoue.
 flowchart LR
     subgraph C["COMPOSANTS"]
         direction TB
-        API["Composants.Api<br/>toutes les routes"] --> IC["IComptesComposant"]
-        API --> IV["IVirementsComposant"]
+        API["Components.Api<br/>toutes les routes"] --> IC["IAccountsComponent"]
+        API --> IV["ITransfersComponent"]
         IV -->|"interface"| IC
     end
     subgraph M["MONOLITHE MODULAIRE"]
         direction TB
-        H["Hôte : IModule[]"] --> MC["Module Comptes<br/>routes + base"]
-        H --> MV["Module Virements<br/>routes + base"]
+        H["Hôte : IModule[]"] --> MC["Module Accounts<br/>routes + base"]
+        H --> MV["Module Transfers<br/>routes + base"]
         H --> MN["Module Notifications"]
-        MV -->|"IComptesApi"| MC
+        MV -->|"IAccountsApi"| MC
         MV -.->|"événement"| MN
     end
     C ~~~ M
@@ -57,7 +57,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Composants** : la couche web déclare les routes et appelle le composant par son interface
-([Program.cs](../../06-Composants/Composants.Api/Program.cs)) :
+([Program.cs](../../06-Components/Components.Api/Program.cs)) :
 
 ```csharp
 // Try writing "new AccountsDbContext(...)" or "new Account(...)" here: it does not compile.
@@ -66,7 +66,7 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest 
 ```
 
 **Monolithe modulaire** : l'hôte ne connaît que des modules, chacun apporte ses routes, sa base, ses abonnements
-([Program.cs](../../07-MonolitheModulaire/Modulaire.Hote/Program.cs)) :
+([Program.cs](../../07-ModularMonolith/Modular.Host/Program.cs)) :
 
 ```csharp
 // The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
@@ -74,7 +74,7 @@ IModule[] modules = [new AccountsModule(), new TransfersModule(), new Notificati
 ```
 
 Le contrat d'un module contient aussi **ses événements**
-([Contrats.cs](../../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs)) :
+([Contracts.cs](../../07-ModularMonolith/Modular.Accounts.Contracts/Contracts.cs)) :
 
 ```csharp
 // ─── Asynchronous communication: the events the module publishes ───
@@ -82,7 +82,7 @@ public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance)
 ```
 
 Et un module peut être **ajouté sans toucher aux autres** : Notifications ne fait que s'abonner
-([NotificationsModule.cs](../../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs)) :
+([NotificationsModule.cs](../../07-ModularMonolith/Modular.Notifications/NotificationsModule.cs)) :
 
 ```csharp
 // Subscriptions to the other modules' events.
@@ -90,13 +90,13 @@ services.AddScoped<IEventHandler<WithdrawalMade>, OnWithdrawalMade>();
 services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 ```
 
-Dans la démo Composants, prévenir Bob d'un virement obligerait à modifier `VirementsComposant` (ou la couche web)
+Dans la démo Composants, prévenir Bob d'un virement obligerait à modifier `TransfersComponent` (ou la couche web)
 pour appeler un composant de notifications.
 
 **Le virement, lui, est presque identique** : débiter, créditer, compenser si le crédit échoue
-([VirementsComposant.cs](../../06-Composants/Composants.Virements/Interne/VirementsComposant.cs),
-[VirementsEndpoints.cs](../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs)). La différence
-est **après** : le module publie `VirementEffectue` sur le bus.
+([TransfersComponent.cs](../../06-Components/Components.Transfers/Internal/TransfersComponent.cs),
+[TransfersEndpoints.cs](../../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs)). La différence
+est **après** : le module publie `TransferMade` sur le bus.
 
 ## Comment choisir
 
@@ -107,7 +107,7 @@ est **après** : le module publie `VirementEffectue` sur le bus.
 
 ## Passer des composants aux modules
 
-1. Sortir l'interface et les DTO dans un projet `*.Contrats`.
+1. Sortir l'interface et les DTO dans un projet `*.Contracts`.
 2. Déplacer les routes de la couche web dans le composant (`MapEndpoints`), qui devient un `IModule`.
 3. Remplacer les appels « pour prévenir » par des événements publiés.
 4. Ajouter les tests d'architecture : aucun module ne référence l'implémentation d'un autre.

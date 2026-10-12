@@ -5,7 +5,7 @@
 > **En une phrase** : des modules autonomes — chacun avec son API, sa base, ses événements — reliés uniquement par des
 > **contrats**, et déployés ensemble dans un seul processus.
 
-📁 Code : [`07-MonolitheModulaire`](../07-MonolitheModulaire) · ⬅️ [Composants](06-composants.md) · ➡️ [Microservices](08-microservices.md) · 🌐 [English](en/07-monolithe-modulaire.md)
+📁 Code : [`07-ModularMonolith`](../07-ModularMonolith) · ⬅️ [Composants](06-composants.md) · ➡️ [Microservices](08-microservices.md) · 🌐 [English](en/07-monolithe-modulaire.md)
 
 ---
 
@@ -22,13 +22,13 @@ c'est une **mini-application** qui possède ses routes HTTP, sa base et ses abon
 
 ```mermaid
 flowchart TB
-    Hote["Modulaire.Hote<br/>IModule[] modules = [Comptes, Virements, Notifications]"]
-    CI["Modulaire.Comptes<br/>ComptesModule + internal"]
-    VI["Modulaire.Virements<br/>VirementsModule + internal"]
-    NI["Modulaire.Notifications<br/>NotificationsModule + internal"]
-    CC["Modulaire.Comptes.Contrats<br/>IComptesApi · RetraitEffectue"]
-    VC["Modulaire.Virements.Contrats<br/>VirementEffectue"]
-    P["Modulaire.Partage<br/>IModule · IBusEvenements"]
+    Hote["Modular.Host<br/>IModule[] modules = [Accounts, Transfers, Notifications]"]
+    CI["Modular.Accounts<br/>AccountsModule + internal"]
+    VI["Modular.Transfers<br/>TransfersModule + internal"]
+    NI["Modular.Notifications<br/>NotificationsModule + internal"]
+    CC["Modular.Accounts.Contracts<br/>IAccountsApi · WithdrawalMade"]
+    VC["Modular.Transfers.Contracts<br/>TransferMade"]
+    P["Modular.Shared<br/>IModule · IEventBus"]
 
     Hote --> CI & VI & NI
     CI --> CC
@@ -46,9 +46,9 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    V["Module Virements"] ==>|"appel synchrone<br/>IComptesApi.Debiter / Crediter"| C["Module Comptes"]
-    C -.->|"publie RetraitEffectue"| B(["Bus d'événements"])
-    V -.->|"publie VirementEffectue"| B
+    V["Module Transfers"] ==>|"appel synchrone<br/>IAccountsApi.Debit / Credit"| C["Module Accounts"]
+    C -.->|"publie WithdrawalMade"| B(["Bus d'événements"])
+    V -.->|"publie TransferMade"| B
     B -.->|"livre"| N["Module Notifications"]
 ```
 
@@ -56,7 +56,7 @@ flowchart LR
 1. Un module ne référence **jamais** l'implémentation d'un autre module, seulement ses **Contrats**.
 2. Un module n'expose publiquement **que** sa classe `IModule`.
 3. Les contrats ne dépendent d'aucun module.
-4. Une base par module (`Banque-Comptes`, `Banque-Virements`, `Banque-Notifications`).
+4. Une base par module (`Bank-Accounts`, `Bank-Transfers`, `Bank-Notifications`).
 
 ---
 
@@ -64,7 +64,7 @@ flowchart LR
 
 | | **Synchrone** (appel d'interface) | **Asynchrone** (événement) |
 |---|---|---|
-| Exemple | Virements → `IComptesApi.Debiter/Crediter` | Comptes publie `RetraitEffectue` |
+| Exemple | Virements → `IAccountsApi.Debit/Credit` | Comptes publie `WithdrawalMade` |
 | Quand | On a besoin de la réponse **tout de suite** | On **annonce** un fait, sans savoir qui écoute |
 | Couplage | l'appelant connaît l'interface du module appelé | l'émetteur ne connaît pas les abonnés |
 | Panne de l'autre côté | l'appelant échoue | l'émetteur n'est pas affecté |
@@ -75,7 +75,7 @@ flowchart LR
 
 ### 1. Le contrat d'un module
 
-([IModule.cs](../07-MonolitheModulaire/Modulaire.Partage/IModule.cs))
+([IModule.cs](../07-ModularMonolith/Modular.Shared/IModule.cs))
 
 ```csharp
 /// What each module implements to plug itself into the host.
@@ -91,7 +91,7 @@ public interface IModule
 
 ### 2. L'hôte assemble, sans aucun métier
 
-([Program.cs](../07-MonolitheModulaire/Modulaire.Hote/Program.cs))
+([Program.cs](../07-ModularMonolith/Modular.Host/Program.cs))
 
 ```csharp
 // The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
@@ -112,7 +112,7 @@ foreach (var module in modules)
 
 ### 3. Les contrats : ce que les autres ont le droit de connaître
 
-([Comptes.Contrats/Contrats.cs](../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs))
+([Accounts.Contracts/Contracts.cs](../07-ModularMonolith/Modular.Accounts.Contracts/Contracts.cs))
 
 ```csharp
 // ─── Synchronous communication: an API the other modules can call ───
@@ -129,7 +129,7 @@ public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance)
 
 ### 4. Un module utilise un autre module… et publie un événement
 
-([VirementsEndpoints.cs](../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs))
+([TransfersEndpoints.cs](../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs))
 
 ```csharp
 // Synchronous call to another module, only through its public contract.
@@ -155,7 +155,7 @@ await bus.Publish(new TransferMade(source.Id, source.Owner, target.Id, target.Ow
 ### 5. Un module ajouté sans toucher aux autres
 
 Notifications ne fait qu'**écouter**. Il a été ajouté sans modifier une ligne de Comptes ni de Virements.
-([NotificationsModule.cs](../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs))
+([NotificationsModule.cs](../07-ModularMonolith/Modular.Notifications/NotificationsModule.cs))
 
 ```csharp
 // Subscriptions to the other modules' events.
@@ -165,7 +165,7 @@ services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 
 ### 6. Le bus isole les pannes
 
-([Evenements.cs](../07-MonolitheModulaire/Modulaire.Partage/Evenements.cs)) — chaque gestionnaire tourne dans son propre
+([Events.cs](../07-ModularMonolith/Modular.Shared/Events.cs)) — chaque gestionnaire tourne dans son propre
 scope, et une erreur chez un abonné ne fait pas échouer le module qui publie.
 
 ```csharp
@@ -188,22 +188,22 @@ foreach (var handler in scope.ServiceProvider.GetServices<IEventHandler<T>>())
 ```mermaid
 sequenceDiagram
     actor Client
-    participant V as Module Virements
-    participant C as Module Comptes (IComptesApi)
-    participant DBV as base Virements
+    participant V as Module Transfers
+    participant C as Module Accounts (IAccountsApi)
+    participant DBV as base Transfers
     participant B as Bus d'événements
     participant N as Module Notifications
-    Client->>V: POST /virements
-    V->>C: Consulter(source), Consulter(cible)
-    V->>C: Debiter(source, 250)
-    V->>C: Crediter(cible, 250)
+    Client->>V: POST /transfers
+    V->>C: Get(source), Get(cible)
+    V->>C: Debit(source, 250)
+    V->>C: Credit(cible, 250)
     V->>DBV: enregistrer le virement
-    V->>B: Publier(VirementEffectue + noms des titulaires)
-    B->>N: SurVirementEffectue
+    V->>B: Publish(TransferMade + noms des titulaires)
+    B->>N: OnTransferMade
     N->>N: 2 notifications (envoyé / reçu)
     V-->>Client: 200 OK
     Client->>N: GET /notifications/{bob}
-    N-->>Client: « Virement de 250,00 € reçu de Alice. »
+    N-->>Client: « Transfer of 250,00 € received from Alice. »
 ```
 
 L'événement transporte les **noms des titulaires** (*event-carried state transfer*) : Notifications n'a pas besoin de
@@ -213,12 +213,12 @@ rappeler Comptes.
 
 ## Les tests
 
-- **Parcours inter-modules** ([ParcoursTests.cs](../07-MonolitheModulaire/Modulaire.Tests/ParcoursTests.cs)) : un virement
+- **Parcours inter-modules** ([JourneyTests.cs](../07-ModularMonolith/Modular.Tests/JourneyTests.cs)) : un virement
   traverse les trois modules.
-- **Isolation** ([IsolationTests.cs](../07-MonolitheModulaire/Modulaire.Tests/IsolationTests.cs)) : on remplace un module
-  par un faux via son contrat (`services.AddScoped<IComptesApi>(_ => faux)`), et on vérifie qu'une panne chez un abonné
+- **Isolation** ([IsolationTests.cs](../07-ModularMonolith/Modular.Tests/IsolationTests.cs)) : on remplace un module
+  par un faux via son contrat (`services.AddScoped<IAccountsApi>(_ => fake)`), et on vérifie qu'une panne chez un abonné
   ne casse pas le module qui publie.
-- **Architecture** ([ArchitectureTests.cs](../07-MonolitheModulaire/Modulaire.Tests/ArchitectureTests.cs)) :
+- **Architecture** ([ArchitectureTests.cs](../07-ModularMonolith/Modular.Tests/ArchitectureTests.cs)) :
 
 ```csharp
 [Theory]

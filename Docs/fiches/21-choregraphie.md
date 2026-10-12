@@ -5,17 +5,17 @@
 > **En une phrase** : aucun service ne conduit le processus ; chacun **réagit aux événements** des autres et publie les
 > siens.
 
-**Famille** : découpage du système · **Démo** : [`21-Choregraphie`](../../21-Choregraphie) (port 5121 ; `/bus` et
+**Famille** : découpage du système · **Démo** : [`21-Choreography`](../../21-Choreography) (port 5121 ; `/bus` et
 `/chaos` pour observer et casser) · 📖 [Page complète](../21-choregraphie.md) ·
 🌐 [English](../en/fiches/21-choregraphie.md)
 
 ```mermaid
 flowchart TB
-    API(["API"]) -->|VirementDemande| CO["Comptes<br/>réserve"]
-    CO -->|FondsReserves| CF["Conformité"]
-    CF -->|ConformiteApprouvee| CH["Change"]
-    CH -->|DevisesConverties| CO2["Comptes<br/>règle"]
-    CO2 -->|VirementRegle| NO["Notifications"] & FI["Fidélité"]
+    API(["API"]) -->|TransferRequested| CO["Accounts<br/>réserve"]
+    CO -->|FundsReserved| CF["Compliance"]
+    CF -->|ComplianceApproved| CH["Exchange"]
+    CH -->|CurrenciesConverted| CO2["Accounts<br/>règle"]
+    CO2 -->|TransferSettled| NO["Notifications"] & FI["Loyalty"]
 ```
 
 ## L'essentiel

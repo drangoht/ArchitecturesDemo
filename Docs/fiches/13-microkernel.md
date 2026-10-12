@@ -10,8 +10,8 @@ de compilation) · 📖 [Page complète](../13-microkernel.md) ·
 
 ```mermaid
 flowchart LR
-    N["Mk.Noyau<br/>NoyauBancaire, Registre,<br/>Chargeur"] --> SDK["Mk.Contrats (SDK)<br/>IControleOperation<br/>IRegleFrais · IFormatReleve"]
-    P["plugins/<br/>PlafondNocturne, ListeNoire,<br/>FraisDeVirement, Exports"] --> SDK
+    N["Mk.Kernel<br/>BankingKernel, Registry,<br/>Chargeur"] --> SDK["Mk.Contracts (SDK)<br/>IOperationCheck<br/>IFeeRule · IStatementFormat"]
+    P["plugins/<br/>NightLimit, Blocklist,<br/>TransferFees, Exports"] --> SDK
     N -. "découvre et charge<br/>à l'exécution" .-> P
 ```
 

@@ -26,31 +26,31 @@ Sur un réseau, on ne sait jamais si un appel sans réponse a été traité : on
 
 ```mermaid
 flowchart LR
-    A["Message / appel<br/>avec un identifiant<br/>(operationId, Message-Id,<br/>virementId…)"] --> B{"Identifiant<br/>déjà traité ?"}
+    A["Message / appel<br/>avec un identifiant<br/>(operationId, Message-Id,<br/>transferId…)"] --> B{"Identifiant<br/>déjà traité ?"}
     B -->|"oui"| C["Renvoyer le résultat<br/>mémorisé, sans rien refaire"]
-    B -->|"non"| D["Appliquer l'effet<br/>+ mémoriser l'identifiant<br/>(même transaction)"]
+    B -->|"non"| D["Apply l'effet<br/>+ mémoriser l'identifiant<br/>(même transaction)"]
 ```
 
 | Technique | Exemple dans les démos |
 |---|---|
-| Table des opérations traitées | [Micro.Comptes/Endpoints.cs](../08-Microservices/Micro.Comptes/Endpoints.cs) : `OperationsTraitees` par `operationId` |
-| Table des messages traités | [Micro.Notifications/Program.cs](../08-Microservices/Micro.Notifications/Program.cs) : `MessagesTraites` par `Message-Id` |
-| Opérations récentes dans l'entité | [Sls.Fonctions/Modele.cs](../12-Serverless/Sls.Fonctions/Modele.cs) : `Compte.Operations` |
-| Clé déterministe (écrasement sans doublon) | [Sls.Fonctions/Fonctions.cs](../12-Serverless/Sls.Fonctions/Fonctions.cs) : notification `{compte}/{virement}` |
-| Identifiant dérivé de l'entrée | `IdentifiantDeterministe($"{fichier}#{ligne}")` : un import retraité ne crée pas de doublons |
-| Point de reprise | [Projecteur.cs](../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs) : `if (sequence <= DerniereSequence) return;` |
-| Opérations traitées, migrées avec le client | [Magasin.cs](../17-CellBased/Cell.Cellule/Magasin.cs) : `OperationsTraitees` suit le client d'une cellule à l'autre |
-| Clé de période sur l'opération | [ServiceBancaire.cs](../15-MultiTenant/Mt.Banque/ServiceBancaire.cs) : `var cle = $"frais-{mois}";` (frais mensuels prélevés une fois) |
-| L'identité de l'acteur | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) : rejouer `virement/facture-42` réveille le même acteur, qui connaît déjà la réponse |
-| Boîte de réception par service | [Autres.cs](../21-Choregraphie/Choreo.Services/Autres.cs) : `Reactif.UneSeuleFois`, testé avec un courtier qui livre chaque événement deux fois |
-| Référence de ligne, à deux niveaux | [Filtres.cs](../20-Pipeline/Pipeline.Banque/Filtres.cs) : `Dedupliquer` écarte tôt les références déjà exécutées ; le registre refuse en dernier recours. Un import interrompu se rejoue tel quel |
-| Identifiant d'opération, dans les deux sens d'une synchronisation | [SystemeBancaire.cs](../22-StranglerFig/Fig.Ancien/SystemeBancaire.cs) : l'ancien ignore un lot renvoyé après une réponse perdue ; [Domaine.cs](../22-StranglerFig/Fig.Nouveau/Domaine.cs) : le nouveau ignore l'écho de ses propres écritures (pas de boucle) |
+| Table des opérations traitées | [Micro.Accounts/Endpoints.cs](../08-Microservices/Micro.Accounts/Endpoints.cs) : `ProcessedOperations` par `operationId` |
+| Table des messages traités | [Micro.Notifications/Program.cs](../08-Microservices/Micro.Notifications/Program.cs) : `ProcessedMessages` par `Message-Id` |
+| Opérations récentes dans l'entité | [Sls.Functions/Model.cs](../12-Serverless/Sls.Functions/Model.cs) : `Account.Operations` |
+| Clé déterministe (écrasement sans doublon) | [Sls.Functions/Functions.cs](../12-Serverless/Sls.Functions/Functions.cs) : notification `{account}/{transfer}` |
+| Identifiant dérivé de l'entrée | `DeterministicId($"{file}#{line}")` : un import retraité ne crée pas de doublons |
+| Point de reprise | [Projector.cs](../09-CQRS/Cqrs.Read/Projections/Projector.cs) : `if (sequence <= LastSequence) return;` |
+| Opérations traitées, migrées avec le client | [Store.cs](../17-CellBased/Cell.App/Store.cs) : `ProcessedOperations` suit le client d'une cellule à l'autre |
+| Clé de période sur l'opération | [BankingService.cs](../15-MultiTenant/Mt.Bank/BankingService.cs) : `var key = $"fee-{month}";` (frais mensuels prélevés une fois) |
+| L'identité de l'acteur | [TransferActor.cs](../18-ActorModel/Actors.Bank/TransferActor.cs) : rejouer `transfer/invoice-42` réveille le même acteur, qui connaît déjà la réponse |
+| Boîte de réception par service | [Others.cs](../21-Choreography/Choreo.Services/Others.cs) : `Reactive.Once`, testé avec un courtier qui livre chaque événement deux fois |
+| Référence de ligne, à deux niveaux | [Filters.cs](../20-Pipeline/Pipeline.Bank/Filters.cs) : `Deduplicate` écarte tôt les références déjà exécutées ; le registre refuse en dernier recours. Un import interrompu se rejoue tel quel |
+| Identifiant d'opération, dans les deux sens d'une synchronisation | [BankingSystem.cs](../22-StranglerFig/Fig.Legacy/BankingSystem.cs) : l'ancien ignore un lot renvoyé après une réponse perdue ; [Domain.cs](../22-StranglerFig/Fig.Modern/Domain.cs) : le nouveau ignore l'écho de ses propres écritures (pas de boucle) |
 
 ---
 
 ## Outbox
 
-**Problème** : enregistrer un retrait puis publier `RetraitEffectue`. Si le processus s'arrête entre les deux, ou si le
+**Problème** : enregistrer un retrait puis publier `WithdrawalMade`. Si le processus s'arrête entre les deux, ou si le
 courtier est en panne, l'événement est perdu — ou pire, publié pour un retrait annulé.
 
 **Solution** : écrire le message dans une table *outbox* **dans la même transaction** que la donnée, puis le publier en
@@ -60,18 +60,18 @@ tâche de fond, en réessayant jusqu'au succès.
 sequenceDiagram
     participant H as Gestionnaire
     participant DB as Base du service
-    participant R as RelaisOutbox (tâche de fond)
-    participant K as Courtier
+    participant R as OutboxRelay (tâche de fond)
+    participant K as Broker
     H->>DB: BEGIN
     H->>DB: UPDATE compte (solde)
-    H->>DB: INSERT outbox (retrait-effectue)
+    H->>DB: INSERT outbox (withdrawal-made)
     H->>DB: COMMIT — les deux, ou aucun
     loop toutes les 500 ms
         R->>DB: messages non envoyés ?
-        R->>K: POST /sujets/retrait-effectue (Message-Id)
+        R->>K: POST /topics/withdrawal-made (Message-Id)
         alt courtier disponible
             K-->>R: 202
-            R->>DB: EnvoyeLe = maintenant
+            R->>DB: SentAt = maintenant
         else courtier en panne
             K--xR: erreur
             Note over R: on réessaiera au prochain tour
@@ -79,10 +79,10 @@ sequenceDiagram
     end
 ```
 
-Le relais peut envoyer un message deux fois (crash entre l'envoi et la mise à jour de `EnvoyeLe`) : d'où l'**idempotence**
-chez les abonnés. Code : [RelaisOutbox.cs](../08-Microservices/Micro.Comptes/RelaisOutbox.cs). En CQRS, le journal
-d'événements de [EcritureDb](../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs) joue le même rôle. Dans la démo 22, les
-opérations écrites par le nouveau service attendent dans une boîte d'envoi (`Depot.AReporter`, remplie sous le même verrou
+Le relais peut envoyer un message deux fois (crash entre l'envoi et la mise à jour de `SentAt`) : d'où l'**idempotence**
+chez les abonnés. Code : [OutboxRelay.cs](../08-Microservices/Micro.Accounts/OutboxRelay.cs). En CQRS, le journal
+d'événements de [WriteDb](../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs) joue le même rôle. Dans la démo 22, les
+opérations écrites par le nouveau service attendent dans une boîte d'envoi (`Store.ToForward`, remplie sous le même verrou
 que le virement) d'être reportées dans l'ancien système ; elles n'en sortent qu'après la confirmation de l'import.
 
 ---
@@ -109,9 +109,9 @@ sequenceDiagram
 
 | | Event Sourcing | Serverless |
 |---|---|---|
-| Où | [MagasinEvenements.Ajouter](../10-EventSourcing/Es.Stockage/MagasinEvenements.cs) | [TableGeree.Ecrire](../12-Serverless/Sls.Plateforme/ServicesGeres.cs) |
+| Où | [EventStore.Add](../10-EventSourcing/Es.Storage/EventStore.cs) | [ManagedTable.Write](../12-Serverless/Sls.Platform/ManagedServices.cs) |
 | Version | nombre d'événements du flux | ETag de l'entité |
-| En cas de conflit | 409 au client (`If-Match`) | relire et réessayer ([`Concurrence.Modifier`](../12-Serverless/Sls.Fonctions/Modele.cs)) |
+| En cas de conflit | 409 au client (`If-Match`) | relire et réessayer ([`Concurrency.Modify`](../12-Serverless/Sls.Functions/Model.cs)) |
 
 « Optimiste » : on ne verrouille rien, on parie qu'il n'y aura pas de conflit, et on le détecte s'il y en a un.
 
@@ -146,12 +146,12 @@ flowchart LR
 
 | Démo | Où | Particularité |
 |---|---|---|
-| 6 | [VirementsComposant.cs](../06-Composants/Composants.Virements/Interne/VirementsComposant.cs) | compensation simple, dans le même processus |
-| 7 | [VirementsEndpoints.cs](../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs) | entre deux modules, via `IComptesApi` |
-| 8 | [Micro.Virements/Endpoints.cs](../08-Microservices/Micro.Virements/Endpoints.cs) | saga à statut (`EnCours` → `Effectue` / `Refuse` / `Annule` / `AReprendre`), appels idempotents |
-| 14 | [MoteurSaga.cs](../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs) | saga **orchestrée** : processus décrit en un seul endroit, état persistant, attente d'un événement extérieur, point de non-retour |
-| 18 | [VirementActeur.cs](../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) | un **acteur par virement**, qui converse avec deux acteurs comptes ; son état stocké (`DebitFait`…) permet de reprendre après une panne |
-| 21 | [Comptes.cs](../21-Choregraphie/Choreo.Services/Comptes.cs) | saga **chorégraphiée** : pas de coordinateur ; Comptes compense en écoutant les échecs des autres, et une réservation qui expire débloque un processus resté en plan |
+| 6 | [TransfersComponent.cs](../06-Components/Components.Transfers/Internal/TransfersComponent.cs) | compensation simple, dans le même processus |
+| 7 | [TransfersEndpoints.cs](../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs) | entre deux modules, via `IAccountsApi` |
+| 8 | [Micro.Transfers/Endpoints.cs](../08-Microservices/Micro.Transfers/Endpoints.cs) | saga à statut (`InProgress` → `Done` / `Refused` / `Cancelled` / `ToResume`), appels idempotents |
+| 14 | [SagaEngine.cs](../14-OrchestratedSaga/Saga.Orchestrator/SagaEngine.cs) | saga **orchestrée** : processus décrit en un seul endroit, état persistant, attente d'un événement extérieur, point de non-retour |
+| 18 | [TransferActor.cs](../18-ActorModel/Actors.Bank/TransferActor.cs) | un **acteur par virement**, qui converse avec deux acteurs comptes ; son état stocké (`DebitDone`…) permet de reprendre après une panne |
+| 21 | [Accounts.cs](../21-Choreography/Choreo.Services/Accounts.cs) | saga **chorégraphiée** : pas de coordinateur ; Comptes compense en écoutant les échecs des autres, et une réservation qui expire débloque un processus resté en plan |
 
 Deux façons de coordonner une saga : la **chorégraphie** (chaque service réagit aux événements des autres, démos 7, 8 et [21](21-choregraphie.md))
 et l'**orchestration** (un chef d'orchestre explicite conduit les étapes, [démo 14](14-saga-orchestree.md)). Les étapes
@@ -179,15 +179,15 @@ flowchart LR
 
 | | Microservices | Serverless |
 |---|---|---|
-| Appels HTTP | [`AddStandardResilienceHandler`](../08-Microservices/Micro.Virements/Program.cs) : 3 retries + timeout + circuit breaker | — |
-| Messages | [Courtier](../08-Microservices/Micro.Courtier/Courtier.cs) : 8 tentatives puis lettres mortes | [ServiceFiles](../12-Serverless/Sls.Plateforme/ServicesGeres.cs) : 3 tentatives puis `-poison`, rejouable |
+| Appels HTTP | [`AddStandardResilienceHandler`](../08-Microservices/Micro.Transfers/Program.cs) : 3 retries + timeout + circuit breaker | — |
+| Messages | [Broker](../08-Microservices/Micro.Broker/Broker.cs) : 8 tentatives puis lettres mortes | [QueueService](../12-Serverless/Sls.Platform/ManagedServices.cs) : 3 tentatives puis `-poison`, rejouable |
 
 Le [modèle d'acteurs](18-modele-acteurs.md) applique la même idée aux acteurs eux-mêmes : un acteur qui plante est
 redémarré (jusqu'à 3 fois par minute), puis arrêté et mis en quarantaine ; les messages qu'on lui envoie pendant ce temps
 sont des « lettres mortes », comptées par le runtime.
 
 À distinguer : un **refus métier** (solde insuffisant) n'est **pas** une panne. Il ne doit pas déclencher de nouvel essai
-(voir `VirementsFonctions.Executer`, qui marque le virement « Refusé » sans lever d'exception).
+(voir `TransfersFunctions.Execute`, qui marque le virement « Refusé » sans lever d'exception).
 
 ---
 
@@ -211,8 +211,8 @@ sequenceDiagram
     L-->>U: nouveau solde
 ```
 
-Rendu visible dans la démo CQRS (`Projections:DelaiMs`, `GET /admin/projections`), dans les microservices (Notifications
-arrêté puis redémarré), en serverless (`202` puis `GET /virements/{id}`) et pendant une migration (démo 22 : un virement
+Rendu visible dans la démo CQRS (`Projections:DelayMs`, `GET /admin/projections`), dans les microservices (Notifications
+arrêté puis redémarré), en serverless (`202` puis `GET /transfers/{id}`) et pendant une migration (démo 22 : un virement
 servi par l'ancien système n'apparaît dans la consultation, servie par le nouveau, qu'au cycle de synchronisation suivant). Côté interface : afficher « en cours »,
 renvoyer l'état connu juste après une commande, ou interroger jusqu'à la mise à jour.
 
@@ -223,16 +223,16 @@ renvoyer l'état connu juste après une commande, ou interroger jusqu'à la mise
 | | Événement **de domaine** | Événement **d'intégration** |
 |---|---|---|
 | Portée | à l'intérieur d'un contexte / module | entre contextes, modules ou services |
-| Types | riches (`Argent`, `Iban`, `CompteId`) | simples (`Guid`, `string`, `decimal`) |
+| Types | riches (`Money`, `Iban`, `AccountId`) | simples (`Guid`, `string`, `decimal`) |
 | Stabilité | évolue librement avec le modèle | contrat public, à faire évoluer avec précaution |
-| Exemple | [`VirementEffectue`](../11-DDD/Ddd.TenueDeCompte.Domaine/Fondations.cs) (DDD) | [`VirementEmis`](../11-DDD/Ddd.TenueDeCompte.Contrats/Contrats.cs) (DDD), [`VirementEffectue`](../07-MonolitheModulaire/Modulaire.Virements.Contrats/VirementEffectue.cs) (démo 7) |
+| Exemple | [`TransferMade`](../11-DDD/Ddd.AccountKeeping.Domain/Foundations.cs) (DDD) | [`TransferSent`](../11-DDD/Ddd.AccountKeeping.Contracts/Contracts.cs) (DDD), [`TransferMade`](../07-ModularMonolith/Modular.Transfers.Contracts/TransferMade.cs) (démo 7) |
 
 ```mermaid
 flowchart LR
-    A["Agrégat Compte"] -->|"lève"| D["VirementEffectue<br/>(domaine : Argent, Iban…)"]
-    D --> T["PublicateurEvenements<br/>(traduction)"]
-    T -->|"publie"| I["VirementEmis<br/>(intégration : Guid, string, decimal)"]
-    I --> C["Autres contextes"]
+    A["Agrégat Account"] -->|"lève"| D["TransferMade<br/>(domaine : Money, Iban…)"]
+    D --> T["EventPublisher<br/>(traduction)"]
+    T -->|"publie"| I["TransferSent<br/>(intégration : Guid, string, decimal)"]
+    I --> C["Others contextes"]
 ```
 
 Un bon événement d'intégration transporte **ce dont les abonnés ont besoin** (par exemple les noms des titulaires), pour

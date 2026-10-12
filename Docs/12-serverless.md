@@ -13,8 +13,8 @@ Popularisé par **AWS Lambda** (2014), puis Azure Functions et Google Cloud Func
 « sans serveur », mais **sans serveur à gérer** : le fournisseur démarre, multiplie et arrête des instances selon le trafic.
 
 > **Dans cette démo, la plateforme est simulée** (aucun téléchargement) mais reproduit les comportements qui changent la
-> façon de coder. `Sls.Plateforme` joue le rôle du fournisseur — **on ne l'écrit jamais en vrai** — ;
-> `Sls.Fonctions` contient le seul code qu'on écrirait réellement.
+> façon de coder. `Sls.Platform` joue le rôle du fournisseur — **on ne l'écrit jamais en vrai** — ;
+> `Sls.Functions` contient le seul code qu'on écrirait réellement.
 
 ```mermaid
 flowchart LR
@@ -24,12 +24,12 @@ flowchart LR
         S["Fichier déposé<br/>(écrit par une fonction)"]
         M["Minuterie"]
     end
-    Mo["Plateforme<br/>MoteurExecution<br/>instances · démarrage à froid<br/>mise à l'échelle · facturation"]
+    Mo["Platform<br/>ExecutionEngine<br/>instances · démarrage à froid<br/>mise à l'échelle · facturation"]
     subgraph Fonctions["Vos fonctions"]
-        F1["OuvrirCompte, Retirer,<br/>DemanderVirement…"]
-        F2["ExecuterVirement<br/>EnvoyerNotification"]
-        F3["TraiterImport"]
-        F4["ProduireRapport"]
+        F1["OpenAccount, Withdraw,<br/>RequestTransfer…"]
+        F2["ExecuteTransfer<br/>SendNotification"]
+        F3["ProcessImport"]
+        F4["ProduceReport"]
     end
     subgraph Geres["Services gérés"]
         T[("Tables (ETag)")]
@@ -62,9 +62,9 @@ La boucle est **événementielle** : une fonction écrit dans une file ou dans l
 
 | Projet | Rôle | En vrai |
 |---|---|---|
-| `Sls.Plateforme` | Le fournisseur simulé + sa « console » `/plateforme/…` | AWS Lambda, Azure Functions |
-| `Sls.Fonctions` | Le manifeste et les fonctions | votre code |
-| `Sls.Hote` | Fait tourner la plateforme en local | `func start`, `sam local` |
+| `Sls.Platform` | Le fournisseur simulé + sa « console » `/platform/…` | AWS Lambda, Azure Functions |
+| `Sls.Functions` | Le manifeste et les fonctions | votre code |
+| `Sls.Host` | Fait tourner la plateforme en local | `func start`, `sam local` |
 | `Sls.Tests` | Plateforme, fonctions, système complet | |
 
 ---
@@ -74,7 +74,7 @@ La boucle est **événementielle** : une fonction écrit dans une file ou dans l
 ### 1. Le manifeste : pas de serveur, pas de contrôleur
 
 L'équivalent de `serverless.yml` ou des attributs `[Function]` d'Azure.
-([Deploiement.cs](../12-Serverless/Sls.Fonctions/Deploiement.cs))
+([Deployment.cs](../12-Serverless/Sls.Functions/Deployment.cs))
 
 ```csharp
 public static void Declare(Manifest manifest) => manifest
@@ -95,7 +95,7 @@ public static void Declare(Manifest manifest) => manifest
 ### 2. Une fonction : une méthode statique
 
 Entrée = le déclencheur + le contexte ; sortie = une réponse. Tout ce qui doit durer va dans un service géré.
-([Fonctions.cs](../12-Serverless/Sls.Fonctions/Fonctions.cs))
+([Functions.cs](../12-Serverless/Sls.Functions/Functions.cs))
 
 ```csharp
 /// <summary>HTTP: the transfer is NOT made here. It is accepted (202) and handed to a queue: immediate response.</summary>
@@ -112,7 +112,7 @@ public static async Task<HttpResponseData> Request(HttpRequestData request, Func
 
 ### 3. Démarrage à froid, instances chaudes, mise à zéro
 
-([MoteurExecution.cs](../12-Serverless/Sls.Plateforme/MoteurExecution.cs))
+([ExecutionEngine.cs](../12-Serverless/Sls.Platform/ExecutionEngine.cs))
 
 ```csharp
 lock (state)
@@ -139,18 +139,18 @@ if (cold)
 ```mermaid
 sequenceDiagram
     actor C as Client
-    participant P as Plateforme
+    participant P as Platform
     participant I1 as Instance #1
-    C->>P: GET /comptes/alice
+    C->>P: GET /accounts/alice
     P->>I1: créer l'instance (démarrage à froid ≈ 600 ms)
-    I1-->>C: 200 (X-Demarrage-A-Froid: oui, 610 ms)
-    C->>P: GET /comptes/alice
+    I1-->>C: 200 (X-Cold-Start: oui, 610 ms)
+    C->>P: GET /accounts/alice
     P->>I1: réutiliser l'instance chaude
-    I1-->>C: 200 (X-Demarrage-A-Froid: non, 0 ms)
+    I1-->>C: 200 (X-Cold-Start: non, 0 ms)
     Note over P,I1: 20 s sans appel…
     P->>I1: recycler (mise à zéro)
     Note over P: plus rien ne tourne, plus rien n'est facturé
-    C->>P: GET /comptes/alice
+    C->>P: GET /accounts/alice
     P->>P: nouvelle instance #2 (de nouveau à froid)
 ```
 
@@ -160,22 +160,22 @@ Une instance ne traite **qu'un appel à la fois** : 8 messages simultanés = 8 i
 
 ```mermaid
 flowchart LR
-    U(["POST /imports<br/>CSV de 8 lignes"]) --> D["DeposerImport"]
+    U(["POST /imports<br/>CSV de 8 lignes"]) --> D["UploadImport"]
     D -->|"écrit imports/….csv"| B[("Stockage")]
-    B -->|"déclenche"| T["TraiterImport<br/>1 instance"]
+    B -->|"déclenche"| T["ProcessImport<br/>1 instance"]
     T -->|"8 messages"| Q[["File « virements »"]]
-    Q --> E1["ExecuterVirement #1"]
-    Q --> E2["ExecuterVirement #2"]
+    Q --> E1["ExecuteTransfer #1"]
+    Q --> E2["ExecuteTransfer #2"]
     Q --> E3["…"]
-    Q --> E8["ExecuterVirement #8"]
+    Q --> E8["ExecuteTransfer #8"]
     E1 & E2 & E3 & E8 -->|"2 messages chacun"| N[["File « notifications »"]]
 ```
 
-Mesuré sur la démo : `picInstances = 8` pour `ExecuterVirement`.
+Mesuré sur la démo : `peakInstances = 8` pour `ExecuteTransfer`.
 
 ### 5. Sans état : la mémoire d'instance est trompeuse
 
-([Fonctions.cs](../12-Serverless/Sls.Fonctions/Fonctions.cs))
+([Functions.cs](../12-Serverless/Sls.Functions/Functions.cs))
 
 ```csharp
 // ✗ Instance memory: specific to THIS instance, reset at each cold start.
@@ -190,7 +190,7 @@ var global = await Concurrency.ModifyOrCreate(context.Table(Tables.Counters), "v
 ### 6. Concurrence : écritures conditionnelles (ETag)
 
 Des dizaines d'instances peuvent modifier le même compte en même temps.
-([Modele.cs](../12-Serverless/Sls.Fonctions/Modele.cs))
+([Model.cs](../12-Serverless/Sls.Functions/Model.cs))
 
 ```csharp
 /// Read → modify → write "only if nobody wrote in the meantime", and start over otherwise.
@@ -218,7 +218,7 @@ public static async Task<T> Modify<T>(ManagedTable table, string key, Func<T, T>
 ### 7. Nouveaux essais, messages empoisonnés et idempotence
 
 Une exception fait relivrer le message (attente croissante) ; après 3 échecs, il part dans la file `-poison`.
-([ServicesGeres.cs](../12-Serverless/Sls.Plateforme/ServicesGeres.cs))
+([ManagedServices.cs](../12-Serverless/Sls.Platform/ManagedServices.cs))
 
 ```csharp
 internal void Failed(string queue, QueuedMessage message, string error)
@@ -238,7 +238,7 @@ internal void Failed(string queue, QueuedMessage message, string error)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> EnFile : EnvoyerDansFile
+    [*] --> EnFile : SendToQueue
     EnFile --> EnCours : instance disponible
     EnCours --> [*] : succès (acquitté)
     EnCours --> EnFile : pas d'instance (étranglement), sans compter d'essai
@@ -248,7 +248,7 @@ stateDiagram-v2
     Poison --> EnFile : rejouer (après réparation)
 ```
 
-Un message pouvant être livré plusieurs fois, **tout traitement doit être idempotent** : `Compte.Appliquer` ignore une
+Un message pouvant être livré plusieurs fois, **tout traitement doit être idempotent** : `Account.Apply` ignore une
 opération déjà connue, les notifications ont une clé déterministe, et un fichier d'import retraité ne crée aucun doublon
 (identifiant tiré du fichier et du numéro de ligne).
 
@@ -265,7 +265,7 @@ public Account Apply(Guid operation, decimal change)
 
 ### 8. La facture
 
-`GET /plateforme/facture` : invocations × 0,20 $ / million + durée × mémoire (Go-s) × 0,0000166667 $ (tarifs AWS Lambda).
+`GET /platform/bill` : invocations × 0,20 $ / million + durée × mémoire (Go-s) × 0,0000166667 $ (tarifs AWS Lambda).
 La démo complète (49 invocations, 2,6 Go-s) coûte **0,000054 $**. Mais un trafic constant et élevé peut coûter plus
 cher qu'un serveur dédié : le serverless brille sur les charges **irrégulières**.
 
@@ -277,9 +277,9 @@ Trois niveaux :
 
 | Niveau | Fichier | Exemple |
 |---|---|---|
-| Plateforme seule | [PlateformeTests.cs](../12-Serverless/Sls.Tests/PlateformeTests.cs) | froid puis chaud, mise à l'échelle, étranglement, recyclage, délai dépassé, Go-s |
-| Fonctions, appelées comme des méthodes | [FonctionsTests.cs](../12-Serverless/Sls.Tests/FonctionsTests.cs) | 30 retraits simultanés → exactement 10 réussissent ; double livraison → un seul débit |
-| Système complet | [SystemeTests.cs](../12-Serverless/Sls.Tests/SystemeTests.cs) | virement HTTP → files ; import → plusieurs instances ; poison puis rejeu |
+| Plateforme seule | [PlatformTests.cs](../12-Serverless/Sls.Tests/PlatformTests.cs) | froid puis chaud, mise à l'échelle, étranglement, recyclage, délai dépassé, Go-s |
+| Fonctions, appelées comme des méthodes | [FunctionsTests.cs](../12-Serverless/Sls.Tests/FunctionsTests.cs) | 30 retraits simultanés → exactement 10 réussissent ; double livraison → un seul débit |
+| Système complet | [SystemTests.cs](../12-Serverless/Sls.Tests/SystemTests.cs) | virement HTTP → files ; import → plusieurs instances ; poison puis rejeu |
 
 ```csharp
 [Fact]

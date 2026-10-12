@@ -6,7 +6,7 @@
 > qui était gratuit dans le monolithe (un appel qui aboutit, un événement qui ne se perd pas) devient du code dans les
 > microservices.
 
-📁 Démos : [`07-MonolitheModulaire`](../../07-MonolitheModulaire) · [`08-Microservices`](../../08-Microservices) · · 🌐 [English](../en/differences/09-monolithe-modulaire-vs-microservices.md)
+📁 Démos : [`07-ModularMonolith`](../../07-ModularMonolith) · [`08-Microservices`](../../08-Microservices) · · 🌐 [English](../en/differences/09-monolithe-modulaire-vs-microservices.md)
 📖 Pages : [Monolithe modulaire](../07-monolithe-modulaire.md) · [Microservices](../08-microservices.md) ·
 🗂️ Fiches : [7](../fiches/07-monolithe-modulaire.md) · [8](../fiches/08-microservices.md)
 
@@ -24,12 +24,12 @@ Une base par partie, des contrats entre parties, des événements pour notifier,
 | | Monolithe modulaire | Microservices |
 |---|---|---|
 | Déploiements | **1** processus | **5** (passerelle, 3 services, courtier) |
-| Le contrat | un projet C# (`Modulaire.Comptes.Contrats`) | **le JSON échangé** : aucun code partagé, chaque client a sa copie du modèle distant |
-| Appel entre parties | `IComptesApi.Debiter(...)` : aboutit ou lève une exception | HTTP : **retry, timeout, circuit breaker** |
+| Le contrat | un projet C# (`Modular.Accounts.Contracts`) | **le JSON échangé** : aucun code partagé, chaque client a sa copie du modèle distant |
+| Appel entre parties | `IAccountsApi.Debit(...)` : aboutit ou lève une exception | HTTP : **retry, timeout, circuit breaker** |
 | Un appel rejoué | impossible | courant (réponse perdue) → **idempotence** par `operationId` |
 | Événements | bus **en mémoire** : perdus si le processus tombe | **outbox** (même transaction) + courtier « au moins une fois » |
 | Un message reçu deux fois | impossible | courant → l'abonné ignore les **doublons** (`Message-Id`) |
-| État d'un virement | réussi ou compensé, dans la requête | une **saga à statut** : `EnCours`, `Effectue`, `Annule`, `AReprendre` |
+| État d'un virement | réussi ou compensé, dans la requête | une **saga à statut** : `InProgress`, `Done`, `Cancelled`, `ToResume` |
 | Une partie en panne | tout le processus est en panne | les autres continuent ; **cohérence à terme** |
 | Mise à l'échelle | le tout | **par service** |
 | Garde-fou | `internal` + tests d'architecture | **le réseau** : impossible de tricher |
@@ -41,13 +41,13 @@ Une base par partie, des contrats entre parties, des événements pour notifier,
 flowchart LR
     subgraph M["MONOLITHE MODULAIRE (1 processus)"]
         direction TB
-        V1["Virements"] -->|"Debiter / Crediter<br/>appel de méthode"| C1["Comptes"]
+        V1["Transfers"] -->|"Debit / Credit<br/>appel de méthode"| C1["Accounts"]
         V1 -.->|"bus en mémoire"| N1["Notifications"]
     end
     subgraph S["MICROSERVICES (5 processus)"]
         direction TB
-        V2["Virements"] -->|"HTTP + operationId<br/>retry, timeout"| C2["Comptes"]
-        V2 -.->|"outbox"| K2["Courtier"] -.->|"au moins une fois"| N2["Notifications"]
+        V2["Transfers"] -->|"HTTP + operationId<br/>retry, timeout"| C2["Accounts"]
+        V2 -.->|"outbox"| K2["Broker"] -.->|"au moins une fois"| N2["Notifications"]
     end
     M ~~~ S
 ```
@@ -55,7 +55,7 @@ flowchart LR
 ## Dans le code des démos
 
 **L'appel.** Monolithe : une méthode du contrat
-([VirementsEndpoints.cs](../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs)) :
+([TransfersEndpoints.cs](../../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs)) :
 
 ```csharp
 // Synchronous call to another module, only through its public contract.
@@ -63,7 +63,7 @@ var debit = await accounts.Debit(source.Id, request.Amount);
 ```
 
 Microservices : un client HTTP armé contre les pannes
-([Micro.Virements/Program.cs](../../08-Microservices/Micro.Virements/Program.cs)) :
+([Micro.Transfers/Program.cs](../../08-Microservices/Micro.Transfers/Program.cs)) :
 
 ```csharp
 // Calls to the Accounts service: the network can fail, so we protect ourselves.
@@ -78,7 +78,7 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
     });
 ```
 
-**Le retry impose l'idempotence** côté Comptes ([Micro.Comptes/Endpoints.cs](../../08-Microservices/Micro.Comptes/Endpoints.cs)) :
+**Le retry impose l'idempotence** côté Comptes ([Micro.Accounts/Endpoints.cs](../../08-Microservices/Micro.Accounts/Endpoints.cs)) :
 
 ```csharp
 if (await db.ProcessedOperations.FindAsync(request.OperationId) is { } alreadyProcessed)
@@ -97,7 +97,7 @@ await db.SaveChangesAsync();
 
 **La compensation.** Monolithe : si le crédit échoue, on recrédite la source, et cet appel aboutit forcément.
 Microservices : la compensation elle-même peut échouer (Comptes injoignable) ; le virement passe alors à
-`AReprendre`, un état qui n'existe pas dans le monolithe.
+`ToResume`, un état qui n'existe pas dans le monolithe.
 
 Résultat : à fonctionnalités égales, l'essentiel du code supplémentaire de la démo 8 sert à **gérer les échecs du
 réseau**.

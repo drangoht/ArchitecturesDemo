@@ -57,7 +57,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Multi-tenant** : l'isolation est une affaire de **code**, concentrée dans le `DbContext`
-([BanqueDbContext.cs](../../15-MultiTenant/Mt.Banque/BanqueDbContext.cs)) :
+([BankDbContext.cs](../../15-MultiTenant/Mt.Bank/BankDbContext.cs)) :
 
 ```csharp
 private void Isolate<T>(ModelBuilder model) where T : class, IBelongsToTenant
@@ -73,7 +73,7 @@ Oublier ce filtre, c'est exposer une banque à une autre. Les cellules n'ont pas
 ses clients, et n'a aucun moyen de lire ceux d'une autre.
 
 **Cellules** : l'isolation est une affaire de **topologie**. Quand une cellule tombe, le routeur ne renvoie l'erreur
-qu'à ses clients ([Relais.cs](../../17-CellBased/Cell.Routeur/Relais.cs)) :
+qu'à ses clients ([Relay.cs](../../17-CellBased/Cell.Router/Relay.cs)) :
 
 ```csharp
 catch (HttpRequestException)
@@ -82,12 +82,12 @@ catch (HttpRequestException)
 ```
 
 **Le client gourmand** : le multi-tenant le **bride** par un quota propre à sa formule
-([Installation.cs](../../15-MultiTenant/Mt.Locataires/Installation.cs)) ; les cellules le **déplacent** dans une autre
+([Setup.cs](../../15-MultiTenant/Mt.Tenants/Setup.cs)) ; les cellules le **déplacent** dans une autre
 cellule (copie, bascule du routage, nettoyage) sans que les autres clients le remarquent.
 
 **Grandir** : le multi-tenant ajoute un client en quelques secondes (une ligne dans le catalogue). Les cellules aussi,
 tant qu'il reste de la place ; quand toutes sont pleines, on n'agrandit pas une cellule, on en ajoute une
-([PlanDeControle.cs](../../17-CellBased/Cell.Routeur/PlanDeControle.cs)) :
+([ControlPlane.cs](../../17-CellBased/Cell.Router/ControlPlane.cs)) :
 
 ```csharp
 /// <summary>The least loaded open cell that still has room.</summary>

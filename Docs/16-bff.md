@@ -32,7 +32,7 @@ flowchart LR
 Sans BFF, deux mauvaises options :
 - chaque application **enchaîne les appels** et assemble elle-même : lent sur mobile (chaque aller-retour coûte), du code
   d'assemblage dupliqué dans chaque client, et un jeton d'accès à manipuler dans le navigateur ;
-- les services ajoutent des routes **pour chaque écran** (`/comptes/resume-pour-mobile`…) : ils deviennent l'otage de toutes
+- les services ajoutent des routes **pour chaque écran** (`/accounts/resume-pour-mobile`…) : ils deviennent l'otage de toutes
   les interfaces, et chaque changement d'écran impose de modifier, tester et déployer un service partagé.
 
 Le BFF (né chez SoundCloud, popularisé par Sam Newman) déplace cette adaptation dans un composant **qui appartient à l'équipe de l'écran** :
@@ -52,7 +52,7 @@ flowchart LR
 
 Les deux BFF ne se référencent pas, et ne référencent pas les services : ils ne les connaissent que par HTTP. Les contrats
 sont **recopiés** dans chaque BFF, avec seulement les champs utiles à ses écrans (lecteur tolérant). Un test le vérifie.
-([ClientServices.cs](../16-BFF/Bff.Mobile/ClientServices.cs))
+([ServicesClient.cs](../16-BFF/Bff.Mobile/ServicesClient.cs))
 
 ```csharp
 // Deliberate copy, and not a project shared with the web BFF: each BFF belongs to the team of ITS application
@@ -65,7 +65,7 @@ sont **recopiés** dans chaque BFF, avec seulement les champs utiles à ses écr
 
 Le tableau de bord du site affiche le client, son conseiller, ses comptes avec leurs dernières opérations, ses dépenses par
 catégorie et des offres. Il faut sept appels aux services ; le navigateur n'en fait qu'un.
-([TableauDeBord.cs](../16-BFF/Bff.Web/TableauDeBord.cs))
+([Dashboard.cs](../16-BFF/Bff.Web/Dashboard.cs))
 
 ```csharp
 // ① The profile first: it says which accounts to display, which advisor, which offer segment.
@@ -84,17 +84,17 @@ sequenceDiagram
     participant N as Navigateur
     participant W as BFF web
     participant S as Services
-    N->>W: GET /api/tableau-de-bord (cookie)
-    W->>S: GET /profils/moi
+    N->>W: GET /api/dashboard (cookie)
+    W->>S: GET /profiles/me
     S-->>W: comptes, conseiller, segment
     par en parallèle
-        W->>S: GET /conseillers/c1
+        W->>S: GET /advisors/c1
     and
-        W->>S: GET /offres?segment=particulier
+        W->>S: GET /offers?segment=individual
     and
-        W->>S: GET /comptes/1111… + /operations
+        W->>S: GET /accounts/1111… + /operations
     and
-        W->>S: GET /comptes/4444… + /operations
+        W->>S: GET /accounts/4444… + /operations
     end
     W->>W: assembler, calculer les dépenses par catégorie
     W-->>N: une réponse prête à afficher
@@ -104,9 +104,9 @@ Mesuré sur la démo en fonctionnement (120 ms de latence simulée par appel) :
 
 | En-tête de la réponse | Valeur | Sens |
 |---|---|---|
-| `X-Appels-Aval` | 7 | appels aux services pour une requête du navigateur |
-| `X-Duree-Aval-Cumulee-Ms` | ≈ 900 | ce qu'auraient coûté ces appels **enchaînés** |
-| `X-Duree-Totale-Ms` | ≈ 300 | la réponse réelle : deux « vagues » d'appels |
+| `X-Downstream-Calls` | 7 | appels aux services pour une requête du navigateur |
+| `X-Downstream-Cumulative-Ms` | ≈ 900 | ce qu'auraient coûté ces appels **enchaînés** |
+| `X-Total-Duration-Ms` | ≈ 300 | la réponse réelle : deux « vagues » d'appels |
 
 Les appels du BFF vers les services passent par le réseau du centre de données, rapide et fiable ; ceux du téléphone
 passent par le réseau mobile. Remplacer cinq allers-retours mobiles par un seul est souvent le premier gain visible.
@@ -117,7 +117,7 @@ passent par le réseau mobile. Remplacer cinq allers-retours mobiles par un seul
 
 Le même besoin (« l'accueil ») donne deux réponses très différentes.
 
-| | BFF web : `/api/tableau-de-bord` | BFF mobile : `/mobile/v1/accueil` |
+| | BFF web : `/api/dashboard` | BFF mobile : `/mobile/v1/home` |
 |---|---|---|
 | Contenu | client, conseiller, comptes avec IBAN, 10 opérations par compte, dépenses par catégorie, offres | prénom, solde total, soldes, 3 dernières opérations |
 | Libellés | bruts (« CB CARREFOUR 0910 PARIS 15 ») | raccourcis (« Carrefour ») |
@@ -125,9 +125,9 @@ Le même besoin (« l'accueil ») donne deux réponses très différentes.
 | Champs nuls | présents | omis |
 | Liste longue | 10 dernières opérations | pages de 10, **curseur opaque** |
 
-La pagination montre bien le rôle d'adaptateur : les services paginent par `page` et `taille`, l'application ne connaît
+La pagination montre bien le rôle d'adaptateur : les services paginent par `page` et `size`, l'application ne connaît
 qu'un curseur. Le BFF pourra changer de stratégie sans mettre à jour l'application.
-([Ecrans.cs](../16-BFF/Bff.Mobile/Ecrans.cs))
+([Screens.cs](../16-BFF/Bff.Mobile/Screens.cs))
 
 ```csharp
 var page = ReadPage(cursor);
@@ -139,8 +139,8 @@ return new MobilePage(result.Operations.Select(View).ToList(), next);
 ### Les versions de l'application
 
 Une application web se met à jour à chaque déploiement ; une application mobile, quand l'utilisateur le veut bien. Plusieurs
-versions vivent donc en même temps. La v2 de l'application affiche un bandeau d'offre : le BFF expose `/mobile/v2/accueil`,
-et continue de servir `/mobile/v1/accueil` aux téléphones pas encore à jour. **Les services n'ont pas changé.**
+versions vivent donc en même temps. La v2 de l'application affiche un bandeau d'offre : le BFF expose `/mobile/v2/home`,
+et continue de servir `/mobile/v1/home` aux téléphones pas encore à jour. **Les services n'ont pas changé.**
 
 ```csharp
 var offer = version >= 2 ? Optional(c => services.Offers(profile.Segment, token, c), OfferBudget) : Task.FromResult<DownstreamOffer[]?>(null);
@@ -160,13 +160,13 @@ sequenceDiagram
     participant W as BFF web
     participant ST as Sessions (serveur)
     participant S as Services
-    N->>W: POST /bff/connexion (X-CSRF: 1)
-    W->>S: POST /identite/jeton
+    N->>W: POST /bff/login (X-CSRF: 1)
+    W->>S: POST /identity/token
     S-->>W: jeton d'accès (15 min)
     W->>ST: ranger le jeton dans une session
     W-->>N: Set-Cookie: bff-session=… (HttpOnly, SameSite=Strict)
     Note over N: aucun jeton côté navigateur :<br/>document.cookie = ""
-    N->>W: GET /api/tableau-de-bord (cookie, X-CSRF: 1)
+    N->>W: GET /api/dashboard (cookie, X-CSRF: 1)
     W->>ST: retrouver la session, donc le jeton
     W->>S: appels avec Authorization: Bearer (jeton de l'utilisateur)
 ```
@@ -179,9 +179,9 @@ o.Cookie.SameSite = SameSiteMode.Strict;                  // never sent from ano
 o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // in production: Always, and the "__Host-" prefix
 ```
 
-- **Session côté serveur** (`SessionsEnMemoire`, un `ITicketStore`) : le cookie ne contient qu'une clé chiffrée. Se
+- **Session côté serveur** (`InMemorySessions`, un `ITicketStore`) : le cookie ne contient qu'une clé chiffrée. Se
   déconnecter supprime la session : un cookie copié auparavant ne donne plus accès à rien (test
-  `Apres_deconnexion_un_cookie_vole_ne_vaut_plus_rien`). Sans ce magasin, ASP.NET Core mettrait tout le ticket (jeton
+  `After_logout_a_stolen_cookie_is_worthless`). Sans ce magasin, ASP.NET Core mettrait tout le ticket (jeton
   compris) dans le cookie chiffré, valable jusqu'à son expiration même après déconnexion.
 - **CSRF** : puisque le navigateur envoie le cookie automatiquement, un autre site pourrait déclencher une requête. Deux
   barrières : `SameSite=Strict`, et l'en-tête obligatoire `X-CSRF: 1`, qu'un formulaire ne sait pas ajouter et qu'un
@@ -218,8 +218,8 @@ private static async Task<T?> Optional<T>(Func<CancellationToken, Task<T>> call,
 }
 ```
 
-Avec `PUT /chaos {"offresEnPanne": true}` sur les services, le tableau de bord répond toujours 200, avec `"offres": null`
-et `"degrade": ["offres"]` ; la page affiche un bandeau « affichage partiel ». Le budget de temps évite qu'un service
+Avec `PUT /chaos {"offersDown": true}` sur les services, le tableau de bord répond toujours 200, avec `"offers": null`
+et `"degraded": ["offers"]` ; la page affiche un bandeau « affichage partiel ». Le budget de temps évite qu'un service
 **lent** (plutôt qu'en panne) ralentisse toute la page.
 
 ---
@@ -240,19 +240,19 @@ Ils se combinent : passerelle en entrée, BFF derrière elle, et un BFF peut tou
 ## Les tests
 
 Les trois processus tournent en mémoire ; les BFF appellent les **vrais** services de test, avec une latence réglable.
-([Systeme.cs](../16-BFF/Bff.Tests/Systeme.cs))
+([BffSystem.cs](../16-BFF/Bff.Tests/BffSystem.cs))
 
 | Test | Ce qui est vérifié |
 |---|---|
-| `La_connexion_pose_un_cookie_HttpOnly_et_ne_renvoie_aucun_jeton` | `HttpOnly`, `SameSite=Strict`, aucun jeton dans la réponse |
-| `Apres_deconnexion_un_cookie_vole_ne_vaut_plus_rien` | session supprimée côté serveur |
-| `Sans_en_tete_anti_CSRF_une_requete_est_refusee_meme_avec_une_session` | protection CSRF |
-| `Le_tableau_de_bord_agrege_sept_appels_faits_en_parallele` | 7 appels, durée < 4 latences (enchaînés : 7) |
+| `Login_sets_an_HttpOnly_cookie_and_returns_no_token` | `HttpOnly`, `SameSite=Strict`, aucun jeton dans la réponse |
+| `After_logout_a_stolen_cookie_is_worthless` | session supprimée côté serveur |
+| `Without_the_anti_CSRF_header_a_request_is_refused_even_with_a_session` | protection CSRF |
+| `The_dashboard_aggregates_seven_calls_made_in_parallel` | 7 appels, durée < 4 latences (enchaînés : 7) |
 | `Une_panne_des_offres_degrade…`, `Un_service_trop_lent_est_abandonne…` | dégradation, budget de temps |
-| `Un_virement_passe_par_la_session_et_les_droits_de_l_utilisateur` | jeton de l'utilisateur, 403 sur le compte de Bob |
-| `L_accueil_mobile_tient_en_une_requete_et_une_reponse_compacte` | 5 appels, pas d'IBAN, libellés courts, 5 fois plus léger |
-| `La_v2_ajoute_un_bandeau_d_offre_sans_changer_la_v1`, `Le_curseur_parcourt…` | versions, pagination |
-| `Chaque_BFF_ne_connait_les_services_et_l_autre_BFF_que_par_HTTP` | **test d'architecture** : aucune référence de code |
+| `A_transfer_goes_through_the_session_and_the_user_s_rights` | jeton de l'utilisateur, 403 sur le compte de Bob |
+| `The_mobile_home_fits_in_one_request_and_a_compact_response` | 5 appels, pas d'IBAN, libellés courts, 5 fois plus léger |
+| `The_v2_adds_an_offer_banner_without_changing_the_v1`, `Le_curseur_parcourt…` | versions, pagination |
+| `Each_BFF_only_knows_the_services_and_the_other_BFF_through_HTTP` | **test d'architecture** : aucune référence de code |
 
 Les tests de sécurité et de parallélisme ont été vérifiés par mutation : appels enchaînés, cookie sans `HttpOnly` ou
 sessions gardées dans le cookie font chacun échouer le test correspondant.

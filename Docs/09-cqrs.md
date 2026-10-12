@@ -24,23 +24,23 @@ flowchart TB
     Client(["Client"])
 
     subgraph Ecriture["ÉCRITURE"]
-        BC["BusCommandes"] -->|"① valider"| Val["IValidateur&lt;T&gt;"]
-        BC -->|"② traiter"| G["IGestionnaireCommande&lt;T&gt;"]
-        G --> A["Agrégat Compte"]
-        G --> DBE[("EcritureDb<br/>comptes + journal")]
+        BC["CommandBus"] -->|"① valider"| Val["IValidator&lt;T&gt;"]
+        BC -->|"② traiter"| G["ICommandHandler&lt;T&gt;"]
+        G --> A["Agrégat Account"]
+        G --> DBE[("WriteDb<br/>comptes + journal")]
     end
 
-    S["SynchroniseurProjections<br/>(tâche de fond)"]
+    S["ProjectionSynchronizer<br/>(tâche de fond)"]
 
     subgraph Lecture["LECTURE"]
-        Pr["Projecteur"] --> DBL[("LectureDb<br/>ReleveCompte · LigneOperation<br/>Statistiques")]
-        BR["BusRequetes"] --> Q["IGestionnaireRequete&lt;,&gt;"] --> DBL
+        Pr["Projector"] --> DBL[("ReadDb<br/>AccountStatement · OperationLine<br/>Statistics")]
+        BR["QueryBus"] --> Q["IQueryHandler&lt;,&gt;"] --> DBL
     end
 
     Client -->|"POST · commande"| BC
     Client -->|"GET · requête"| BR
     DBE -.->|"événements"| S
-    S -.->|"Appliquer"| Pr
+    S -.->|"Apply"| Pr
 
     classDef ecriture fill:#ffebe9,stroke:#cf222e
     classDef lecture fill:#ddf4ff,stroke:#0969da
@@ -48,7 +48,7 @@ flowchart TB
     class Lecture lecture
 ```
 
-Les deux côtés **ne se référencent pas** : le seul lien est `Cqrs.Evenements`.
+Les deux côtés **ne se référencent pas** : le seul lien est `Cqrs.Events`.
 
 ---
 
@@ -57,7 +57,7 @@ Les deux côtés **ne se référencent pas** : le seul lien est `Cqrs.Evenements
 ### 1. Une commande : intention + validation + gestionnaire, dans un fichier
 
 L'identifiant est fourni par l'appelant : la commande n'a rien à renvoyer.
-([OuvrirCompte.cs](../09-CQRS/Cqrs.Ecriture/Commandes/OuvrirCompte.cs))
+([OpenAccount.cs](../09-CQRS/Cqrs.Write/Commands/OpenAccount.cs))
 
 ```csharp
 public record OpenAccount(Guid AccountId, string Owner, decimal InitialDeposit) : ICommand;
@@ -90,7 +90,7 @@ public class OpenAccountHandler(WriteDb db, TimeProvider clock) : ICommandHandle
 ### 2. Un pipeline commun pour toutes les commandes
 
 C'est le rôle qu'on confie souvent à MediatR, écrit ici en quelques lignes.
-([BusCommandes.cs](../09-CQRS/Cqrs.Ecriture/Commandes/BusCommandes.cs))
+([CommandBus.cs](../09-CQRS/Cqrs.Write/Commands/CommandBus.cs))
 
 ```csharp
 public async Task Send<TCommand>(TCommand command) where TCommand : ICommand
@@ -108,7 +108,7 @@ public async Task Send<TCommand>(TCommand command) where TCommand : ICommand
 
 ### 3. L'écriture enregistre l'état ET les événements, ensemble
 
-([EcritureDb.cs](../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs))
+([WriteDb.cs](../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs))
 
 ```csharp
 /// Saves the changes and adds to the log the events produced by the aggregates.
@@ -134,7 +134,7 @@ public async Task Save(params IDomainEvent[] extraEvents)
 ### 4. Le projecteur construit les vues
 
 Seul code qui écrit côté lecture. Le **point de reprise** le rend idempotent.
-([Projecteur.cs](../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs))
+([Projector.cs](../09-CQRS/Cqrs.Read/Projections/Projector.cs))
 
 ```csharp
 public async Task Apply(RecordedEvent recorded)
@@ -164,7 +164,7 @@ public async Task Apply(RecordedEvent recorded)
 
 ### 5. Les requêtes ne font que lire
 
-([Requetes.cs](../09-CQRS/Cqrs.Lecture/Requetes/Requetes.cs))
+([Queries.cs](../09-CQRS/Cqrs.Read/Queries/Queries.cs))
 
 ```csharp
 public class GetDashboardHandler(ReadDb db) : IQueryHandler<GetDashboard, DashboardView>
@@ -193,7 +193,7 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest 
 
 ### La cohérence à terme, rendue visible
 
-`appsettings.json` ralentit volontairement la projection de 2 s (`Projections:DelaiMs`).
+`appsettings.json` ralentit volontairement la projection de 2 s (`Projections:DelayMs`).
 
 ```mermaid
 sequenceDiagram
@@ -202,19 +202,19 @@ sequenceDiagram
     participant E as Côté écriture
     participant S as Synchroniseur
     participant L as Côté lecture
-    Client->>API: POST /comptes/alice/retrait (100)
-    API->>E: BusCommandes.Envoyer(RetirerArgent)
+    Client->>API: POST /accounts/alice/withdrawal (100)
+    API->>E: CommandBus.Send(WithdrawMoney)
     E->>E: agrégat + journal (événement #3)
     API-->>Client: 202 Accepted
-    Client->>API: GET /comptes/alice
-    API->>L: ConsulterReleve
+    Client->>API: GET /accounts/alice
+    API->>L: GetStatement
     L-->>Client: solde 1 000 (pas encore à jour)
     Client->>API: GET /admin/projections
     API-->>Client: retard : 1
-    S->>E: LireApres(2)
+    S->>E: ReadAfter(2)
     S->>S: attente de 2 s (démo)
-    S->>L: Projecteur.Appliquer(#3)
-    Client->>API: GET /comptes/alice
+    S->>L: Projector.Apply(#3)
+    Client->>API: GET /accounts/alice
     L-->>Client: solde 900
 ```
 
@@ -223,9 +223,9 @@ sequenceDiagram
 ## Les tests
 
 - **Côté écriture** : les événements produits par l'agrégat, le pipeline de validation
-  ([EcritureTests.cs](../09-CQRS/Cqrs.Tests/EcritureTests.cs)).
+  ([WriteTests.cs](../09-CQRS/Cqrs.Tests/WriteTests.cs)).
 - **Côté lecture, sans aucune commande** : on lui donne des événements, on interroge ses vues
-  ([LectureTests.cs](../09-CQRS/Cqrs.Tests/LectureTests.cs)) :
+  ([ReadTests.cs](../09-CQRS/Cqrs.Tests/ReadTests.cs)) :
 
 ```csharp
 private static readonly RecordedEvent[] History =

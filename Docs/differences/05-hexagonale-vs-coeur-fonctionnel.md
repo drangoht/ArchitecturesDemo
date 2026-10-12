@@ -6,7 +6,7 @@
 > cœur fonctionnel n'en fait **plus aucune** : il reçoit des valeurs et renvoie une décision, la coquille fait tout le
 > reste.
 
-📁 Démos : [`01-Hexagonale`](../../01-Hexagonale) · [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) · · 🌐 [English](../en/differences/05-hexagonale-vs-coeur-fonctionnel.md)
+📁 Démos : [`01-Hexagonal`](../../01-Hexagonal) · [`04-FunctionalCore`](../../04-FunctionalCore) · · 🌐 [English](../en/differences/05-hexagonale-vs-coeur-fonctionnel.md)
 📖 Pages : [Hexagonale](../01-hexagonale.md) · [Cœur fonctionnel](../04-coeur-fonctionnel.md) · 🗂️ Fiches : [1](../fiches/01-hexagonale.md) · [4](../fiches/04-coeur-fonctionnel.md)
 
 ⬅️ [Clean ou Vertical Slice ?](04-clean-vs-vertical-slice.md) · ➡️ [DDD ou Hexagonale / Onion ?](06-ddd-vs-hexagonale-onion.md)
@@ -22,10 +22,10 @@ souvent décrit comme **l'hexagonale poussée à l'extrême**.
 
 | | Hexagonale | Cœur fonctionnel |
 |---|---|---|
-| Le centre appelle… | des **ports sortants** (`IComptes.Charger`, `INotifications`) | **rien** |
-| Style | objets, `async`, entités modifiées sur place | fonctions **pures**, `record` immuables (`compte with { Solde = … }`) |
+| Le centre appelle… | des **ports sortants** (`IAccounts.Load`, `INotifications`) | **rien** |
+| Style | objets, `async`, entités modifiées sur place | fonctions **pures**, `record` immuables (`account with { Balance = … }`) |
 | Qui orchestre lire → décider → écrire | le cas d'utilisation, **au centre** | la **coquille**, à l'extérieur |
-| Ce que renvoie la règle | rien (elle modifie l'entité) ou une exception | une **décision** : `Accepte` ou `Refuse` |
+| Ce que renvoie la règle | rien (elle modifie l'entité) ou une exception | une **décision** : `Accepted` ou `Refused` |
 | Le temps (« aujourd'hui ») | lu au centre via un port (horloge) si besoin | **une donnée d'entrée** calculée par la coquille |
 | Tests du centre | avec des adapters de test (mémoire, faux) | valeurs → valeur, **aucun double** |
 | Limite | interfaces à maintenir | tout charger **avant** de décider |
@@ -36,13 +36,13 @@ souvent décrit comme **l'hexagonale poussée à l'extrême**.
 flowchart LR
     subgraph H["HEXAGONALE"]
         direction TB
-        CU["Cas d'utilisation<br/>(centre)"] -->|"Charger"| P["port IComptes"]
-        CU -->|"Retirer, Deposer"| E["Compte"]
-        CU -->|"Sauvegarder"| P
+        CU["Cas d'utilisation<br/>(centre)"] -->|"Charger"| P["port IAccounts"]
+        CU -->|"Withdraw, Deposit"| E["Account"]
+        CU -->|"Save"| P
     end
     subgraph F["CŒUR FONCTIONNEL"]
         direction TB
-        L["Coquille : lire"] --> R["Regles.Virer<br/>(pur)"] --> A["Coquille : appliquer"]
+        L["Coquille : lire"] --> R["Rules.Transfer<br/>(pur)"] --> A["Coquille : appliquer"]
     end
     H ~~~ F
 ```
@@ -50,7 +50,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Hexagonale** : le cas d'utilisation, au centre, charge, modifie et sauvegarde à travers ses ports
-([CasUtilisation.cs](../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs)) :
+([UseCases.cs](../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs)) :
 
 ```csharp
 var source = await accounts.Load(sourceId) ?? throw new AccountNotFoundException(sourceId);
@@ -64,7 +64,7 @@ await accounts.Save(target);
 ```
 
 **Cœur fonctionnel** : la règle reçoit tout ce dont elle a besoin, y compris le cumul du jour, et renvoie une décision
-([Regles.cs](../../04-CoeurFonctionnel/Fonctionnel.Coeur/Regles.cs)) :
+([Rules.cs](../../04-FunctionalCore/Functional.Core/Rules.cs)) :
 
 ```csharp
 public static TransferDecision Transfer(Account source, Account target, decimal amount, decimal alreadyTransferredToday)
@@ -75,7 +75,7 @@ public static TransferDecision Transfer(Account source, Account target, decimal 
 }
 ```
 
-La coquille fait les trois temps ([Endpoints.cs](../../04-CoeurFonctionnel/Fonctionnel.Coquille/Endpoints.cs)) :
+La coquille fait les trois temps ([Endpoints.cs](../../04-FunctionalCore/Functional.Shell/Endpoints.cs)) :
 
 ```csharp
 // 2. DECIDE (pure)

@@ -3,13 +3,13 @@
 > **En une phrase** : des règles **pures** qui renvoient une décision ; une fine **coquille** autour fait toutes les entrées/sorties.
 
 **Famille** : organisation du code · **Origine** : Gary Bernhardt, « Boundaries », 2012 ·
-**Démo** : [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) (port 5104) · 📖 [Page complète](../04-coeur-fonctionnel.md) ·
+**Démo** : [`04-FunctionalCore`](../../04-FunctionalCore) (port 5104) · 📖 [Page complète](../04-coeur-fonctionnel.md) ·
 🌐 [English](../en/fiches/04-coeur-fonctionnel.md)
 
 ```mermaid
 flowchart LR
-    L["① LIRE<br/>base, horloge, requête"] -->|valeurs immuables| D["② DÉCIDER (pur)<br/>Regles.Virer(…)<br/>→ DecisionVirement"]
-    D -->|"Accepte / Refuse"| A["③ APPLIQUER<br/>écrire, journaliser, répondre"]
+    L["① LIRE<br/>base, horloge, requête"] -->|valeurs immuables| D["② DÉCIDER (pur)<br/>Rules.Transfer(…)<br/>→ TransferDecision"]
+    D -->|"Accepted / Refused"| A["③ APPLIQUER<br/>écrire, journaliser, répondre"]
 ```
 
 ## L'essentiel

@@ -4,7 +4,7 @@
 > données, ses règles et ses quotas, sans jamais voir ceux des autres.
 
 **Famille** : découpage du système · **Démo** : [`15-MultiTenant`](../../15-MultiTenant) (port 5114 ; locataire par
-sous-domaine `beta.localhost:5114` ou en-tête `X-Locataire`) · 📖 [Page complète](../15-multi-tenant.md) ·
+sous-domaine `beta.localhost:5114` ou en-tête `X-Tenant`) · 📖 [Page complète](../15-multi-tenant.md) ·
 🌐 [English](../en/fiches/15-multi-tenant.md)
 
 ```mermaid
@@ -16,10 +16,10 @@ flowchart LR
 
 ## L'essentiel
 
-- Le locataire est résolu **une fois** (middleware) puis **ambiant** (`ContexteLocataire`).
+- Le locataire est résolu **une fois** (middleware) puis **ambiant** (`TenantContext`).
 - Garde-fous : **filtre global** EF Core, **estampillage** automatique à l'écriture, **clé composite** (locataire + id).
 - Formules : base partagée par défaut, **base dédiée** pour qui la paie ; quotas contre le **voisin bruyant**.
-- `Mt.Locataires` ne contient aucun métier bancaire : le métier reste écrit comme pour une seule banque.
+- `Mt.Tenants` ne contient aucun métier bancaire : le métier reste écrit comme pour une seule banque.
 
 | ✅ Quand l'utiliser | ❌ Coût |
 |---|---|

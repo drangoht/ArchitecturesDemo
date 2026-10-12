@@ -25,7 +25,7 @@ possibilité d'ajouter, retirer ou mettre à jour un morceau **sans recompiler l
 |---|---|---|
 | Question | ajouter des **variantes** (par client, pays, offre) sans toucher au cœur | **déployer et dimensionner** des parties indépendamment |
 | Processus | **un seul** : les plugins tournent dans celui du noyau | un par service |
-| Le contrat | un **SDK** : des interfaces .NET (`IControleOperation`, `IRegleFrais`…) | du **JSON** sur le réseau |
+| Le contrat | un **SDK** : des interfaces .NET (`IOperationCheck`, `IFeeRule`…) | du **JSON** sur le réseau |
 | Qui appelle qui | le **noyau** appelle les plugins, aux points d'extension qu'il a prévus | chaque service appelle qui il veut, par HTTP ou messages |
 | Coût d'un appel | un appel de méthode | un aller-retour réseau, qui peut échouer |
 | Mettre à jour un morceau | déposer une DLL : rechargée **à chaud** | redéployer un service |
@@ -41,12 +41,12 @@ flowchart LR
     subgraph K["MICROKERNEL : 1 processus"]
         direction TB
         N["Noyau"] -->|"points d'extension"| SDK["SDK"]
-        P1["PlafondNocturne"] --> SDK
-        P2["FraisDeVirement"] --> SDK
+        P1["NightLimit"] --> SDK
+        P2["TransferFees"] --> SDK
     end
     subgraph M["MICROSERVICES : N processus"]
         direction TB
-        V["Virements"] -->|"HTTP"| C["Comptes"]
+        V["Transfers"] -->|"HTTP"| C["Accounts"]
         V -.->|"messages"| NO["Notifications"]
     end
     K ~~~ M
@@ -55,7 +55,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Microkernel** : c'est le noyau qui décide où les extensions interviennent, et dans quel ordre
-([NoyauBancaire.cs](../../13-Microkernel/Mk.Noyau/NoyauBancaire.cs)) :
+([BankingKernel.cs](../../13-Microkernel/Mk.Kernel/BankingKernel.cs)) :
 
 ```csharp
 // 1. "Check" extension point: a single refusal is enough.
@@ -70,7 +70,7 @@ foreach (var check in plugins.Active<IOperationCheck>())
 ```
 
 Un plugin est une classe chargée depuis une DLL, dans son propre contexte, mais **dans le même processus**
-([ChargeurPlugins.cs](../../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs)) :
+([PluginLoader.cs](../../13-Microkernel/Mk.Kernel/PluginLoader.cs)) :
 
 ```csharp
 internal sealed class PluginLoadContext(string dllPath)
@@ -78,7 +78,7 @@ internal sealed class PluginLoadContext(string dllPath)
 ```
 
 **Microservices** : Virements appelle Comptes **à travers le réseau**, avec tout ce qu'il faut pour survivre à ses
-pannes ([Micro.Virements/Program.cs](../../08-Microservices/Micro.Virements/Program.cs)) :
+pannes ([Micro.Transfers/Program.cs](../../08-Microservices/Micro.Transfers/Program.cs)) :
 
 ```csharp
 builder.Services.AddHttpClient("accounts", (sp, client) =>
@@ -92,7 +92,7 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
 
 Ce qui en découle :
 
-- un plugin `FraisDeVirement` s'exécute **dans** l'opération du noyau ; pas de réseau, pas d'idempotence à prévoir ;
+- un plugin `TransferFees` s'exécute **dans** l'opération du noyau ; pas de réseau, pas d'idempotence à prévoir ;
 - un plugin qui boucle ou lit le disque peut nuire à tout le processus ; un service fautif ne nuit qu'à lui-même ;
 - ajouter une règle de frais à un microservice demande de le **redéployer** ; au microkernel, de **déposer** une DLL.
 

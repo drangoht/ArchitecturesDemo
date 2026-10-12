@@ -14,7 +14,7 @@
 
 ## Ce qu'ils partagent
 
-Des **événements** (`CompteOuvert`, `ArgentRetire`…), des **projections** qui construisent des vues de lecture, et la
+Des **événements** (`AccountOpened`, `MoneyWithdrawn`…), des **projections** qui construisent des vues de lecture, et la
 **cohérence à terme** entre ce qu'on écrit et ce qu'on lit. D'où la confusion.
 
 ## Les différences point par point
@@ -40,7 +40,7 @@ flowchart LR
         direction TB
         CC["Commande"] --> CA["Agrégat"]
         CA --> CE[("état + journal")]
-        CE -.-> CP["Projecteur"] --> CL[("vues")]
+        CE -.-> CP["Projector"] --> CL[("vues")]
     end
     subgraph E["EVENT SOURCING"]
         direction TB
@@ -55,7 +55,7 @@ flowchart LR
 ## Dans le code des démos
 
 **CQRS** : l'écriture enregistre l'**état** (les entités suivies par EF Core) **et** ajoute les événements au journal,
-dans la même transaction ([EcritureDb.cs](../../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs)) :
+dans la même transaction ([WriteDb.cs](../../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs)) :
 
 ```csharp
 public async Task Save(params IDomainEvent[] extraEvents)
@@ -71,7 +71,7 @@ public async Task Save(params IDomainEvent[] extraEvents)
 
 **Event Sourcing** : il n'y a pas de colonne « solde ». L'agrégat **décide** (et produit un événement), puis
 **applique** l'événement pour faire évoluer son état en mémoire
-([Compte.cs](../../10-EventSourcing/Es.Domaine/Compte.cs)) :
+([Account.cs](../../10-EventSourcing/Es.Domain/Account.cs)) :
 
 ```csharp
 // ─── Decisions ───
@@ -92,7 +92,7 @@ public static Account Rehydrate(IEnumerable<IEvent> history) =>
 ```
 
 Et le magasin refuse d'écrire si le flux a bougé depuis son chargement
-([MagasinEvenements.cs](../../10-EventSourcing/Es.Stockage/MagasinEvenements.cs)) :
+([EventStore.cs](../../10-EventSourcing/Es.Storage/EventStore.cs)) :
 
 ```csharp
 var current = _events.Count(e => e.Stream == write.Stream);
@@ -102,7 +102,7 @@ if (current != write.ExpectedVersion)
 
 **Ce qui est possible d'un côté seulement** : les deux démos savent jeter leurs vues et les reconstruire en rejouant
 leurs événements. Mais seule l'Event Sourcing peut **retrouver l'état d'écriture à une version passée**
-(`GET /comptes/{id}/etat?version=2`) : en CQRS, l'état est écrasé à chaque modification, et le journal n'est qu'un
+(`GET /accounts/{id}/state?version=2`) : en CQRS, l'état est écrasé à chaque modification, et le journal n'est qu'un
 complément, qui ne garantit pas de pouvoir reconstituer un agrégat. En Event Sourcing, le journal **est** l'agrégat,
 et une projection ajoutée après coup (« plus gros retraits ») connaît d'emblée tout le passé.
 

@@ -5,7 +5,7 @@
 > **La différence en une phrase** : le **même virement en plusieurs étapes**, écrit **en un seul endroit** (un
 > orchestrateur qui appelle chaque service) ou **nulle part** (chaque service réagit aux événements des autres).
 
-📁 Démos : [`14-SagaOrchestree`](../../14-SagaOrchestree) · [`21-Choregraphie`](../../21-Choregraphie) (mêmes données, · 🌐 [English](../en/differences/12-saga-orchestree-vs-choregraphie.md)
+📁 Démos : [`14-OrchestratedSaga`](../../14-OrchestratedSaga) · [`21-Choreography`](../../21-Choreography) (mêmes données, · 🌐 [English](../en/differences/12-saga-orchestree-vs-choregraphie.md)
 mêmes règles, pour comparer sur pièces) · 📖 Pages : [Saga orchestrée](../14-saga-orchestree.md) ·
 [Chorégraphie](../21-choregraphie.md) · 🗂️ Fiches : [14](../fiches/14-saga-orchestree.md) · [21](../fiches/21-choregraphie.md)
 
@@ -24,12 +24,12 @@ on ne défait plus), les participants sont idempotents.
 
 | | Saga orchestrée | Chorégraphie |
 |---|---|---|
-| Le processus est écrit… | **en un seul fichier** (`DefinitionVirement.cs`) | **nulle part** : il émerge des abonnements |
+| Le processus est écrit… | **en un seul fichier** (`TransferDefinition.cs`) | **nulle part** : il émerge des abonnements |
 | Un service connaît… | l'orchestrateur connaît **tous** les participants | **personne** : seulement des contrats d'événements (test d'architecture) |
 | « Où en est le virement 42 ? » | l'**état de la saga**, enregistré après chaque pas | une **projection** à construire (le service Suivi, qui écoute les 13 types d'événements) |
-| Compensation | **ordre inverse**, par le moteur, réessayée jusqu'à réussir | **dispersée** : Comptes libère les fonds sur `ConformiteRefusee` **et** sur `ChangeEchoue` |
+| Compensation | **ordre inverse**, par le moteur, réessayée jusqu'à réussir | **dispersée** : Comptes libère les fonds sur `ComplianceRefused` **et** sur `ExchangeFailed` |
 | Un participant en panne | le moteur réessaie (4 fois), puis compense ou passe « à traiter manuellement » | **silence** : le courtier réessaie, met aux lettres mortes ; la réservation **expire** au bout de 30 s |
-| Attente humaine | une étape « en attente », avec une **échéance** gérée par le moteur | la Conformité attend ; elle doit aussi écouter `ReservationExpiree` |
+| Attente humaine | une étape « en attente », avec une **échéance** gérée par le moteur | la Conformité attend ; elle doit aussi écouter `ReservationExpired` |
 | Ajouter une réaction (fidélité…) | modifier la définition | **s'abonner**, sans toucher aux autres |
 | Point unique de défaillance | l'orchestrateur | le courtier |
 | La carte du système | la définition | la liste des abonnements, **à l'exécution** (`GET /bus`) |
@@ -40,17 +40,17 @@ on ne défait plus), les participants sont idempotents.
 flowchart LR
     subgraph O["ORCHESTRATION"]
         direction TB
-        OR["Orchestrateur<br/>état de la saga"] -->|"① réserver · ④⑤ créditer, débiter"| C1["Comptes"]
-        OR -->|"② examiner"| K1["Conformité"]
-        OR -->|"③ convertir"| X1["Change"]
+        OR["Orchestrateur<br/>état de la saga"] -->|"① réserver · ④⑤ créditer, débiter"| C1["Accounts"]
+        OR -->|"② examiner"| K1["Compliance"]
+        OR -->|"③ convertir"| X1["Exchange"]
         OR -->|"⑥ notifier"| N1["Notifications"]
     end
     subgraph C["CHORÉGRAPHIE"]
         direction TB
-        C2["Comptes"] -.->|"FondsReserves"| K2["Conformité"]
-        K2 -.->|"ConformiteApprouvee"| X2["Change"]
-        X2 -.->|"DevisesConverties"| C3["Comptes"]
-        C3 -.->|"VirementRegle"| N2["Notifications, Fidélité"]
+        C2["Accounts"] -.->|"FundsReserved"| K2["Compliance"]
+        K2 -.->|"ComplianceApproved"| X2["Exchange"]
+        X2 -.->|"CurrenciesConverted"| C3["Accounts"]
+        C3 -.->|"TransferSettled"| N2["Notifications, Loyalty"]
     end
     O ~~~ C
 ```
@@ -58,7 +58,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Orchestration** : le processus se lit de haut en bas, avec ses compensations à côté de chaque étape
-([DefinitionVirement.cs](../../14-SagaOrchestree/Saga.Orchestrateur/DefinitionVirement.cs)) :
+([TransferDefinition.cs](../../14-OrchestratedSaga/Saga.Orchestrator/TransferDefinition.cs)) :
 
 ```csharp
 new("ReserveFunds",
@@ -71,7 +71,7 @@ new("CaptureFunds",
 ```
 
 Et c'est le moteur qui décide quoi faire d'un échec
-([MoteurSaga.cs](../../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs)) :
+([SagaEngine.cs](../../14-OrchestratedSaga/Saga.Orchestrator/SagaEngine.cs)) :
 
 ```csharp
 else if (PointOfNoReturnPassed(saga))
@@ -87,7 +87,7 @@ else
 
 **Chorégraphie** : aucun fichier ne décrit le processus. Le seul fil est la **corrélation** et la **cause** portées
 par chaque événement, qui permettent de le raconter après coup
-([Bus.cs](../../21-Choregraphie/Choreo.Bus/Bus.cs)) :
+([Bus.cs](../../21-Choreography/Choreo.Bus/Bus.cs)) :
 
 ```csharp
 /// <summary>A new event, in reaction to this one: same correlation, and this one as cause.</summary>
@@ -96,11 +96,11 @@ public T Next<T>(T next, string emitter) where T : Event =>
 ```
 
 Quand le change tombe en panne, personne n'attend sa réponse. Le filet de sécurité est **local** : Comptes donne une
-durée de vie à ses réservations et émet `ReservationExpiree`. Chaque cas tardif (analyste qui décide trop tard,
+durée de vie à ses réservations et émet `ReservationExpired`. Chaque cas tardif (analyste qui décide trop tard,
 règlement qui arrive après l'expiration) a demandé une ligne de code dans **un service différent**.
 
 En revanche, ajouter le service Fidélité n'a demandé **aucune** modification ailleurs : il s'abonne à
-`VirementRegle`, et le test `Ajouter_un_abonne_ne_change_rien_pour_les_autres` le prouve. Côté orchestration, il
+`TransferSettled`, et le test `Adding_a_subscriber_changes_nothing_for_the_others` le prouve. Côté orchestration, il
 aurait fallu ajouter une étape à la définition.
 
 ## Le même incident : le change est en panne
@@ -110,7 +110,7 @@ aurait fallu ajouter une étape à la définition.
 | Qui s'en aperçoit | le moteur (exception à l'étape ③) | le courtier (livraison en échec) |
 | Ce qui se passe | nouveaux essais, puis compensation : fonds libérés, saga « Annulée » | 4 essais, lettres mortes ; le virement reste « EnCours », 200 € réservés |
 | Comment ça finit | immédiatement, par le moteur | 30 s plus tard, par l'expiration de la réservation : « Abandonné » |
-| Où le voir | `GET /sagas/{id}` : l'historique complet | `GET /bus/lettres-mortes`, `GET /virements/bloques` |
+| Où le voir | `GET /sagas/{id}` : l'historique complet | `GET /bus/dead-letters`, `GET /transfers/stuck` |
 
 ## Comment choisir
 
@@ -122,7 +122,7 @@ aurait fallu ajouter une étape à la définition.
 
 ## Les combiner
 
-Le plus courant : un orchestrateur conduit le processus, puis publie `VirementEffectue` ; notifications, fidélité,
+Le plus courant : un orchestrateur conduit le processus, puis publie `TransferMade` ; notifications, fidélité,
 comptabilité **chorégraphient** autour, sans que l'orchestrateur les connaisse.
 
 ## Idées reçues

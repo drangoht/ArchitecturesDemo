@@ -89,7 +89,7 @@ flowchart LR
     SA["Saga orchestrée"] --- CH["Chorégraphie"]
     PI["Pipeline"] --- CH
     AC["Acteurs"] --- SP["Spatiale"]
-    PA["Passerelle"] --- BFF["BFF"]
+    PA["Gateway"] --- BFF["BFF"]
     BFF --- GQ["GraphQL"]
     PA --- SF["Façade Strangler"]
     RE["REST"] -.- GR["gRPC"] -.- GQ

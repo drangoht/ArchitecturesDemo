@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart LR
-    F[/"CSV"/] --> A["Analyser"] --> V["Valider"] --> D["Dédupliquer"] --> C["Convertir"] --> FR["Fraude ×N"] --> E["Exécuter"]
+    F[/"CSV"/] --> A["Analyser"] --> V["Validate"] --> D["Dédupliquer"] --> C["ConvertCurrency"] --> FR["Fraude ×N"] --> E["Execute"]
     A & V & D & C & FR & E -.-> R[("Rejets par motif")]
 ```
 

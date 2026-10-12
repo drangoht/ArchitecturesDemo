@@ -11,7 +11,7 @@ et console sur les mêmes ViewModels) · 📖 [Page complète](../24-mvc-mvvm.md
 flowchart LR
     N(["Navigateur"]) -->|requête| C["Contrôleur"] -->|"choisit, remplit"| V["Vue Razor"] -->|HTML| N
     U(["Utilisateur"]) --> W["Vue XAML / console"] <-->|"liaisons, commandes,<br/>PropertyChanged"| VM["ViewModel"]
-    C --> M["Modèle IBanque"]
+    C --> M["Modèle IBank"]
     VM --> M
 ```
 

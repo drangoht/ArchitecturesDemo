@@ -4,7 +4,7 @@
 > n'efface jamais rien.
 
 **Famille** : modélisation · **Démo** : [`10-EventSourcing`](../../10-EventSourcing) (port 5109 ; magasin lisible :
-`Es.Api\evenements.jsonl`) · 📖 [Page complète](../10-event-sourcing.md) ·
+`Es.Api\events.jsonl`) · 📖 [Page complète](../10-event-sourcing.md) ·
 🌐 [English](../en/fiches/10-event-sourcing.md)
 
 ```mermaid

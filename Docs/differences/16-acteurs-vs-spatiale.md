@@ -6,7 +6,7 @@
 > **un seul propriétaire** (aucune écriture ne se perd), quand l'architecture spatiale la **réplique** dans chaque
 > unité (des écritures simultanées peuvent se perdre).
 
-📁 Démos : [`18-ModeleActeurs`](../../18-ModeleActeurs) · [`19-SpaceBased`](../../19-SpaceBased) · · 🌐 [English](../en/differences/16-acteurs-vs-spatiale.md)
+📁 Démos : [`18-ActorModel`](../../18-ActorModel) · [`19-SpaceBased`](../../19-SpaceBased) · · 🌐 [English](../en/differences/16-acteurs-vs-spatiale.md)
 📖 Pages : [Acteurs](../18-modele-acteurs.md) · [Spatiale](../19-space-based.md) ·
 🗂️ Fiches : [18](../fiches/18-modele-acteurs.md) · [19](../fiches/19-space-based.md)
 
@@ -25,14 +25,14 @@ base pour lire ; on passe à l'échelle en ajoutant des unités de calcul. Et da
 | | Acteurs | Spatiale |
 |---|---|---|
 | Problème visé | la **concurrence** : plusieurs requêtes sur la même donnée | la **base qui sature** : trop de requêtes pour elle |
-| Une donnée vit… | dans **un seul** acteur (`compte/alice`) | **répliquée** dans chaque unité de traitement |
+| Une donnée vit… | dans **un seul** acteur (`account/alice`) | **répliquée** dans chaque unité de traitement |
 | Écritures simultanées | **mises en file** dans la boîte aux lettres, traitées une par une | appliquées **en parallèle** dans plusieurs répliques |
 | Écriture perdue ? | **jamais** | **possible** (collision : la plus grande version gagne) |
 | Parade | structurelle : un propriétaire, un message à la fois | le **routage par affinité** (même clé → même unité), imparfait |
 | La base | état durable écrit par l'acteur ; relu par une nouvelle incarnation | sauvegarde **en différé** (pompe) ; peut tomber sans arrêter le service |
 | Passer à l'échelle | des millions d'acteurs, **activés à la demande**, répartis | 2 à 6 unités, ajoutées selon la charge, chacune avec **toutes** les données |
 | Une panne | l'acteur fautif est **remplacé** (supervision) ; les autres ne voient rien | une unité tombe : ses requêtes vont ailleurs ; toutes tombent : démarrage à froid depuis la base |
-| Opération sur deux données | une conversation (acteur `virement/…`), avec compensation | sans transaction ; risque de collision sur chaque clé |
+| Opération sur deux données | une conversation (acteur `transfer/…`), avec compensation | sans transaction ; risque de collision sur chaque clé |
 | Limite | lectures transversales, cycles de demandes (interblocages) | tout en mémoire, base en retard, collisions |
 
 ## Côte à côte : 3 requêtes sur le compte d'Alice
@@ -56,7 +56,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Acteurs** : un seul lecteur par boîte aux lettres, qui attend la fin de chaque message avant le suivant
-([SystemeActeurs.cs](../../18-ModeleActeurs/Acteurs.Noyau/SystemeActeurs.cs)) :
+([ActorSystem.cs](../../18-ActorModel/Actors.Runtime/ActorSystem.cs)) :
 
 ```csharp
 // THE key point of the model: only one message at a time, each handled to the end before the next one.
@@ -64,7 +64,7 @@ response = await activation.Instance!.Receive(envelope.Message);
 ```
 
 Le compte peut donc écrire le code le plus naïf : lire, vérifier, modifier, sans verrou
-([CompteActeur.cs](../../18-ModeleActeurs/Acteurs.Banque/CompteActeur.cs)) :
+([AccountActor.cs](../../18-ActorModel/Actors.Bank/AccountActor.cs)) :
 
 ```csharp
 if (debit && amount > state.Balance)
@@ -72,7 +72,7 @@ if (debit && amount > state.Balance)
 ```
 
 **Spatiale** : l'écriture est appliquée dans la réplique locale, puis **publiée** vers les autres répliques et la
-pompe, sans les attendre ([GrilleDeDonnees.cs](../../19-SpaceBased/Espace.Grille/GrilleDeDonnees.cs)) :
+pompe, sans les attendre ([DataGrid.cs](../../19-SpaceBased/Space.Grid/DataGrid.cs)) :
 
 ```csharp
 // The database is not on the request path: the write goes into the pump, we do not wait.
@@ -80,14 +80,14 @@ _toThePump(modification);
 ```
 
 À la réception, une réplique détecte qu'une modification ne part pas de la version qu'elle connaît : c'est une
-collision, et la plus grande version gagne ([Replique.cs](../../19-SpaceBased/Espace.Grille/Replique.cs)) :
+collision, et la plus grande version gagne ([Replica.cs](../../19-SpaceBased/Space.Grid/Replica.cs)) :
 
 ```csharp
 var concurrent = local != m.Previous && local.Unit != "" && local.Unit != m.Version.Unit;
 ```
 
 La parade est de router une même clé toujours vers la même unité
-([GrilleDeMessages.cs](../../19-SpaceBased/Espace.Grille/GrilleDeMessages.cs)) :
+([MessagingGrid.cs](../../19-SpaceBased/Space.Grid/MessagingGrid.cs)) :
 
 ```csharp
 : _units.MaxBy(u => Hash($"{key}/{u.Id}"))!;
@@ -102,7 +102,7 @@ La parade est de router une même clé toujours vers la même unité
 | | | **tourniquet** : 200 acceptés, 700 € : **100 € perdus**, 199 mises à jour écrasées |
 
 En spatiale, même l'affinité n'est pas une garantie : pendant qu'une unité arrive ou part, une clé peut changer de
-propriétaire et une écriture se perdre (test `En_affinite_un_changement_d_unites_ouvre_une_fenetre_de_collision`).
+propriétaire et une écriture se perdre (test `With_affinity_a_change_of_units_opens_a_collision_window`).
 Les acteurs n'ont pas ce problème, car **le propriétaire est la donnée elle-même**.
 
 ## Comment choisir

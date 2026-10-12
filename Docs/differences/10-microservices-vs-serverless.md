@@ -40,15 +40,15 @@ file *poison* de l'autre).
 flowchart LR
     subgraph M["MICROSERVICES"]
         direction TB
-        CL1(["Client"]) -->|"POST /virements"| V1["Service Virements<br/>(toujours là)"]
-        V1 -->|"HTTP débit, crédit"| C1["Service Comptes"]
-        V1 -->|"200 Effectue"| CL1
+        CL1(["Client"]) -->|"POST /transfers"| V1["Service Transfers<br/>(toujours là)"]
+        V1 -->|"HTTP débit, crédit"| C1["Service Accounts"]
+        V1 -->|"200 Done"| CL1
     end
     subgraph S["SERVERLESS"]
         direction TB
-        CL2(["Client"]) -->|"POST /virements"| D2["DemanderVirement"]
+        CL2(["Client"]) -->|"POST /transfers"| D2["RequestTransfer"]
         D2 -->|"202 + message"| Q2[["File virements"]]
-        Q2 --> E2["ExecuterVirement<br/>(N instances)"]
+        Q2 --> E2["ExecuteTransfer<br/>(N instances)"]
         E2 --> T2[("Table comptes<br/>ETag")]
     end
     M ~~~ S
@@ -57,10 +57,10 @@ flowchart LR
 ## Dans le code des démos
 
 **Microservices** : le service Virements fait le virement **dans la requête**, en appelant Comptes par HTTP, et répond
-avec le statut final ([Micro.Virements/Endpoints.cs](../../08-Microservices/Micro.Virements/Endpoints.cs)).
+avec le statut final ([Micro.Transfers/Endpoints.cs](../../08-Microservices/Micro.Transfers/Endpoints.cs)).
 
 **Serverless** : la fonction HTTP **ne fait pas** le virement ; elle l'accepte et le confie à une file
-([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs)) :
+([Functions.cs](../../12-Serverless/Sls.Functions/Functions.cs)) :
 
 ```csharp
 /// <summary>HTTP: the transfer is NOT made here. It is accepted (202) and handed to a queue: immediate response.</summary>
@@ -68,7 +68,7 @@ public static async Task<HttpResponseData> Request(HttpRequestData request, Func
 ```
 
 Il n'y a ni contrôleur ni `Program.cs` de service : un **manifeste** déclare qui réagit à quoi
-([Deploiement.cs](../../12-Serverless/Sls.Fonctions/Deploiement.cs)) :
+([Deployment.cs](../../12-Serverless/Sls.Functions/Deployment.cs)) :
 
 ```csharp
 .Http("RequestTransfer", "POST", "/transfers", TransfersFunctions.Request)
@@ -79,7 +79,7 @@ Il n'y a ni contrôleur ni `Program.cs` de service : un **manifeste** déclare q
 ```
 
 **L'état** : un microservice peut garder ce qu'il veut en mémoire tant qu'il tourne. Une fonction non, et la démo le
-montre côte à côte ([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs)) :
+montre côte à côte ([Functions.cs](../../12-Serverless/Sls.Functions/Functions.cs)) :
 
 ```csharp
 // ✗ Instance memory: specific to THIS instance, reset at each cold start.
@@ -93,10 +93,10 @@ var global = await Concurrency.ModifyOrCreate(context.Table(Tables.Counters), "v
 
 **La concurrence** : dans les microservices, chaque service a sa base et ses transactions. En serverless, des dizaines
 d'instances écrivent dans la même table gérée : on écrit **seulement si personne n'a écrit entre-temps** (ETag), sinon
-on relit et on recommence ([Modele.cs](../../12-Serverless/Sls.Fonctions/Modele.cs)).
+on relit et on recommence ([Model.cs](../../12-Serverless/Sls.Functions/Model.cs)).
 
-**L'échelle** : un import de 8 lignes produit 8 messages, donc **8 instances** d'`ExecuterVirement` en même temps
-(mesuré : `picInstances = 8`), sans rien configurer. Côté microservices, il faudrait lancer plus d'instances du
+**L'échelle** : un import de 8 lignes produit 8 messages, donc **8 instances** d'`ExecuteTransfer` en même temps
+(mesuré : `peakInstances = 8`), sans rien configurer. Côté microservices, il faudrait lancer plus d'instances du
 service Virements soi-même.
 
 ## Comment choisir

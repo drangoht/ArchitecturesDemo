@@ -15,19 +15,19 @@ Aucune des démos précédentes ne traitait cet axe : l'**extensibilité**.
 
 ```mermaid
 flowchart TB
-    subgraph Noyau["Noyau — Mk.Noyau"]
+    subgraph Noyau["Noyau — Mk.Kernel"]
         direction LR
-        N["NoyauBancaire<br/>comptes · débit · crédit"]
-        R["RegistrePlugins"]
-        C["ChargeurPlugins"]
+        N["BankingKernel<br/>comptes · débit · crédit"]
+        R["PluginRegistry"]
+        C["PluginLoader"]
     end
-    SDK["Mk.Contrats (SDK)<br/>IPlugin · IControleOperation<br/>IRegleFrais · IFormatReleve"]
+    SDK["Mk.Contracts (SDK)<br/>IPlugin · IOperationCheck<br/>IFeeRule · IStatementFormat"]
     subgraph Plugins["Dossier plugins/ — chargés à l'exécution"]
         direction LR
-        P1["PlafondNocturne"]
-        P2["ListeNoire"]
-        P3["FraisDeVirement"]
-        P4["ExportCsv + ExportQif"]
+        P1["NightLimit"]
+        P2["Blocklist"]
+        P3["TransferFees"]
+        P4["CsvExport + QifExport"]
     end
     Noyau --> SDK
     Plugins --> SDK
@@ -37,16 +37,16 @@ flowchart TB
     class SDK sdk
 ```
 
-**Le noyau ne référence aucun plugin**, et les plugins ne voient du noyau que le SDK (`Mk.Contrats`). Les deux côtés
+**Le noyau ne référence aucun plugin**, et les plugins ne voient du noyau que le SDK (`Mk.Contracts`). Les deux côtés
 ne se rencontrent qu'à l'exécution.
 
 ### Les trois points d'extension
 
 | Point d'extension | Rôle | Plugins de la démo |
 |---|---|---|
-| `IControleOperation` | Peut **refuser** une opération avant qu'elle ait lieu | `PlafondNocturne` (retraits limités la nuit), `ListeNoire` (virements vers des comptes interdits) |
-| `IRegleFrais` | Ajoute des **frais** | `FraisDeVirement` (0,1 %, entre 0,20 € et 5 €) |
-| `IFormatReleve` | Produit un **relevé** dans un format | `ExportCsv`, `ExportQif` — **deux extensions dans une seule DLL** |
+| `IOperationCheck` | Peut **refuser** une opération avant qu'elle ait lieu | `NightLimit` (retraits limités la nuit), `Blocklist` (virements vers des comptes interdits) |
+| `IFeeRule` | Ajoute des **frais** | `TransferFees` (0,1 %, entre 0,20 € et 5 €) |
+| `IStatementFormat` | Produit un **relevé** dans un format | `CsvExport`, `QifExport` — **deux extensions dans une seule DLL** |
 
 ---
 
@@ -54,15 +54,15 @@ ne se rencontrent qu'à l'exécution.
 
 ```
 13-Microkernel/
-├── Mk.Contrats/               le SDK : interfaces et données échangées
-├── Mk.Noyau/                  NoyauBancaire, RegistrePlugins, ChargeurPlugins
-├── Mk.Hote/                   API HTTP + surveillance du dossier des plugins
-├── Mk.Plugins.FraisVirement/  ┐
-├── Mk.Plugins.PlafondNocturne/│  projets de plugins : compilés dans plugins/{Nom}/,
-├── Mk.Plugins.ListeNoire/     │  chacun avec son plugin.json de réglages
-├── Mk.Plugins.Exports/        ┘
-├── Plugins.props              réglages communs aux plugins
-└── plugins/                   ← sortie de compilation (non versionnée), lue par le noyau
+├── Mk.Contracts/               le SDK : interfaces et données échangées
+├── Mk.Kernel/                  BankingKernel, PluginRegistry, PluginLoader
+├── Mk.Host/                    API HTTP + surveillance du dossier des plugins
+├── Mk.Plugins.TransferFees/    ┐
+├── Mk.Plugins.NightLimit/      │  projets de plugins : compilés dans plugins/{Nom}/,
+├── Mk.Plugins.Blocklist/       │  chacun avec son plugin.json de réglages
+├── Mk.Plugins.Exports/         ┘
+├── Plugins.props               réglages communs aux plugins
+└── plugins/                    ← sortie de compilation (non versionnée), lue par le noyau
 ```
 
 ---
@@ -71,7 +71,7 @@ ne se rencontrent qu'à l'exécution.
 
 ### 1. Le SDK : ce que noyau et plugins partagent
 
-([Contrats.cs](../13-Microkernel/Mk.Contrats/Contrats.cs))
+([Contracts.cs](../13-Microkernel/Mk.Contracts/Contracts.cs))
 
 ```csharp
 public interface IPlugin
@@ -94,11 +94,11 @@ public interface IOperationCheck : IPlugin
 }
 ```
 
-Les plugins reçoivent des **valeurs** (`OperationProposee`, `ReleveCompte`), jamais les objets internes du noyau.
+Les plugins reçoivent des **valeurs** (`ProposedOperation`, `AccountStatement`), jamais les objets internes du noyau.
 
 ### 2. Un plugin : une classe qui implémente un point d'extension
 
-([PlafondNocturne.cs](../13-Microkernel/Mk.Plugins.PlafondNocturne/PlafondNocturne.cs))
+([NightLimit.cs](../13-Microkernel/Mk.Plugins.NightLimit/NightLimit.cs))
 
 ```csharp
 public sealed class NightLimit : IOperationCheck
@@ -142,11 +142,11 @@ Ses réglages viennent de son propre `plugin.json`, à côté de sa DLL :
 </ItemGroup>
 ```
 
-`Private="false"` évite de copier `Mk.Contrats.dll` dans le dossier du plugin. Pourquoi c'est vital : voir l'étape suivante.
+`Private="false"` évite de copier `Mk.Contracts.dll` dans le dossier du plugin. Pourquoi c'est vital : voir l'étape suivante.
 
 ### 4. Charger chaque plugin dans son propre contexte
 
-([ChargeurPlugins.cs](../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs))
+([PluginLoader.cs](../13-Microkernel/Mk.Kernel/PluginLoader.cs))
 
 ```csharp
 internal sealed class PluginLoadContext(string dllPath)
@@ -175,19 +175,19 @@ internal sealed class PluginLoadContext(string dllPath)
 ```mermaid
 flowchart TB
     subgraph Defaut["Contexte par défaut (le processus)"]
-        H["Mk.Hote"] --> N["Mk.Noyau"] --> K["Mk.Contrats<br/>(un seul exemplaire)"]
+        H["Mk.Host"] --> N["Mk.Kernel"] --> K["Mk.Contracts<br/>(un seul exemplaire)"]
     end
-    subgraph A1["Contexte « ListeNoire » (déchargeable)"]
-        L["Mk.Plugins.ListeNoire"]
+    subgraph A1["Contexte « Blocklist » (déchargeable)"]
+        L["Mk.Plugins.Blocklist"]
     end
     subgraph A2["Contexte « Exports » (déchargeable)"]
         E["Mk.Plugins.Exports"]
     end
-    L -->|"Load(Mk.Contrats) → null :<br/>délégué au contexte par défaut"| K
+    L -->|"Load(Mk.Contracts) → null :<br/>délégué au contexte par défaut"| K
     E -->|"idem"| K
 ```
 
-Un test le vérifie : après chargement, `Mk.Contrats` n'est présent **qu'une fois** dans le processus.
+Un test le vérifie : après chargement, `Mk.Contracts` n'est présent **qu'une fois** dans le processus.
 
 ### 5. Découvrir les extensions par réflexion
 
@@ -198,22 +198,22 @@ return assembly.GetExportedTypes()
     .ToList();
 ```
 
-`Preparer` vérifie la version du noyau exigée, puis appelle `Initialiser` avec les réglages du `plugin.json`.
+`Prepare` vérifie la version du noyau exigée, puis appelle `Initialize` avec les réglages du `plugin.json`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Incompatible : VersionNoyauMinimale > version du noyau
-    [*] --> EnErreur : exception dans Initialiser
-    [*] --> Actif : chargé et initialisé
-    Actif --> Desactive : POST /admin/plugins/{nom}/desactiver
-    Desactive --> Actif : POST /admin/plugins/{nom}/activer
-    Actif --> EnErreur : exception pendant un appel
-    EnErreur --> Actif : réactivation ou rechargement
+    [*] --> Incompatible : MinimumKernelVersion > version du noyau
+    [*] --> Faulted : exception dans Initialize
+    [*] --> Active : chargé et initialisé
+    Active --> Disabled : POST /admin/plugins/{nom}/disable
+    Disabled --> Active : POST /admin/plugins/{nom}/enable
+    Active --> Faulted : exception pendant un appel
+    Faulted --> Active : réactivation ou rechargement
 ```
 
 ### 6. Le noyau appelle les extensions aux endroits prévus
 
-([NoyauBancaire.cs](../13-Microkernel/Mk.Noyau/NoyauBancaire.cs))
+([BankingKernel.cs](../13-Microkernel/Mk.Kernel/BankingKernel.cs))
 
 ```csharp
 // 1. "Check" extension point: a single refusal is enough.
@@ -238,16 +238,16 @@ if (amount + totalFees > account.Balance)
 ```mermaid
 sequenceDiagram
     actor Client
-    participant N as NoyauBancaire
-    participant C1 as PlafondNocturne
-    participant C2 as ListeNoire
-    participant F as FraisDeVirement
-    Client->>N: Virer(Alice → Bob, 300)
-    N->>C1: Verifier(opération)
+    participant N as BankingKernel
+    participant C1 as NightLimit
+    participant C2 as Blocklist
+    participant F as TransferFees
+    Client->>N: Transfer(Alice → Bob, 300)
+    N->>C1: Check(opération)
     C1-->>N: null (pas un retrait)
-    N->>C2: Verifier(opération)
+    N->>C2: Check(opération)
     C2-->>N: null (Bob n'est pas listé)
-    N->>F: CalculerFrais(opération)
+    N->>F: ComputeFee(opération)
     F-->>N: 0,30 €
     N->>N: solde suffisant ? débit 300 + frais 0,30, crédit 300
     N-->>Client: 200 { solde: 699,70, frais: 0,30 }
@@ -279,26 +279,26 @@ Choix de sécurité (*fail-closed*) : l'opération en cours est **refusée**, pl
 ### 8. Le rechargement à chaud
 
 Le registre est **remplacé d'un bloc** ; les anciens contextes sont ensuite déchargés.
-`SurveillanceDesPlugins` ([Endpoints.cs](../13-Microkernel/Mk.Hote/Endpoints.cs)) observe le dossier et recharge
+`PluginWatcher` ([Endpoints.cs](../13-Microkernel/Mk.Host/Endpoints.cs)) observe le dossier et recharge
 750 ms après le dernier changement (une compilation écrit plusieurs fichiers d'affilée).
 
 ```mermaid
 sequenceDiagram
     actor Dev as Développeur
     participant FS as Dossier plugins/
-    participant S as SurveillanceDesPlugins
-    participant C as ChargeurPlugins
-    participant R as RegistrePlugins
-    participant N as NoyauBancaire
-    Dev->>FS: dotnet build Mk.Plugins.ListeNoire (API en marche)
+    participant S as PluginWatcher
+    participant C as PluginLoader
+    participant R as PluginRegistry
+    participant N as BankingKernel
+    Dev->>FS: dotnet build Mk.Plugins.Blocklist (API en marche)
     Note over FS: DLL remplacée : possible,<br/>elle a été lue en mémoire
     FS-->>S: événements de fichiers
     S->>S: attendre 750 ms de calme
-    S->>C: Recharger(dossier)
+    S->>C: Reload(dossier)
     C->>C: nouveaux contextes, nouvelles instances
-    C->>R: Publier(nouvelle liste) — remplacement atomique
+    C->>R: Publish(nouvelle liste) — remplacement atomique
     C->>C: Unload() des anciens contextes
-    N->>R: Actifs<IControleOperation>() → nouvelle version
+    N->>R: Active<IOperationCheck>() → nouvelle version
 ```
 
 ---
@@ -307,8 +307,8 @@ sequenceDiagram
 
 | Fichier | Ce qui est vérifié |
 |---|---|
-| [NoyauTests.cs](../13-Microkernel/Mk.Tests/NoyauTests.cs) | Le noyau seul, avec des plugins **écrits dans le test** (sans DLL) : frais, plugin défaillant isolé, plugin incompatible refusé, pas d'export sans plugin de format |
-| [ChargementTests.cs](../13-Microkernel/Mk.Tests/ChargementTests.cs) | Les vraies DLL : découverte, réglages, **un seul** `Mk.Contrats`, plugin supprimé puis **contexte réellement déchargé** |
+| [KernelTests.cs](../13-Microkernel/Mk.Tests/KernelTests.cs) | Le noyau seul, avec des plugins **écrits dans le test** (sans DLL) : frais, plugin défaillant isolé, plugin incompatible refusé, pas d'export sans plugin de format |
+| [LoadingTests.cs](../13-Microkernel/Mk.Tests/LoadingTests.cs) | Les vraies DLL : découverte, réglages, **un seul** `Mk.Contracts`, plugin supprimé puis **contexte réellement déchargé** |
 | [ApiTests.cs](../13-Microkernel/Mk.Tests/ApiTests.cs) | De bout en bout : frais, liste noire, plafond nocturne selon l'heure (horloge réglable), formats, désactivation à chaud |
 
 ```csharp

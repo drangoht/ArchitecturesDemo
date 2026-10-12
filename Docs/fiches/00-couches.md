@@ -5,12 +5,12 @@
 > **En une phrase** : Présentation → Métier → Données ; chaque couche n'appelle que celle du dessous.
 
 **Famille** : organisation du code · **Origine** : usage courant depuis les années 1990 ·
-**Démo** : [`00-Couches`](../../00-Couches) (port 5100) · 📖 [Page complète](../00-couches.md) ·
+**Démo** : [`00-Layered`](../../00-Layered) (port 5100) · 📖 [Page complète](../00-couches.md) ·
 🌐 [English](../en/fiches/00-couches.md)
 
 ```mermaid
 flowchart TB
-    P["Presentation<br/>contrôleurs"] --> M["Metier<br/>ComptesService"] --> D["Donnees<br/>DAO, entités, DbContext"] --> DB[("Base")]
+    P["Presentation<br/>contrôleurs"] --> M["Business<br/>AccountsService"] --> D["Data<br/>DAO, entités, DbContext"] --> DB[("Base")]
 ```
 
 ## L'essentiel

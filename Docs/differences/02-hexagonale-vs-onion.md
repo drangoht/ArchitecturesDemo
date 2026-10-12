@@ -6,7 +6,7 @@
 > structure **le pourtour** (ports et adapters) quand l'Onion structure **le centre** (modèle, services de domaine,
 > services applicatifs).
 
-📁 Démos : [`01-Hexagonale`](../../01-Hexagonale) · [`02-Onion`](../../02-Onion) · · 🌐 [English](../en/differences/02-hexagonale-vs-onion.md)
+📁 Démos : [`01-Hexagonal`](../../01-Hexagonal) · [`02-Onion`](../../02-Onion) · · 🌐 [English](../en/differences/02-hexagonale-vs-onion.md)
 📖 Pages : [Hexagonale](../01-hexagonale.md) · [Onion](../02-onion.md) · 🗂️ Fiches : [1](../fiches/01-hexagonale.md) · [2](../fiches/02-onion.md)
 
 ⬅️ [Couches ou Hexagonale ?](01-couches-vs-hexagonale.md) · ➡️ [Onion ou Clean ?](03-onion-vs-clean.md)
@@ -25,10 +25,10 @@ l'autre. C'est pourquoi on les confond, et pourquoi beaucoup de modèles « Clea
 |---|---|---|
 | Ce qu'elle dessine | l'**extérieur** : qui appelle, qui est appelé | l'**intérieur** : des couches concentriques |
 | Le centre | un bloc : domaine + cas d'utilisation + ports | Domain Model → Domain Services → Application Services |
-| Projets de la démo | `Hexa.Hexagone` (un seul) + un projet par adapter | `Onion.Domain`, `Onion.Application`, `Onion.Infrastructure`, `Onion.Api` |
+| Projets de la démo | `Hexa.Hexagon` (un seul) + un projet par adapter | `Onion.Domain`, `Onion.Application`, `Onion.Infrastructure`, `Onion.Api` |
 | Vocabulaire | port entrant / sortant, adapter, *driving* / *driven* | repository, unit of work, service de domaine, service applicatif |
-| Règle qui touche **deux** comptes | dans le cas d'utilisation | dans un **service de domaine** (`ServiceVirement`) |
-| Enregistrer un virement | deux appels `Sauvegarder`, un par compte | **une** unité de travail : tout ou rien |
+| Règle qui touche **deux** comptes | dans le cas d'utilisation | dans un **service de domaine** (`TransferService`) |
+| Enregistrer un virement | deux appels `Save`, un par compte | **une** unité de travail : tout ou rien |
 | Entrées | mises en avant : Web **et** CLI sur le même cas | une seule API ; le sujet est ailleurs |
 | Ce qu'on vérifie en test | **tests de contrat** : chaque adapter d'un port passe la même suite | chaque couche ne dépend que des couches intérieures |
 
@@ -55,7 +55,7 @@ flowchart LR
 ## Dans le code des démos : le même virement
 
 **Hexagonale** : le cas d'utilisation porte la règle « même compte » et enregistre chaque compte séparément
-([CasUtilisation.cs](../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs)) :
+([UseCases.cs](../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs)) :
 
 ```csharp
 public class MakeTransfer(IAccounts accounts, INotifications notifications) : IMakeTransfer
@@ -79,9 +79,9 @@ public class MakeTransfer(IAccounts accounts, INotifications notifications) : IM
 ```
 
 **Onion** : la règle qui concerne deux comptes est un **service de domaine**
-([ServiceVirement.cs](../../02-Onion/Onion.Domain/Services/ServiceVirement.cs)) ; le service applicatif ne fait
+([TransferService.cs](../../02-Onion/Onion.Domain/Services/TransferService.cs)) ; le service applicatif ne fait
 qu'orchestrer, et valide **une seule fois**
-([VirementsAppService.cs](../../02-Onion/Onion.Application/VirementsAppService.cs)) :
+([TransfersAppService.cs](../../02-Onion/Onion.Application/TransfersAppService.cs)) :
 
 ```csharp
 public async Task<TransferResult> Transfer(Guid sourceId, Guid targetId, decimal amount)
@@ -101,7 +101,7 @@ public async Task<TransferResult> Transfer(Guid sourceId, Guid targetId, decimal
 Ce que cela change :
 
 - **Atomicité** : dans la démo hexagonale, si la seconde sauvegarde échouait, la première serait déjà faite. Le port
-  `IComptes` n'offre pas de transaction. L'Onion la rend explicite avec `IUnitOfWork`, que le `DbContext` implémente.
+  `IAccounts` n'offre pas de transaction. L'Onion la rend explicite avec `IUnitOfWork`, que le `DbContext` implémente.
 - **Place des règles** : l'hexagonale ne dit pas où ranger une règle à deux entités ; l'Onion lui donne une couche.
 - **Points d'entrée** : l'hexagonale montre deux adapters entrants sur le même cas d'utilisation ; c'est son sujet.
 
@@ -120,7 +120,7 @@ Ce n'est pas vraiment un choix exclusif :
 ## Les combiner
 
 La combinaison la plus courante en .NET : **un centre en oignon** (`Domain`, `Application`) **entouré d'adapters**
-(`Infrastructure.Persistance`, `Infrastructure.Messagerie`, `Api`, `Cli`), avec des tests de contrat sur les
+(`Infrastructure.Persistence`, `Infrastructure.Messagerie`, `Api`, `Cli`), avec des tests de contrat sur les
 adapters. On ajoute ensuite les objets-valeurs et agrégats du [DDD](06-ddd-vs-hexagonale-onion.md) au centre.
 
 ## Idées reçues

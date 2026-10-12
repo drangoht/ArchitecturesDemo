@@ -5,7 +5,7 @@
 > **En une phrase** : aucun service ne conduit le processus ; chacun **réagit aux événements** des autres et publie les
 > siens, et le virement avance de réaction en réaction, comme des danseurs qui suivent la musique sans chef d'orchestre.
 
-📁 Code : [`21-Choregraphie`](../21-Choregraphie) · ⬅️ [Pipeline](20-pipeline.md) · ➡️ [Strangler Fig](22-strangler-fig.md) · 🌐 [English](en/21-choregraphie.md)
+📁 Code : [`21-Choreography`](../21-Choreography) · ⬅️ [Pipeline](20-pipeline.md) · ➡️ [Strangler Fig](22-strangler-fig.md) · 🌐 [English](en/21-choregraphie.md)
 
 ---
 
@@ -17,12 +17,12 @@ Ici, le **même processus**, avec les mêmes données (Alice 50 000 €, Bob 500
 
 ```mermaid
 flowchart LR
-    API(["API"]) -->|"VirementDemande"| CO["Comptes<br/>réserve"]
-    CO -->|"FondsReserves"| CF["Conformité<br/>examine"]
-    CF -->|"ConformiteApprouvee"| CH["Change<br/>convertit"]
-    CH -->|"DevisesConverties"| CO2["Comptes<br/>règle"]
-    CO2 -->|"VirementRegle"| NO["Notifications"]
-    CO2 -->|"VirementRegle"| FI["Fidélité"]
+    API(["API"]) -->|"TransferRequested"| CO["Accounts<br/>réserve"]
+    CO -->|"FundsReserved"| CF["Compliance<br/>examine"]
+    CF -->|"ComplianceApproved"| CH["Exchange<br/>convertit"]
+    CH -->|"CurrenciesConverted"| CO2["Accounts<br/>règle"]
+    CO2 -->|"TransferSettled"| NO["Notifications"]
+    CO2 -->|"TransferSettled"| FI["Loyalty"]
 ```
 
 Chaque flèche est un événement publié **sans savoir qui l'écoute**. Les démos 7 et 8 utilisaient déjà la chorégraphie,
@@ -43,16 +43,16 @@ attente humaine, compensations et pannes. C'est là qu'on voit ses forces et ses
 
 ## Les composants
 
-- **Le courtier** ([Bus.cs](../21-Choregraphie/Choreo.Bus/Bus.cs), simulé dans le processus, sans package) : une file
+- **Le courtier** ([Bus.cs](../21-Choreography/Choreo.Bus/Bus.cs), simulé dans le processus, sans package) : une file
   **par abonné** (un abonné lent ne retarde pas les autres), livraison « au moins une fois », nouveaux essais, lettres
   mortes, et le journal de tous les événements.
-- **Les contrats** ([Contrats.cs](../21-Choregraphie/Choreo.Services/Contrats.cs)) : la forme des événements, seul
+- **Les contrats** ([Contracts.cs](../21-Choreography/Choreo.Services/Contracts.cs)) : la forme des événements, seul
   code partagé. Chaque événement transporte **toutes les données du virement**, complétées au fil de l'eau (devises,
   montant en euros, puis montant converti) : chaque service y trouve ce qu'il lui faut sans rappeler personne.
-- **Les services** ([Comptes.cs](../21-Choregraphie/Choreo.Services/Comptes.cs),
-  [Autres.cs](../21-Choregraphie/Choreo.Services/Autres.cs)) : Comptes, Conformité, Change, Notifications, Fidélité,
+- **Les services** ([Accounts.cs](../21-Choreography/Choreo.Services/Accounts.cs),
+  [Others.cs](../21-Choreography/Choreo.Services/Others.cs)) : Comptes, Conformité, Change, Notifications, Fidélité,
   chacun dans son espace de noms, avec ses données. Un test d'architecture vérifie qu'aucun ne connaît les autres.
-- **Le Suivi** ([Suivi.cs](../21-Choregraphie/Choreo.Services/Suivi.cs)) : il écoute tout et reconstitue l'état de
+- **Le Suivi** ([Tracking.cs](../21-Choreography/Choreo.Services/Tracking.cs)) : il écoute tout et reconstitue l'état de
   chaque virement. Il observe, il ne décide rien.
 
 Un service, c'est une liste d'abonnements. Voici tout ce que Comptes écoute :
@@ -79,15 +79,15 @@ public T Next<T>(T next, string emitter) where T : Event =>
     next with { Correlation = Correlation, Cause = Id, Emitter = emitter };
 ```
 
-C'est le seul fil qui permet de raconter ce qui s'est passé. **Essai réel**, `GET /virements/{id}` :
+C'est le seul fil qui permet de raconter ce qui s'est passé. **Essai réel**, `GET /transfers/{id}` :
 
 ```text
-VirementDemande                                  ← API
-  FondsReserves                                  ← Comptes, en réaction à VirementDemande
-    ConformiteApprouvee                          ← Conformité
-      DevisesConverties                          ← Change
-        VirementRegle                            ← Comptes
-          ClientNotifie                          ← Notifications : « Virement de 100,00 EUR effectué (108,32 USD reçus). »
+TransferRequested                      ← API
+  FundsReserved                        ← Accounts, en réaction à TransferRequested
+    ComplianceApproved                 ← Compliance
+      CurrenciesConverted              ← Exchange
+        TransferSettled                ← Accounts
+          CustomerNotified             ← Notifications : « Transfer of 100,00 EUR done (108,32 USD received). »
 ```
 
 Pour savoir **où en est** un virement, il faut un service de plus, le **Suivi**, qui écoute tous les événements (une
@@ -97,12 +97,12 @@ processus, c'est aussi penser à lui.
 La seule « carte » du système est la liste des abonnements, et elle n'existe qu'à l'exécution (`GET /bus`) :
 
 ```text
-Comptes        écoute ChangeEchoue, ConformiteRefusee, DevisesConverties, VirementDemande
-Conformité     écoute FondsReserves, ReservationExpiree
-Change         écoute ConformiteApprouvee
-Notifications  écoute VirementRegle
-Fidélité       écoute VirementRegle
-Suivi          écoute les 13 types d'événements
+Accounts       écoute ComplianceRefused, CurrenciesConverted, ExchangeFailed, TransferRequested
+Compliance     écoute FundsReserved, ReservationExpired
+Exchange       écoute ComplianceApproved
+Loyalty        écoute TransferSettled
+Notifications  écoute TransferSettled
+Tracking       écoute les 13 types d'événements
 ```
 
 ---
@@ -110,17 +110,17 @@ Suivi          écoute les 13 types d'événements
 ## 2. Des compensations dispersées
 
 Pas de moteur qui défait les étapes en ordre inverse : chaque service doit savoir **quels événements des autres
-signifient « défais ce que tu as fait »**. Comptes libère la réservation sur `ConformiteRefusee` **et** sur
-`ChangeEchoue` ; si demain un nouveau service peut échouer, il faudra penser à l'abonner aussi. Essai réel :
+signifient « défais ce que tu as fait »**. Comptes libère la réservation sur `ComplianceRefused` **et** sur
+`ExchangeFailed` ; si demain un nouveau service peut échouer, il faudra penser à l'abonner aussi. Essai réel :
 
 ```text
-Alice → Mallory (liste noire)    VirementDemande → FondsReserves → ConformiteRefusee → FondsLiberes      Annule
-Alice → Yuki (yens, non cotés)   … → ConformiteApprouvee → ChangeEchoue → FondsLiberes                   Annule
-Bob → Alice, 900 € (solde 500)   VirementDemande → FondsRefuses                                          Refuse
+Alice → Mallory (liste noire)    TransferRequested → FundsReserved → ComplianceRefused → FundsReleased    Cancelled
+Alice → Yuki (yens, non cotés)   … → ComplianceApproved → ExchangeFailed → FundsReleased                 Cancelled
+Bob → Alice, 900 € (solde 500)   TransferRequested → FundsRefused                                        Refused
 ```
 
 Comme dans la démo 14, les fonds sont d'abord **réservés** (indisponibles pour un autre virement, test
-`L_argent_reserve_n_est_plus_disponible_pour_un_autre_virement`), et seulement débités au règlement : le point de
+`Reserved_money_is_no_longer_available_for_another_transfer`), et seulement débités au règlement : le point de
 non-retour. Après lui (notification), on réessaie, on ne défait rien.
 
 ---
@@ -132,10 +132,10 @@ Avec un orchestrateur, un participant en panne est réessayé puis compensé : q
 mortes… et c'est tout. Essai réel :
 
 ```text
-POST /chaos { "changeEnPanne": true } ; POST /virements (200 €)   → statut EnCours, 200 € réservés sur le compte d'Alice
-GET /bus/lettres-mortes          → Change, 4 tentatives, « Service de change indisponible. »
-GET /virements/bloques           → le virement, sans activité récente
-… 30 s plus tard                 → ReservationExpiree (émise par Comptes, sans cause) : Abandonne, 0 € réservé
+POST /chaos { "exchangeDown": true } ; POST /transfers (200 €)   → statut InProgress, 200 € réservés sur le compte d'Alice
+GET /bus/dead-letters          → Exchange, 4 tentatives, « Exchange service unavailable. »
+GET /transfers/stuck           → le virement, sans activité récente
+… 30 s plus tard               → ReservationExpired (émise par Accounts, sans cause) : Abandoned, 0 € réservé
 ```
 
 Le filet de sécurité est **local** : Comptes se protège lui-même en donnant une durée de vie à ses réservations.
@@ -144,8 +144,8 @@ Le filet de sécurité est **local** : Comptes se protège lui-même en donnant 
 expired = _reservations.Where(r => r.Value.ExpiresAt <= now).ToList()
 ```
 
-Et les autres services doivent en tenir compte : la Conformité écoute `ReservationExpiree` pour ne plus faire décider
-un analyste sur un virement abandonné ; Comptes refuse un règlement arrivé trop tard (`VirementAbandonne`) ; le Suivi
+Et les autres services doivent en tenir compte : la Conformité écoute `ReservationExpired` pour ne plus faire décider
+un analyste sur un virement abandonné ; Comptes refuse un règlement arrivé trop tard (`TransferAbandoned`) ; le Suivi
 ne rouvre pas un virement terminé. Chacun de ces cas est un **test**, et chacun a demandé une ligne de code à un
 service différent : c'est le coût caché de la chorégraphie.
 
@@ -168,7 +168,7 @@ lock (Lock)
 }
 ```
 
-Test `Des_evenements_livres_deux_fois_ne_produisent_leur_effet_qu_une_fois` : avec un courtier qui livre **chaque**
+Test `Events_delivered_twice_produce_their_effect_only_once` : avec un courtier qui livre **chaque**
 événement deux fois, 20 virements de 10 € donnent exactement 200 € débités, 20 notifications, 20 points de fidélité.
 (Dans un vrai service avec une base, « d'un seul tenant » demande l'outbox de la [démo 8](08-microservices.md).)
 
@@ -182,7 +182,7 @@ Le service Fidélité (des points sur chaque virement réglé) a été ajouté *
 public void Register() => Bus.Subscribe<TransferSettled>(Name, e => Once(e, () =>
 ```
 
-Aucun autre service n'a changé, aucun ne sait qu'il existe : le test `Ajouter_un_abonne_ne_change_rien_pour_les_autres`
+Aucun autre service n'a changé, aucun ne sait qu'il existe : le test `Adding_a_subscriber_changes_nothing_for_the_others`
 fait tourner le système avec et sans lui, et obtient exactement les mêmes événements. C'est l'atout majeur de la
 chorégraphie, et la raison pour laquelle elle convient si bien aux **réactions** (notifier, compter, archiver,
 alimenter un tableau de bord) plutôt qu'aux processus.
@@ -192,22 +192,22 @@ alimenter un tableau de bord) plutôt qu'aux processus.
 ## Les tests
 
 Les services et le bus sans HTTP, avec une horloge manuelle pour l'expiration
-([ChoregraphieTests.cs](../21-Choregraphie/Choreo.Tests/ChoregraphieTests.cs)), et l'API
-([ApiTests.cs](../21-Choregraphie/Choreo.Tests/ApiTests.cs)).
+([ChoreographyTests.cs](../21-Choreography/Choreo.Tests/ChoreographyTests.cs)), et l'API
+([ApiTests.cs](../21-Choreography/Choreo.Tests/ApiTests.cs)).
 
 | Test | Ce qui est vérifié |
 |---|---|
-| `Un_virement_avance_par_reactions_en_chaine_sans_que_personne_le_conduise` | les 6 événements, leurs émetteurs, la chaîne des causes |
-| `Un_refus_de_la_conformite_est_compense_par_le_service_comptes`, `Un_echec_du_change_est_compense_lui_aussi` | compensations |
-| `Un_solde_insuffisant_arrete_tout_des_la_premiere_reaction`, `L_argent_reserve_n_est_plus_disponible_pour_un_autre_virement` | réservation |
-| `Un_gros_virement_attend_la_decision_d_un_analyste` | attente humaine, approbation et refus |
-| `Un_service_en_panne_bloque_le_processus_jusqu_a_l_expiration_de_la_reservation` | lettres mortes, virement bloqué, expiration |
-| `Apres_l_expiration_ni_l_analyste_ni_un_message_en_retard_ne_reglent_le_virement` | les cas tardifs, dans trois services |
-| `Des_evenements_livres_deux_fois_ne_produisent_leur_effet_qu_une_fois` | boîte de réception |
-| `Apres_le_point_de_non_retour_une_notification_en_echec_est_reessayee_jamais_compensee` | nouveaux essais, lettres mortes |
-| `Ajouter_un_abonne_ne_change_rien_pour_les_autres` | extensibilité |
-| `Aucun_service_ne_connait_les_autres` | **test d'architecture** (réflexion) |
-| `Demander_un_virement_repond_202_et_la_suite_se_fait_sans_l_appelant`, `L_analyste_decide_par_l_API`, `Un_service_en_panne_se_voit_aux_lettres_mortes_et_aux_virements_bloques`, `Le_bus_montre_qui_ecoute_quoi` | l'API |
+| `A_transfer_moves_forward_through_chain_reactions_without_anyone_driving_it` | les 6 événements, leurs émetteurs, la chaîne des causes |
+| `A_compliance_refusal_is_compensated_by_the_accounts_service`, `An_exchange_failure_is_compensated_too` | compensations |
+| `An_insufficient_balance_stops_everything_from_the_first_reaction`, `Reserved_money_is_no_longer_available_for_another_transfer` | réservation |
+| `A_big_transfer_waits_for_an_analyst_decision` | attente humaine, approbation et refus |
+| `A_failed_service_blocks_the_process_until_the_reservation_expires` | lettres mortes, virement bloqué, expiration |
+| `After_the_expiry_neither_the_analyst_nor_a_late_message_settles_the_transfer` | les cas tardifs, dans trois services |
+| `Events_delivered_twice_produce_their_effect_only_once` | boîte de réception |
+| `After_the_point_of_no_return_a_failed_notification_is_retried_never_compensated` | nouveaux essais, lettres mortes |
+| `Adding_a_subscriber_changes_nothing_for_the_others` | extensibilité |
+| `No_service_knows_the_others` | **test d'architecture** (réflexion) |
+| `Requesting_a_transfer_answers_202_and_the_rest_happens_without_the_caller`, `The_analyst_decides_through_the_API`, `A_failed_service_shows_in_the_dead_letters_and_the_stuck_transfers`, `The_bus_shows_who_listens_to_what` | l'API |
 
 Vérifiés par mutation : pas de boîte de réception, chacune des deux compensations, expiration qui ne rend pas l'argent
 ou n'a pas lieu, conformité sourde à l'expiration, règlement tardif silencieux, Suivi qui rouvre un virement terminé,

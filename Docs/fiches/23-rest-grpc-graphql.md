@@ -11,8 +11,8 @@ HTTP/1.1, gRPC 5250 en HTTP/2 ; Protobuf, gRPC et GraphQL écrits à la main) ·
 flowchart LR
     APP(["Client"]) -->|JSON| R["REST<br/>/comptes…"]
     APP -->|JSON| Q["GraphQL<br/>POST /graphql"]
-    APP -->|Protobuf| G["gRPC<br/>banque.Banque/…"]
-    R & Q & G --> M["ServiceBancaire<br/>(ignore les trois)"]
+    APP -->|Protobuf| G["gRPC<br/>bank.Bank/…"]
+    R & Q & G --> M["BankService<br/>(ignore les trois)"]
 ```
 
 ## L'essentiel

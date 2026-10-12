@@ -27,7 +27,7 @@ traverse deux morceaux : **idempotence** (identifiant d'opération) et **compens
 | Morceaux différents ? | **oui** : chaque service a son propre code | **non** : toutes les cellules font tourner le même code |
 | Un virement Alice → Bob | traverse **toujours** plusieurs services (Virements → Comptes) | reste **local** si Alice et Bob sont dans la même cellule |
 | Échanges entre morceaux | constants, au cœur du fonctionnement | **rares** : à éviter par le choix de la clé de partition |
-| Le point d'entrée | passerelle : aiguille **par route** (`/comptes`, `/virements`) | routeur : aiguille **par client** (alice → c1) |
+| Le point d'entrée | passerelle : aiguille **par route** (`/accounts`, `/transfers`) | routeur : aiguille **par client** (alice → c1) |
 | Une panne touche… | **une fonction, pour tous** les clients | **toutes les fonctions, pour un groupe** de clients |
 | Déployer | **service par service**, chacun à son rythme | la même version, **cellule par cellule** (canari, vagues) |
 | Grandir | ajouter des instances du service le plus chargé | ajouter des cellules de taille connue |
@@ -37,10 +37,10 @@ traverse deux morceaux : **idempotence** (identifiant d'opération) et **compens
 
 ```mermaid
 flowchart LR
-    subgraph M["MICROSERVICES : Comptes en panne"]
+    subgraph M["MICROSERVICES : Accounts en panne"]
         direction TB
-        P["Passerelle"] --> CO["Comptes ✗"]
-        P --> VI["Virements"]
+        P["Gateway"] --> CO["Accounts ✗"]
+        P --> VI["Transfers"]
         VI -->|"échoue pour tous"| CO
     end
     subgraph C["CELLULES : c2 en panne"]
@@ -55,20 +55,20 @@ flowchart LR
 ## Dans le code des démos
 
 **Microservices** : Virements appelle **toujours** Comptes par le réseau, avec retry et idempotence, pour n'importe
-quel virement ([Micro.Virements/Program.cs](../../08-Microservices/Micro.Virements/Program.cs),
-[Micro.Comptes/Endpoints.cs](../../08-Microservices/Micro.Comptes/Endpoints.cs)).
+quel virement ([Micro.Transfers/Program.cs](../../08-Microservices/Micro.Transfers/Program.cs),
+[Micro.Accounts/Endpoints.cs](../../08-Microservices/Micro.Accounts/Endpoints.cs)).
 
 **Cellules** : un virement entre deux clients de la même cellule est une **transaction locale**. Seul un virement entre
 cellules passe par le routeur, avec un identifiant d'opération et une compensation, exactement comme en
-microservices (test `Un_virement_dans_une_meme_cellule_reste_local`, et
-`Si_la_cellule_du_beneficiaire_est_en_panne_le_virement_est_compense`).
+microservices (test `A_transfer_within_the_same_cell_stays_local`, et
+`If_the_beneficiary_s_cell_is_down_the_transfer_is_compensated`).
 
 **Le relevé réel après l'arrêt d'une cellule** : alice, carla et david répondent 200 ; bob et emma reçoivent
-« Cellule c2 injoignable : seuls ses clients sont touchés » ([Relais.cs](../../17-CellBased/Cell.Routeur/Relais.cs)).
+« Cellule c2 injoignable : seuls ses clients sont touchés » ([Relay.cs](../../17-CellBased/Cell.Router/Relay.cs)).
 L'arrêt du service Comptes, lui, empêche **tous** les clients de consulter leur compte et de virer.
 
 **Déployer** : dans les cellules, une version défectueuse s'arrête à la cellule canari ; sa sonde de santé rejoue un
-retrait de contrôle ([Version.cs](../../17-CellBased/Cell.Cellule/Version.cs)) :
+retrait de contrôle ([Version.cs](../../17-CellBased/Cell.App/Version.cs)) :
 
 ```csharp
 public (bool Healthy, string Detail) Probe()

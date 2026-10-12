@@ -5,7 +5,7 @@
 > **En une phrase** : on empile des couches techniques — présentation, métier, données — et chaque couche n'appelle
 > que celle du dessous.
 
-📁 Code : [`00-Couches`](../00-Couches) · ⬅️ [Sommaire](README.md) · ➡️ [Hexagonale](01-hexagonale.md) · 🌐 [English](en/00-couches.md)
+📁 Code : [`00-Layered`](../00-Layered) · ⬅️ [Sommaire](README.md) · ➡️ [Hexagonale](01-hexagonale.md) · 🌐 [English](en/00-couches.md)
 
 ---
 
@@ -17,17 +17,17 @@ comparaison de toutes les autres. Son principe est simple : **séparer les respo
 ```mermaid
 flowchart TB
     Client(["Client HTTP"])
-    subgraph P["Couches.Presentation"]
-        CC["ComptesController"]
+    subgraph P["Layered.Presentation"]
+        CC["AccountsController"]
     end
-    subgraph M["Couches.Metier"]
-        CS["ComptesService<br/><i>toutes les règles</i>"]
-        DTO["CompteDto"]
+    subgraph M["Layered.Business"]
+        CS["AccountsService<br/><i>toutes les règles</i>"]
+        DTO["AccountDto"]
     end
-    subgraph D["Couches.Donnees"]
-        DAO["IComptesDao / ComptesDao"]
-        E["CompteEntite<br/><i>anémique</i>"]
-        DB[("BanqueDbContext")]
+    subgraph D["Layered.Data"]
+        DAO["IAccountsDao / AccountsDao"]
+        E["AccountEntity<br/><i>anémique</i>"]
+        DB[("BankDbContext")]
     end
     Client --> CC
     CC -->|"appelle"| CS
@@ -40,7 +40,7 @@ flowchart TB
 ```
 
 **Le point clé : les dépendances descendent jusqu'à la base.** La couche métier *dépend* de la couche données : c'est la
-couche données qui définit l'interface `IComptesDao` et l'entité `CompteEntite`, dans son vocabulaire, et le métier s'y adapte.
+couche données qui définit l'interface `IAccountsDao` et l'entité `AccountEntity`, dans son vocabulaire, et le métier s'y adapte.
 C'est exactement ce que les architectures suivantes (Hexagonale, Onion, Clean) vont **inverser**.
 
 ---
@@ -49,10 +49,10 @@ C'est exactement ce que les architectures suivantes (Hexagonale, Onion, Clean) v
 
 | Projet | Rôle | Référence |
 |---|---|---|
-| `Couches.Donnees` | Entité, `DbContext`, interface et implémentation du DAO | rien |
-| `Couches.Metier` | `ComptesService` (règles), DTO, exceptions | `Couches.Donnees` |
-| `Couches.Presentation` | Contrôleurs MVC, `Program.cs` | `Couches.Metier` **seulement** |
-| `Couches.Tests` | Tests du service et de l'architecture | — |
+| `Layered.Data` | Entité, `DbContext`, interface et implémentation du DAO | rien |
+| `Layered.Business` | `AccountsService` (règles), DTO, exceptions | `Layered.Data` |
+| `Layered.Presentation` | Contrôleurs MVC, `Program.cs` | `Layered.Business` **seulement** |
+| `Layered.Tests` | Tests du service et de l'architecture | — |
 
 ---
 
@@ -61,7 +61,7 @@ C'est exactement ce que les architectures suivantes (Hexagonale, Onion, Clean) v
 ### 1. La couche données définit le modèle… et le contrat
 
 L'entité est **anémique** : uniquement des données, avec des setters publics.
-([CompteEntite.cs](../00-Couches/Couches.Donnees/CompteEntite.cs))
+([AccountEntity.cs](../00-Layered/Layered.Data/AccountEntity.cs))
 
 ```csharp
 public class AccountEntity
@@ -73,7 +73,7 @@ public class AccountEntity
 ```
 
 L'interface d'accès est définie **par la couche données**, dans **son** vocabulaire.
-([ComptesDao.cs](../00-Couches/Couches.Donnees/ComptesDao.cs))
+([AccountsDao.cs](../00-Layered/Layered.Data/AccountsDao.cs))
 
 ```csharp
 // The interface is defined BY the data layer, in ITS vocabulary (AccountEntity).
@@ -90,7 +90,7 @@ public interface IAccountsDao
 ### 2. La couche métier contient toutes les règles (*transaction script*)
 
 Une méthode = un cas d'utilisation, du début à la fin.
-([ComptesService.cs](../00-Couches/Couches.Metier/ComptesService.cs))
+([AccountsService.cs](../00-Layered/Layered.Business/AccountsService.cs))
 
 ```csharp
 public class AccountsService(IAccountsDao dao)
@@ -120,7 +120,7 @@ public class AccountsService(IAccountsDao dao)
 ### 3. La présentation ne voit que la couche juste en dessous
 
 Un contrôleur MVC classique traduit HTTP ⇄ métier.
-([ComptesController.cs](../00-Couches/Couches.Presentation/Controllers/ComptesController.cs))
+([AccountsController.cs](../00-Layered/Layered.Presentation/Controllers/AccountsController.cs))
 
 ```csharp
 [HttpPost("accounts/{id:guid}/withdrawal")]
@@ -129,16 +129,16 @@ public Task<IActionResult> Withdraw(Guid id, WithdrawalRequest request) =>
 ```
 
 Les **couches strictes** sont imposées par le compilateur : sans ce réglage, la présentation pourrait utiliser
-`BanqueDbContext` grâce à la référence transitive via `Couches.Metier`.
-([Couches.Presentation.csproj](../00-Couches/Couches.Presentation/Couches.Presentation.csproj))
+`BankDbContext` grâce à la référence transitive via `Layered.Business`.
+([Layered.Presentation.csproj](../00-Layered/Layered.Presentation/Layered.Presentation.csproj))
 
 ```xml
 <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
 ```
 
-Essayer d'injecter `BanqueDbContext` dans un contrôleur donne alors `CS0234 : le nom 'Donnees' n'existe pas`.
+Essayer d'injecter `BankDbContext` dans un contrôleur donne alors `CS0234 : le name 'Data' n'existe pas`.
 C'est la couche métier qui branche elle-même la couche du dessous
-([MetierExtensions.cs](../00-Couches/Couches.Metier/MetierExtensions.cs)) :
+([BusinessExtensions.cs](../00-Layered/Layered.Business/BusinessExtensions.cs)) :
 
 ```csharp
 public static IServiceCollection AddBusinessLayer(this IServiceCollection services, string databaseName = "Bank")
@@ -154,20 +154,20 @@ public static IServiceCollection AddBusinessLayer(this IServiceCollection servic
 ```mermaid
 sequenceDiagram
     actor Client
-    participant C as ComptesController
-    participant S as ComptesService
-    participant D as ComptesDao
-    participant DB as BanqueDbContext
-    Client->>C: POST /comptes/{id}/retrait
-    C->>S: Retirer(id, montant)
-    S->>D: ParId(id)
+    participant C as AccountsController
+    participant S as AccountsService
+    participant D as AccountsDao
+    participant DB as BankDbContext
+    Client->>C: POST /accounts/{id}/withdrawal
+    C->>S: Withdraw(id, montant)
+    S->>D: ById(id)
     D->>DB: FindAsync
-    DB-->>S: CompteEntite
-    S->>S: VerifierRetraitPossible
-    S->>S: compte.Solde -= montant
-    S->>D: Enregistrer()
+    DB-->>S: AccountEntity
+    S->>S: CheckWithdrawalAllowed
+    S->>S: account.Balance -= montant
+    S->>D: Save()
     D->>DB: SaveChangesAsync
-    S-->>C: CompteDto
+    S-->>C: AccountDto
     C-->>Client: 200 OK
 ```
 
@@ -175,9 +175,9 @@ sequenceDiagram
 
 ## Les tests
 
-Tester le métier oblige à manipuler la couche données : même le faux DAO renvoie des `CompteEntite`.
+Tester le métier oblige à manipuler la couche données : même le faux DAO renvoie des `AccountEntity`.
 **Le test du métier est couplé au schéma de persistance.**
-([ComptesServiceTests.cs](../00-Couches/Couches.Tests/ComptesServiceTests.cs))
+([AccountsServiceTests.cs](../00-Layered/Layered.Tests/AccountsServiceTests.cs))
 
 ```csharp
 private readonly FakeDao _dao = new(
@@ -186,7 +186,7 @@ private readonly FakeDao _dao = new(
 ```
 
 Les tests d'architecture vérifient le sens des dépendances
-([ArchitectureTests.cs](../00-Couches/Couches.Tests/ArchitectureTests.cs)) :
+([ArchitectureTests.cs](../00-Layered/Layered.Tests/ArchitectureTests.cs)) :
 
 ```csharp
 [Fact]
@@ -210,11 +210,11 @@ public void The_presentation_only_sees_the_layer_right_below()
 flowchart LR
     subgraph Couches["Couches (démo 0)"]
         direction TB
-        M0["Métier"] -->|"dépend de"| D0["Données<br/>définit IComptesDao"]
+        M0["Métier"] -->|"dépend de"| D0["Données<br/>définit IAccountsDao"]
     end
     subgraph Onion["Onion, Hexagonale"]
         direction TB
-        D2["Infrastructure<br/>implémente l'interface"] -->|"dépend de"| M2["Domaine<br/>définit IComptesRepository"]
+        D2["Infrastructure<br/>implémente l'interface"] -->|"dépend de"| M2["Domaine<br/>définit IAccountsRepository"]
     end
     Couches ==>|"inversion des dépendances"| Onion
 ```

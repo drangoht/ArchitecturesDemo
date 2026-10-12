@@ -6,14 +6,14 @@
 > réessaie, attend, et **compense** en ordre inverse si besoin.
 
 **Famille** : découpage du système · **Origine** : sagas, Garcia-Molina et Salem, 1987 ·
-**Démo** : [`14-SagaOrchestree`](../../14-SagaOrchestree) (port 5113) · 📖 [Page complète](../14-saga-orchestree.md) ·
+**Démo** : [`14-OrchestratedSaga`](../../14-OrchestratedSaga) (port 5113) · 📖 [Page complète](../14-saga-orchestree.md) ·
 🌐 [English](../en/fiches/14-saga-orchestree.md)
 
 ```mermaid
 flowchart LR
-    O["Orchestrateur<br/>état persistant de la saga"] -->|"① réserver"| C["Comptes"]
+    O["Orchestrateur<br/>état persistant de la saga"] -->|"① réserver"| C["Accounts"]
     O -->|"② examiner<br/>(analyste si > 10 000 €)"| K["Conformité"]
-    O -->|"③ convertir"| X["Change"]
+    O -->|"③ convertir"| X["Exchange"]
     O -->|"④ créditer · ⑤ débiter"| C
     O -->|"⑥ notifier"| N["Notifications"]
 ```

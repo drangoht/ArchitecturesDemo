@@ -18,28 +18,28 @@ La démo 0 (couches classiques) sert de point de comparaison : toutes les autres
 
 | # | Dossier | Architecture | Nom anglais | Idée clé | Port |
 |---|---|---|---|---|---|
-| 0 | `00-Couches` | Couches / N-tiers (classique) | Layered Architecture (N-tier) | Présentation → Métier → Données : les dépendances descendent vers la base | 5100 |
-| 1 | `01-Hexagonale` | Ports & Adapters (Cockburn) | Hexagonal Architecture (Ports & Adapters) | Le métier au centre, branché au monde par des ports (interfaces) et des adapters | 5101 |
+| 0 | `00-Layered` | Couches / N-tiers (classique) | Layered Architecture (N-tier) | Présentation → Métier → Données : les dépendances descendent vers la base | 5100 |
+| 1 | `01-Hexagonal` | Ports & Adapters (Cockburn) | Hexagonal Architecture (Ports & Adapters) | Le métier au centre, branché au monde par des ports (interfaces) et des adapters | 5101 |
 | 2 | `02-Onion` | Onion (Palermo) | Onion Architecture | Couches concentriques ; le centre distingue modèle et services de domaine | 5102 |
 | 3 | `03-Clean` | Clean Architecture (Uncle Bob) | Clean Architecture | Un interacteur par cas d'utilisation ; le résultat passe par un presenter | 5103 |
-| 4 | `04-CoeurFonctionnel` | Functional Core / Imperative Shell | Functional Core, Imperative Shell | Règles 100 % pures qui renvoient une décision ; la coquille fait les I/O | 5104 |
+| 4 | `04-FunctionalCore` | Functional Core / Imperative Shell | Functional Core, Imperative Shell | Règles 100 % pures qui renvoient une décision ; la coquille fait les I/O | 5104 |
 | 5 | `05-VerticalSlice` | Vertical Slice (Bogard) | Vertical Slice Architecture | Un fichier par fonctionnalité, de la route à la base | 5105 |
-| 6 | `06-Composants` | Package by Component (Simon Brown) | Package by Component | Une interface publique par composant, tout le reste `internal` | 5106 |
-| 7 | `07-MonolitheModulaire` | Monolithe modulaire | Modular Monolith | Modules autonomes (API, base, événements), reliés par des contrats, dans un seul déploiement | 5107 |
+| 6 | `06-Components` | Package by Component (Simon Brown) | Package by Component | Une interface publique par composant, tout le reste `internal` | 5106 |
+| 7 | `07-ModularMonolith` | Monolithe modulaire | Modular Monolith | Modules autonomes (API, base, événements), reliés par des contrats, dans un seul déploiement | 5107 |
 | 8 | `08-Microservices` | Microservices | Microservices | Un processus par service, communication par HTTP et par messages, aucun code partagé | 5200 (passerelle) |
 | 9 | `09-CQRS` | CQRS | CQRS (Command Query Responsibility Segregation) | Un modèle pour écrire (règles), un autre pour lire (vues prêtes à servir), reliés par des événements | 5108 |
 | 10 | `10-EventSourcing` | Event Sourcing | Event Sourcing | On ne stocke pas l'état mais la suite des événements ; l'état se recalcule en les rejouant | 5109 |
 | 11 | `11-DDD` | Domain-Driven Design | Domain-Driven Design (DDD) | Modéliser le métier dans son langage : objets-valeurs, agrégats, contextes délimités, anti-corruption | 5110 |
 | 12 | `12-Serverless` | Serverless (FaaS) | Serverless (Function as a Service) | Des fonctions sans état déclenchées par des événements ; le fournisseur gère les serveurs et facture à l'usage | 5111 |
 | 13 | `13-Microkernel` | Microkernel (plugins) | Microkernel (Plug-in Architecture) | Un noyau minimal ; contrôles, frais et formats de relevé sont des plugins chargés à chaud | 5112 |
-| 14 | `14-SagaOrchestree` | Saga orchestrée | Orchestrated Saga | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
+| 14 | `14-OrchestratedSaga` | Saga orchestrée | Orchestrated Saga | Un orchestrateur conduit un virement en 6 étapes : état persistant, réessais, attente, compensation | 5113 |
 | 15 | `15-MultiTenant` | Multi-tenant (SaaS) | Multi-tenant Architecture (SaaS) | Une seule application pour plusieurs banques clientes : données isolées, règles et quotas par client | 5114 |
 | 16 | `16-BFF` | Backend for Frontend | Backend for Frontend (BFF) | Un backend par application cliente (site, mobile) : agrégation, réponses taillées pour l'écran, jeton gardé côté serveur | 5115 (web), 5116 (mobile) |
 | 17 | `17-CellBased` | Architecture cellulaire | Cell-Based Architecture | Plusieurs copies complètes et indépendantes du système, chacune pour une partie des clients : rayon d'impact borné | 5117 (routeur) |
-| 18 | `18-ModeleActeurs` | Modèle d'acteurs | Actor Model | Un acteur par compte et par virement : état privé, messages traités un par un, aucun verrou ; un acteur qui plante est remplacé | 5118 |
+| 18 | `18-ActorModel` | Modèle d'acteurs | Actor Model | Un acteur par compte et par virement : état privé, messages traités un par un, aucun verrou ; un acteur qui plante est remplacé | 5118 |
 | 19 | `19-SpaceBased` | Architecture spatiale (space-based) | Space-Based Architecture | Toutes les données en mémoire, répliquées entre des unités de traitement ajoutées selon la charge ; la base hors du chemin des requêtes | 5119 |
 | 20 | `20-Pipeline` | Pipeline (pipes & filters) | Pipes and Filters (Pipeline) | Des filtres indépendants reliés par des tuyaux bornés, qui travaillent en même temps sur un fichier de virements | 5120 |
-| 21 | `21-Choregraphie` | Chorégraphie (événementiel pur) | Event-Driven Choreography | Le virement de la démo 14 sans orchestrateur : chaque service réagit aux événements des autres | 5121 |
+| 21 | `21-Choreography` | Chorégraphie (événementiel pur) | Event-Driven Choreography | Le virement de la démo 14 sans orchestrateur : chaque service réagit aux événements des autres | 5121 |
 | 22 | `22-StranglerFig` | Strangler Fig (migration progressive) | Strangler Fig | Une façade devant l'ancien système ; ses fonctions passent au nouveau une route à la fois, réversibles, jusqu'à pouvoir l'éteindre | 5122 (façade) |
 | 23 | `23-RestGrpcGraphQL` | REST, gRPC, GraphQL (styles d'API) | REST, gRPC, GraphQL (API Styles) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client : requêtes, octets, erreurs, flux et évolution comparés | 5123 (REST, GraphQL), 5250 (gRPC) |
 | 24 | `24-MvcMvvm` | MVC et MVVM (patterns de présentation) | MVC and MVVM (Presentation Patterns) | Le même écran deux fois : MVC web (le contrôleur reçoit la requête et choisit une vue, jetée après rendu) et MVVM (un ViewModel vivant, testable sans écran, que des vues WPF et console observent) | 5124 (site MVC) |
@@ -61,104 +61,104 @@ Tout tourne en mémoire (EF Core InMemory ou dictionnaires) : aucune base à ins
 ## Lancer
 
 ```powershell
-# Tout compiler et tester (489 tests)
+# Build and test everything (489 tests)
 dotnet test ArchitecturesDemo.slnx
 
-# Lancer une API (chaque dossier a aussi sa propre solution .slnx)
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web
+# Run an API (each folder also has its own .slnx solution)
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web
 ```
 
-Chaque API contient un fichier **`Banque.http`** avec les requêtes prêtes à envoyer (Visual Studio, Rider ou l'extension REST Client de VS Code).
+Chaque API contient un fichier **`Bank.http`** avec les requêtes prêtes à envoyer (Visual Studio, Rider ou l'extension REST Client de VS Code).
 
 ---
 
-## 0. Couches (N-tiers) — `00-Couches`
+## 0. Couches (N-tiers) — `00-Layered`
 
 ```
-Couches.Presentation   contrôleurs MVC                                  (→ Metier uniquement)
-Couches.Metier         ComptesService : toutes les règles, CompteDto    (→ Donnees)
-Couches.Donnees        CompteEntite (anémique), BanqueDbContext, IComptesDao + ComptesDao
+Layered.Presentation   contrôleurs MVC                                     (→ Business uniquement)
+Layered.Business       AccountsService : toutes les règles, AccountDto     (→ Data)
+Layered.Data           AccountEntity (anémique), BankDbContext, IAccountsDao + AccountsDao
 ```
 
 **À observer**
-- **Le sens des dépendances** : le métier dépend de la couche données. C'est elle qui définit `IComptesDao` et `CompteEntite`,
+- **Le sens des dépendances** : le métier dépend de la couche données. C'est elle qui définit `IAccountsDao` et `AccountEntity`,
   dans son vocabulaire, et le métier s'y adapte. Comparer avec `02-Onion`, où les flèches sont inversées : le domaine définit
-  `IComptesRepository` et l'infrastructure l'implémente. C'est **la** différence entre couches et architectures centrées sur le domaine.
-- **Entité anémique** : `CompteEntite` n'a que des propriétés publiques. Les règles sont dans `ComptesService` (style *transaction script*).
-  Rien n'empêche un autre code de faire `compte.Solde -= x` sans vérification (voir le commentaire dans le service).
-- **Tests couplés à la persistance** : même le faux DAO de `ComptesServiceTests` manipule des `CompteEntite`. Un changement de schéma casse les tests du métier.
+  `IAccountsRepository` et l'infrastructure l'implémente. C'est **la** différence entre couches et architectures centrées sur le domaine.
+- **Entité anémique** : `AccountEntity` n'a que des propriétés publiques. Les règles sont dans `AccountsService` (style *transaction script*).
+  Rien n'empêche un autre code de faire `account.Balance -= x` sans vérification (voir le commentaire dans le service).
+- **Tests couplés à la persistance** : même le faux DAO de `AccountsServiceTests` manipule des `AccountEntity`. Un changement de schéma casse les tests du métier.
 - **Couches strictes** : la présentation ne voit que la couche juste en dessous. `DisableTransitiveProjectReferences` dans
-  `Couches.Presentation.csproj` empêche d'utiliser `BanqueDbContext` depuis un contrôleur (erreur CS0234 à la compilation),
-  et c'est `AddCoucheMetier()` qui branche lui-même la couche données.
+  `Layered.Presentation.csproj` empêche d'utiliser `BankDbContext` depuis un contrôleur (erreur CS0234 à la compilation),
+  et c'est `AddBusinessLayer()` qui branche lui-même la couche données.
 - C'est l'approche la plus simple à comprendre, et elle reste tout à fait valable pour une application CRUD où le métier est mince.
 
 ---
 
-## 1. Hexagonale — `01-Hexagonale`
+## 1. Hexagonale — `01-Hexagonal`
 
 ```
-Hexa.Hexagone                 ← AUCUNE dépendance
-  Domaine/                       Compte, exceptions métier
-  Ports/Entrants/                IConsulterCompte, IRetirerArgent, IEffectuerVirement
-  Ports/Sortants/                IComptes, INotifications
-  Application/                   implémentations des ports entrants
-Hexa.Adapters.Persistance     ← 2 adapters du MÊME port : ComptesEnMemoire, ComptesFichierJson
-Hexa.Adapters.Notifications   ← NotificationsJournal
+Hexa.Hexagon                  ← AUCUNE dépendance
+  Domain/                       Account, exceptions métier
+  Ports/Inbound/                IGetAccount, IWithdrawMoney, IMakeTransfer
+  Ports/Outbound/               IAccounts, INotifications
+  Application/                  implémentations des ports entrants
+Hexa.Adapters.Persistence     ← 2 adapters du MÊME port : InMemoryAccounts, JsonFileAccounts
+Hexa.Adapters.Notifications   ← LogNotifications
 Hexa.Adapters.Web             ← adapter entrant HTTP + composition root
 Hexa.Adapters.Cli             ← 2e adapter entrant : la ligne de commande
 ```
 
 **À observer**
 - Un adapter se remplace par **configuration**, sans toucher au métier :
-  `dotnet run --project Hexa.Adapters.Web -- --Persistance=Json`
-- Deux portes d'entrée sur le même hexagone. Lancées depuis `01-Hexagonale\`, l'API (en mode Json) et la CLI partagent `comptes.json` :
+  `dotnet run --project Hexa.Adapters.Web -- --Persistence=Json`
+- Deux portes d'entrée sur le même hexagone. Lancées depuis `01-Hexagonal\`, l'API (en mode Json) et la CLI partagent `accounts.json` :
   ```powershell
-  dotnet run --project Hexa.Adapters.Cli -- solde 11111111-1111-1111-1111-111111111111
-  dotnet run --project Hexa.Adapters.Cli -- virer 11111111-1111-1111-1111-111111111111 22222222-2222-2222-2222-222222222222 50
+  dotnet run --project Hexa.Adapters.Cli -- balance 11111111-1111-1111-1111-111111111111
+  dotnet run --project Hexa.Adapters.Cli -- transfer 11111111-1111-1111-1111-111111111111 22222222-2222-2222-2222-222222222222 50
   ```
-- `Hexa.Tests\Adapters\ContratIComptesTests.cs` : **tests de contrat**. Les mêmes tests tournent sur chaque adapter du port, ce qui garantit qu'ils sont interchangeables.
-- La CLI assemble tout à la main (`new RetirerArgent(comptes, notifications)`) : l'hexagone n'a pas besoin d'un conteneur d'injection.
+- `Hexa.Tests\Adapters\IAccountsContractTests.cs` : **tests de contrat**. Les mêmes tests tournent sur chaque adapter du port, ce qui garantit qu'ils sont interchangeables.
+- La CLI assemble tout à la main (`new WithdrawMoney(accounts, notifications)`) : l'hexagone n'a pas besoin d'un conteneur d'injection.
 
 ## 2. Onion — `02-Onion`
 
 ```
-Onion.Domain          Model/ (Compte)  →  Services/ (ServiceVirement)  →  Interfaces/ (IComptesRepository, IUnitOfWork)
-Onion.Application     ComptesAppService, VirementsAppService, DTO           (→ Domain)
-Onion.Infrastructure  BanqueDbContext (EF Core), ComptesRepository          (→ Application)
-Onion.Api             composition root, middleware d'erreurs                (→ tout)
+Onion.Domain          Model/ (Account)  →  Services/ (TransferService)  →  Interfaces/ (IAccountsRepository, IUnitOfWork)
+Onion.Application     AccountsAppService, TransfersAppService, DTO     (→ Domain)
+Onion.Infrastructure  BankDbContext (EF Core), AccountsRepository      (→ Application)
+Onion.Api             composition root, middleware d'erreurs           (→ tout)
 ```
 
 **À observer**
-- `ServiceVirement` est un **service de domaine** : la règle (plafond de 5 000 €, pas de virement vers soi-même) concerne deux comptes et n'appartient à aucun des deux.
-- `VirementsAppService` **orchestre** sans décider : il charge, délègue au domaine, puis enregistre une seule fois via `IUnitOfWork` (tout ou rien).
-- Le mapping EF Core est dans `BanqueDbContext.OnModelCreating` : le domaine ne porte aucun attribut EF.
+- `TransferService` est un **service de domaine** : la règle (plafond de 5 000 €, pas de virement vers soi-même) concerne deux comptes et n'appartient à aucun des deux.
+- `TransfersAppService` **orchestre** sans décider : il charge, délègue au domaine, puis enregistre une seule fois via `IUnitOfWork` (tout ou rien).
+- Le mapping EF Core est dans `BankDbContext.OnModelCreating` : le domaine ne porte aucun attribut EF.
 - Les erreurs métier sont traduites en HTTP **une seule fois**, par un middleware.
 
 ## 3. Clean Architecture — `03-Clean`
 
 ```
-Clean.Entites               Compte                                                         (cercle 1)
-Clean.CasUtilisation        par cas : Demande/Reponse, IxxxEntree, IxxxSortie, Interacteur  (cercle 2)
-Clean.AdaptateursInterface  Controleurs/, Presenters/, Passerelles/                         (cercle 3)
-Clean.Web                   ASP.NET Core : simple tuyauterie                                (cercle 4)
+Clean.Entities           Account                                                        (cercle 1)
+Clean.UseCases           par cas : Request/Response, IxxxInput, IxxxOutput, Interactor   (cercle 2)
+Clean.InterfaceAdapters  Controllers/, Presenters/, Gateways/                           (cercle 3)
+Clean.Web                ASP.NET Core : simple tuyauterie                               (cercle 4)
 ```
 
 **À observer**
-- L'interacteur **ne renvoie rien** : il appelle `sortie.Succes(...)`, `sortie.Refus(...)` ou `sortie.CompteIntrouvable(...)`.
-- **Deux presenters pour le même interacteur** : `GET /comptes/{id}` donne du JSON, `GET /comptes/{id}?format=texte` un relevé texte. L'interacteur n'a pas été modifié pour cela.
-- Les adaptateurs ne dépendent pas d'ASP.NET Core (vérifié par `ArchitectureTests`) : les presenters produisent un `VueHttp`, que `Clean.Web` écrit dans la réponse.
+- L'interacteur **ne renvoie rien** : il appelle `output.Success(...)`, `output.Refused(...)` ou `output.AccountNotFound(...)`.
+- **Deux presenters pour le même interacteur** : `GET /accounts/{id}` donne du JSON, `GET /accounts/{id}?format=texte` un relevé texte. L'interacteur n'a pas été modifié pour cela.
+- Les adaptateurs ne dépendent pas d'ASP.NET Core (vérifié par `ArchitectureTests`) : les presenters produisent un `HttpView`, que `Clean.Web` écrit dans la réponse.
 - C'est la variante la plus « cérémonieuse » : comparez le nombre de types avec la démo 5 pour le même service rendu.
 
-## 4. Functional Core / Imperative Shell — `04-CoeurFonctionnel`
+## 4. Functional Core / Imperative Shell — `04-FunctionalCore`
 
 ```
-Fonctionnel.Coeur     Compte (record immuable), DecisionRetrait/DecisionVirement, Regles (fonctions pures)
-Fonctionnel.Coquille  API + EF Core + horloge + journal : LIRE → DÉCIDER → APPLIQUER
+Functional.Core    Account (record immuable), WithdrawalDecision/TransferDecision, Rules (fonctions pures)
+Functional.Shell   API + EF Core + horloge + journal : LIRE → DÉCIDER → APPLIQUER
 ```
 
 **À observer**
-- `Regles.Virer(source, cible, montant, dejaVireAujourdhui)` : le cumul du jour (qui dépend de la base et de l'heure) est **calculé par la coquille et passé en paramètre**. Le cœur n'appelle jamais `DateTime.Now`.
-- Les tests (`ReglesTests`) n'ont **aucun mock** : des valeurs en entrée, une décision en sortie.
+- `Rules.Transfer(source, target, amount, alreadyTransferredToday)` : le cumul du jour (qui dépend de la base et de l'heure) est **calculé par la coquille et passé en paramètre**. Le cœur n'appelle jamais `DateTime.Now`.
+- Les tests (`RulesTests`) n'ont **aucun mock** : des valeurs en entrée, une décision en sortie.
 - Dans `Endpoints.cs`, chaque endpoint suit le même schéma en trois temps, commenté.
 - Pour tester le plafond journalier de 2 000 € : un virement de 1 500 € passe, puis un de 1 000 € est refusé.
 
@@ -166,67 +166,67 @@ Fonctionnel.Coquille  API + EF Core + horloge + journal : LIRE → DÉCIDER → 
 
 ```
 Vertical.Api
-  Features/Comptes/OuvrirCompte.cs       ← transaction script : tout est dans le fichier
-  Features/Comptes/ConsulterCompte.cs    ← lecture : projection LINQ directe, AsNoTracking
-  Features/Comptes/RetirerArgent.cs      ← écriture : validation + règle + persistance
-  Features/Virements/EffectuerVirement.cs
-  Domain/Compte.cs                       ← seulement la règle PARTAGÉE (solde suffisant)
-  Data/BanqueDbContext.cs                ← pas de repository par-dessus
+  Features/Accounts/OpenAccount.cs       ← transaction script : tout est dans le fichier
+  Features/Accounts/GetAccount.cs        ← lecture : projection LINQ directe, AsNoTracking
+  Features/Accounts/WithdrawMoney.cs     ← écriture : validation + règle + persistance
+  Features/Transfers/MakeTransfer.cs
+  Domain/Account.cs                      ← seulement la règle PARTAGÉE (solde suffisant)
+  Data/BankDbContext.cs                  ← pas de repository par-dessus
 ```
 
 **À observer**
 - Pour comprendre « retirer de l'argent », il suffit d'ouvrir **un seul fichier**.
 - Chaque tranche choisit sa technique : la lecture projette directement vers la réponse, l'écriture passe par l'entité.
-- `Compte.Retirer` n'a été extrait dans `Domain/` que parce que deux tranches en ont besoin (voir le commentaire de la classe).
+- `Account.Withdraw` n'a été extrait dans `Domain/` que parce que deux tranches en ont besoin (voir le commentaire de la classe).
 - Les tests sont des **tests d'intégration par tranche** (`WebApplicationFactory`), rangés comme le code.
 
-## 6. Composants — `06-Composants`
+## 6. Composants — `06-Components`
 
 ```
-Composants.Comptes     public : IComptesComposant, CompteDto, Resultat, AddComposantComptes()
-                       internal : Compte, ComptesDbContext, ComptesComposant
-Composants.Virements   public : IVirementsComposant, VirementDto, AddComposantVirements()
-                       internal : Virement, VirementsDbContext, VirementsComposant   (→ IComptesComposant)
-Composants.Api         ne voit que les interfaces publiques
+Components.Accounts    public : IAccountsComponent, AccountDto, Result, AddAccountsComponent()
+                       internal : Account, AccountsDbContext, AccountsComponent
+Components.Transfers   public : ITransfersComponent, TransferDto, AddTransfersComponent()
+                       internal : Transfer, TransfersDbContext, TransfersComponent   (→ IAccountsComponent)
+Components.Api         ne voit que les interfaces publiques
 ```
 
 **À observer**
-- Dans `Composants.Api\Program.cs`, essayez d'écrire `new Compte(...)` ou d'injecter `ComptesDbContext` : **ça ne compile pas**. L'architecture est imposée par le compilateur.
-- Chaque composant a **sa propre base**. Virements ne lit jamais les tables de Comptes : il passe par `IComptesComposant`.
-- Faute de transaction commune entre les deux bases, `VirementsComposant` **compense** si le dépôt échoue. Le test `Si_le_depot_echoue_le_retrait_est_compense` le vérifie avec un faux composant Comptes.
+- Dans `Components.Api\Program.cs`, essayez d'écrire `new Account(...)` ou d'injecter `AccountsDbContext` : **ça ne compile pas**. L'architecture est imposée par le compilateur.
+- Chaque composant a **sa propre base**. Virements ne lit jamais les tables de Comptes : il passe par `IAccountsComponent`.
+- Faute de transaction commune entre les deux bases, `TransfersComponent` **compense** si le dépôt échoue. Le test `If_the_deposit_fails_the_withdrawal_is_compensated` le vérifie avec un faux composant Comptes.
 - `ArchitectureTests` verrouille la surface publique : rendre un type interne public fait échouer le test.
 - `InternalsVisibleTo` (dans le `.csproj`) ouvre l'intérieur au seul projet de tests.
 
-## 7. Monolithe modulaire — `07-MonolitheModulaire`
+## 7. Monolithe modulaire — `07-ModularMonolith`
 
 ```
-Modulaire.Partage               IModule, bus d'événements en mémoire        (aucun métier)
-Modulaire.Comptes.Contrats      IComptesApi, CompteInfo, événement RetraitEffectue
-Modulaire.Comptes               ComptesModule (seul type public) + base, API HTTP, domaine   (→ ses Contrats)
-Modulaire.Virements.Contrats    événement VirementEffectue
-Modulaire.Virements             VirementsModule + base, API HTTP              (→ Comptes.Contrats, Virements.Contrats)
-Modulaire.Notifications         NotificationsModule : n'écoute que des événements   (→ Contrats uniquement)
-Modulaire.Hote                  assemble les modules : un seul processus, un seul déploiement
+Modular.Shared                IModule, bus d'événements en mémoire        (aucun métier)
+Modular.Accounts.Contracts    IAccountsApi, AccountInfo, événement WithdrawalMade
+Modular.Accounts              AccountsModule (seul type public) + base, API HTTP, domaine   (→ ses Contracts)
+Modular.Transfers.Contracts   événement TransferMade
+Modular.Transfers             TransfersModule + base, API HTTP              (→ Accounts.Contracts, Transfers.Contracts)
+Modular.Notifications         NotificationsModule : n'écoute que des événements   (→ Contracts uniquement)
+Modular.Host                  assemble les modules : un seul processus, un seul déploiement
 ```
 
 C'est l'étape d'après les composants (démo 6). Un module n'est plus seulement « du métier derrière une interface » :
 c'est une **mini-application** qui possède ses routes HTTP, sa base, ses abonnements, et qu'on branche ou débranche d'une ligne.
 
 **À observer**
-- `Modulaire.Hote\Program.cs` : l'hôte ne connaît que `IModule`. Retirer `new NotificationsModule()` de la liste retire la fonctionnalité
+- `Modular.Host\Program.cs` : l'hôte ne connaît que `IModule`. Retirer `new NotificationsModule()` de la liste retire la fonctionnalité
   entière (routes, base, abonnements) sans casser les autres.
-- **Projets `Contrats`** : Virements a besoin des comptes, mais ne référence que `Modulaire.Comptes.Contrats`, jamais `Modulaire.Comptes`.
-  L'implémentation de `IComptesApi` lui est fournie par l'hôte, via l'injection de dépendances.
+- **Projets `Contracts`** : Virements a besoin des comptes, mais ne référence que `Modular.Accounts.Contracts`, jamais `Modular.Accounts`.
+  L'implémentation de `IAccountsApi` lui est fournie par l'hôte, via l'injection de dépendances.
 - **Deux modes de communication** :
-  - *synchrone* : Virements appelle `IComptesApi.Debiter/Crediter`, car il a besoin de la réponse tout de suite ;
-  - *asynchrone* : Comptes publie `RetraitEffectue` et Virements publie `VirementEffectue`, sans savoir qui écoute.
+  - *synchrone* : Virements appelle `IAccountsApi.Debit/Credit`, car il a besoin de la réponse tout de suite ;
+  - *asynchrone* : Comptes publie `WithdrawalMade` et Virements publie `TransferMade`, sans savoir qui écoute.
 - **Notifications** a été ajouté sans toucher à Comptes ni à Virements : il s'abonne aux événements et tient sa propre base.
   L'événement transporte les noms des titulaires, pour que l'abonné n'ait pas à rappeler Comptes.
-- **Une base par module** (`Banque-Comptes`, `Banque-Virements`, `Banque-Notifications`). Sans transaction commune, Virements
+- **Une base par module** (`Bank-Accounts`, `Bank-Transfers`, `Bank-Notifications`). Sans transaction commune, Virements
   **compense** le débit si le crédit échoue.
 - **Isolation** (`IsolationTests`) : un module se teste en remplaçant un autre par un faux via son contrat. Une panne chez un abonné
   ne fait pas échouer le module qui publie.
-- `ArchitectureTests` vérifie les règles : un module ne référence que des `Contrats` et `Partage`, n'expose que sa classe `IModule`,
+- `ArchitectureTests` vérifie les règles : un module ne référence que des `Contracts` et `Shared`, n'expose que sa classe `IModule`,
   et les contrats ne dépendent d'aucun module.
 - Le bus est volontairement simple : synchrone et dans le même processus. En production, on utiliserait une *outbox*
   (événement enregistré dans la même transaction que les données) et un traitement en arrière-plan.
@@ -236,41 +236,41 @@ c'est une **mini-application** qui possède ses routes HTTP, sa base, ses abonne
 ## 8. Microservices — `08-Microservices`
 
 ```
-Micro.Passerelle     :5200  point d'entrée unique des clients (reverse proxy) ; n'expose pas les API internes
-Micro.Comptes        :5201  sa base ; API publique + API interne idempotente (/interne/…) ; outbox
-Micro.Virements      :5202  sa base ; appelle Comptes par HTTP (retry, timeout, circuit breaker) ; saga + compensation ; outbox
+Micro.Gateway        :5200  point d'entrée unique des clients (reverse proxy) ; n'expose pas les API internes
+Micro.Accounts       :5201  sa base ; API publique + API interne idempotente (/internal/…) ; outbox
+Micro.Transfers      :5202  sa base ; appelle Accounts par HTTP (retry, timeout, circuit breaker) ; saga + compensation ; outbox
 Micro.Notifications  :5203  sa base ; reçoit des messages, ignore les doublons
-Micro.Courtier       :5209  mini courtier de messages : livraison « au moins une fois », réessais, lettres mortes
-Micro.Lanceur               outil de démo : démarre les services comme le ferait un orchestrateur
+Micro.Broker         :5209  mini courtier de messages : livraison « au moins une fois », réessais, lettres mortes
+Micro.Launcher              outil de démo : démarre les services comme le ferait un orchestrateur
 ```
 
 ```powershell
 dotnet build 08-Microservices\Microservices.slnx
-dotnet run --project 08-Microservices\Micro.Lanceur                          # tous les services
-dotnet run --project 08-Microservices\Micro.Lanceur -- comptes passerelle    # seulement certains
+dotnet run --project 08-Microservices\Micro.Launcher                          # all the services
+dotnet run --project 08-Microservices\Micro.Launcher -- accounts gateway    # only some of them
 ```
 
 C'est la démo 7 coupée en processus séparés. Tout ce qui était gratuit dans le monolithe (appel de méthode, transaction,
 événement en mémoire) passe maintenant par le **réseau**, qui peut échouer. L'essentiel du code sert à gérer ces échecs.
 
 **À observer**
-- **Aucune référence entre services**, ni projet partagé. Le contrat, c'est le JSON : `Micro.Virements\ClientComptes.cs` et
-  `Micro.Notifications\Donnees.cs` ont leurs propres copies des messages. Le relais d'outbox est volontairement dupliqué.
-- **Résilience des appels** (`Micro.Virements\Program.cs`) : `AddStandardResilienceHandler` ajoute retry, timeout et circuit breaker.
+- **Aucune référence entre services**, ni projet partagé. Le contrat, c'est le JSON : `Micro.Transfers\AccountsClient.cs` et
+  `Micro.Notifications\Data.cs` ont leurs propres copies des messages. Le relais d'outbox est volontairement dupliqué.
+- **Résilience des appels** (`Micro.Transfers\Program.cs`) : `AddStandardResilienceHandler` ajoute retry, timeout et circuit breaker.
 - **Idempotence** :
-  - les débits/crédits portent un `operationId` (`Micro.Comptes\Endpoints.cs`). Un retry après une réponse perdue ne débite
-    pas deux fois (test `Une_panne_passagere_est_absorbee_par_le_retry_sans_double_debit`) ;
+  - les débits/crédits portent un `operationId` (`Micro.Accounts\Endpoints.cs`). Un retry après une réponse perdue ne débite
+    pas deux fois (test `A_transient_failure_is_absorbed_by_the_retry_without_double_debit`) ;
   - Notifications ignore un `Message-Id` déjà traité, car le courtier peut livrer deux fois.
 - **Outbox** : le message est enregistré dans la même transaction que la donnée, puis un relais l'envoie au courtier.
   Si le courtier est à terre, le retrait réussit quand même et l'événement part plus tard (test `Si_le_courtier_est_en_panne…`).
-- **Saga et compensation** (`Micro.Virements\Endpoints.cs`) : le virement est enregistré avant les appels, avec un statut
-  (`EnCours`, `Effectue`, `Refuse`, `Annule`, `AReprendre`). Si le crédit échoue, on recrédite la source.
+- **Saga et compensation** (`Micro.Transfers\Endpoints.cs`) : le virement est enregistré avant les appels, avec un statut
+  (`InProgress`, `Done`, `Refused`, `Cancelled`, `ToResume`). Si le crédit échoue, on recrédite la source.
 - **Cohérence à terme**, à tester soi-même :
-  1. `dotnet run --project Micro.Lanceur -- courtier comptes virements passerelle` (sans Notifications) ;
-  2. faire un virement : il réussit, `/notifications/…` répond 502 et `http://localhost:5209/etat` montre les messages en attente ;
-  3. dans un 2e terminal, `dotnet run --project Micro.Lanceur -- notifications` : quelques secondes plus tard, les notifications apparaissent.
-- **Passerelle** : `GET /sante` agrège la santé de tous les services. `/interne/…` répond 404, car seules les routes publiques sont relayées.
-- **Tests** : chaque service est testé **seul**, avec de faux serveurs HTTP à la place des autres (`Micro.Tests\Outils.cs`).
+  1. `dotnet run --project Micro.Launcher -- broker accounts transfers gateway` (sans Notifications) ;
+  2. faire un virement : il réussit, `/notifications/…` répond 502 et `http://localhost:5209/state` montre les messages en attente ;
+  3. dans un 2e terminal, `dotnet run --project Micro.Launcher -- notifications` : quelques secondes plus tard, les notifications apparaissent.
+- **Passerelle** : `GET /health` agrège la santé de tous les services. `/internal/…` répond 404, car seules les routes publiques sont relayées.
+- **Tests** : chaque service est testé **seul**, avec de faux serveurs HTTP à la place des autres (`Micro.Tests\Tools.cs`).
   Le parcours complet se vérifie en lançant le système.
 - En production, on remplacerait le courtier par RabbitMQ / Azure Service Bus, la passerelle par YARP, le lanceur par
   docker compose / Kubernetes / .NET Aspire, et on ajouterait la traçabilité distribuée (OpenTelemetry).
@@ -278,12 +278,12 @@ C'est la démo 7 coupée en processus séparés. Tout ce qui était gratuit dans
 ## 9. CQRS — `09-CQRS`
 
 ```
-Cqrs.Evenements   CompteOuvert, ArgentRetire, VirementEffectue : le SEUL lien entre les deux côtés
-Cqrs.Ecriture     Commandes/ (commande + validateur + gestionnaire), BusCommandes (pipeline), Domaine/Compte (agrégat),
-                  EcritureDb : état des comptes + journal d'événements, dans la même transaction
-Cqrs.Lecture      Modele/ (ReleveCompte, LigneOperation, Statistiques : tables dénormalisées), Projections/Projecteur,
-                  Requetes/ (requête + gestionnaire), BusRequetes ; LectureDb : base séparée
-Cqrs.Api          POST → commandes, GET → requêtes ; SynchroniseurProjections (tâche de fond)
+Cqrs.Events   AccountOpened, MoneyWithdrawn, TransferMade : le SEUL lien entre les deux côtés
+Cqrs.Write    Commands/ (commande + validateur + gestionnaire), CommandBus (pipeline), Domain/Account (agrégat),
+              WriteDb : état des comptes + journal d'événements, dans la même transaction
+Cqrs.Read     Model/ (AccountStatement, OperationLine, Statistics : tables dénormalisées), Projections/Projector,
+              Queries/ (requête + gestionnaire), QueryBus ; ReadDb : base séparée
+Cqrs.Api      POST → commandes, GET → requêtes ; ProjectionSynchronizer (tâche de fond)
 ```
 
 **CQRS** (*Command Query Responsibility Segregation*) part d'un constat : écrire et lire n'ont pas les mêmes besoins.
@@ -291,20 +291,20 @@ L'écriture veut des règles et de la cohérence ; la lecture veut des données 
 On sépare donc les deux modèles.
 
 **À observer**
-- **Commandes** (`Cqrs.Ecriture\Commandes\`) : un fichier par intention, à l'impératif (`OuvrirCompte`, `RetirerArgent`…).
+- **Commandes** (`Cqrs.Write\Commands\`) : un fichier par intention, à l'impératif (`OpenAccount`, `WithdrawMoney`…).
   Elles ne renvoient **pas de données** : l'API répond `202 Accepted`. L'identifiant du nouveau compte est choisi par l'appelant.
-- **Pipeline** (`BusCommandes`) : la validation de forme (`IValidateur<T>`) s'exécute avant tout gestionnaire et rassemble
+- **Pipeline** (`CommandBus`) : la validation de forme (`IValidator<T>`) s'exécute avant tout gestionnaire et rassemble
   toutes les erreurs. Les règles métier (solde suffisant) restent dans l'agrégat. C'est le rôle qu'on confie souvent à MediatR.
-- **Agrégat** (`Domaine\Compte.cs`) : il n'a **aucune** propriété pour l'affichage (pas d'historique, pas de statistiques).
+- **Agrégat** (`Domain\Account.cs`) : il n'a **aucune** propriété pour l'affichage (pas d'historique, pas de statistiques).
   Il note ce qui lui arrive sous forme d'événements, enregistrés avec son état dans la même transaction.
-- **Modèle de lecture** (`Cqrs.Lecture\Modele\`) : une table par écran, avec des données dupliquées exprès (titulaire,
+- **Modèle de lecture** (`Cqrs.Read\Model\`) : une table par écran, avec des données dupliquées exprès (titulaire,
   solde après chaque opération, libellés déjà rédigés, totaux maintenus au fil de l'eau). Les requêtes ne font que lire.
-- **Projections** (`Projecteur.cs`) : seul code qui écrit côté lecture. Le point de reprise rend la projection **idempotente**
+- **Projections** (`Projector.cs`) : seul code qui écrit côté lecture. Le point de reprise rend la projection **idempotente**
   (rejouer un événement est sans effet). On pourrait jeter toute la base de lecture et la reconstruire depuis les événements.
-- **Cohérence à terme, rendue visible** : `appsettings.json` ralentit la projection de 2 s (`Projections:DelaiMs`). Juste après
-  un retrait, `GET /comptes/{id}` montre encore l'ancien solde, et `GET /admin/projections` indique le retard. Mettre 0 pour
+- **Cohérence à terme, rendue visible** : `appsettings.json` ralentit la projection de 2 s (`Projections:DelayMs`). Juste après
+  un retrait, `GET /accounts/{id}` montre encore l'ancien solde, et `GET /admin/projections` indique le retard. Mettre 0 pour
   une projection quasi immédiate.
-- **Deux côtés indépendants** : ni `Cqrs.Ecriture` ni `Cqrs.Lecture` ne se référencent (vérifié par `ArchitectureTests`).
+- **Deux côtés indépendants** : ni `Cqrs.Write` ni `Cqrs.Read` ne se référencent (vérifié par `ArchitectureTests`).
   Les tests du côté lecture n'utilisent que des événements, sans aucune commande.
 - **À ne pas confondre** :
   - CQRS n'impose pas deux bases. On peut séparer seulement les modèles, sur une même base, et lire en synchrone.
@@ -317,11 +317,11 @@ On sépare donc les deux modèles.
 ## 10. Event Sourcing — `10-EventSourcing`
 
 ```
-Es.Domaine       Evenements (CompteOuvert, ArgentDepose, ArgentRetire v2, VirementEmis/Recu, CompteCloture),
-                 Compte : agrégat reconstitué en rejouant ses événements
-Es.Stockage      MagasinEvenements (ajout seul, concurrence optimiste, fichier .jsonl), SerialiseurEvenements (+ upcasting),
-                 DepotComptes (chargement, instantanés, voyage dans le temps)
-Es.Projections   ProjectionReleves, ProjectionPlusGrosRetraits, MoteurProjections (suivi du flux global, reconstruction)
+Es.Domain        Events (AccountOpened, MoneyDeposited, MoneyWithdrawn v2, TransferSent/Received, AccountClosed),
+                 Account : agrégat reconstitué en rejouant ses événements
+Es.Storage       EventStore (ajout seul, concurrence optimiste, fichier .jsonl), EventSerializer (+ upcasting),
+                 AccountRepository (chargement, instantanés, voyage dans le temps)
+Es.Projections   StatementsProjection, LargestWithdrawalsProjection, ProjectionEngine (suivi du flux global, reconstruction)
 Es.Api           commandes, audit, voyage dans le temps, administration des projections
 ```
 
@@ -329,24 +329,24 @@ Dans toutes les autres démos, on stocke l'**état** (le solde) et on oublie com
 **suite des événements** et on n'en efface jamais aucun. L'état n'est qu'un calcul : le résultat du rejeu de l'historique.
 
 **À observer**
-- **La base de données est un fichier lisible** : `Es.Api\evenements.jsonl`, une ligne par événement, en ajout seul. Arrêtez
+- **La base de données est un fichier lisible** : `Es.Api\events.jsonl`, une ligne par événement, en ajout seul. Arrêtez
   l'API, ouvrez le fichier, relancez : tout l'état (soldes, projections) est reconstruit à partir de ces lignes.
   Pour repartir de zéro, supprimez le fichier.
-- **Décider / appliquer** (`Es.Domaine\Compte.cs`) : les décisions (`Retirer`, `Cloturer`…) vérifient les règles et
-  enregistrent un événement ; `Appliquer` fait évoluer l'état **sans aucune règle**, car un fait passé ne se refuse pas.
-- **Tests en Given / When / Then** (`CompteTests`) : *étant donné* ces événements, *quand* je retire 30 €, *alors* j'attends
-  `ArgentRetire(30)`. On teste le comportement sans base, sans mock, avec des faits.
+- **Décider / appliquer** (`Es.Domain\Account.cs`) : les décisions (`Withdraw`, `Close`…) vérifient les règles et
+  enregistrent un événement ; `Apply` fait évoluer l'état **sans aucune règle**, car un fait passé ne se refuse pas.
+- **Tests en Given / When / Then** (`AccountTests`) : *étant donné* ces événements, *quand* je retire 30 €, *alors* j'attends
+  `MoneyWithdrawn(30)`. On teste le comportement sans base, sans mock, avec des faits.
 - **Concurrence optimiste** : chaque flux a une version. `If-Match: 1` sur une commande signifie « je décide d'après la version 1 ».
   Si le compte a bougé depuis : 409, rien n'est écrit. Le virement écrit dans deux flux en tout ou rien.
-- **Audit et voyage dans le temps** : `GET /comptes/{id}/evenements` donne l'historique complet ;
-  `GET /comptes/{id}/etat?version=2` (ou `?date=…`) recalcule l'état du compte tel qu'il était à ce moment-là.
-- **Projections jetables** : `POST /admin/projections/reconstruire` efface toutes les vues et rejoue tout le magasin.
-  `ProjectionPlusGrosRetraits` illustre l'atout majeur de l'approche : une vue ajoutée **après coup** connaît d'emblée tout
+- **Audit et voyage dans le temps** : `GET /accounts/{id}/events` donne l'historique complet ;
+  `GET /accounts/{id}/state?version=2` (ou `?date=…`) recalcule l'état du compte tel qu'il était à ce moment-là.
+- **Projections jetables** : `POST /admin/projections/rebuild` efface toutes les vues et rejoue tout le magasin.
+  `LargestWithdrawalsProjection` illustre l'atout majeur de l'approche : une vue ajoutée **après coup** connaît d'emblée tout
   l'historique, ce qui est impossible quand on n'a gardé que l'état final.
-- **Instantanés** (`DepotComptes`) : tous les 5 événements, une photo de l'état est mise en cache. Charger un compte ne rejoue
+- **Instantanés** (`AccountRepository`) : tous les 5 événements, une photo de l'état est mise en cache. Charger un compte ne rejoue
   alors que la suite (test `Un_instantane_evite_de_rejouer…`). Ce n'est qu'un cache : on peut l'effacer sans rien perdre.
-- **Évolution des événements (upcasting)** : `ArgentRetire` a gagné un champ `Motif` en v2. Les anciens événements v1 ne sont
-  jamais réécrits ; `SerialiseurEvenements` les convertit à la lecture (motif « Non précisé »).
+- **Évolution des événements (upcasting)** : `MoneyWithdrawn` a gagné un champ `Reason` en v2. Les anciens événements v1 ne sont
+  jamais réécrits ; `EventSerializer` les convertit à la lecture (motif « Non précisé »).
 - **Les contreparties** : on ne peut ni modifier ni supprimer un événement. Les erreurs se corrigent par un nouvel événement
   compensatoire, et le RGPD oblige à prévoir l'effacement (chiffrement des données personnelles, puis destruction de la clé).
   Il faut aussi versionner les événements et garder des projections à jour. C'est puissant pour les domaines où l'historique
@@ -356,13 +356,13 @@ Dans toutes les autres démos, on stocke l'**état** (le solde) et on oublie com
 ## 11. Domain-Driven Design — `11-DDD`
 
 ```
-Ddd.TenueDeCompte.Domaine          LANGAGE.md (glossaire), ObjetsValeurs/ (Argent, Devise, Iban, NomTitulaire, CompteId),
-                                   Comptes/ (agrégat Compte + entité Mouvement, FabriqueDeComptes, IComptes, ServiceDeVirement)
-Ddd.TenueDeCompte.Application      ServiceComptes (cas d'utilisation), PublicateurEvenements (domaine → langage publié)
-Ddd.TenueDeCompte.Infrastructure   EF Core (mapping des objets-valeurs), couche anti-corruption vers le système de change hérité
-Ddd.TenueDeCompte.Contrats         LANGAGE PUBLIÉ : VirementEmis, IAbonneTenueDeCompte, ITenueDeCompteApi (service hôte ouvert)
-Ddd.Conformite                     2e contexte délimité : LANGAGE.md, DossierDeVigilance, Alerte, SurveillanceDesVirements
-Ddd.Api                            héberge les deux contextes
+Ddd.AccountKeeping.Domain           LANGUAGE.md (glossaire), ValueObjects/ (Money, Currency, Iban, OwnerName, AccountId),
+                                    Accounts/ (agrégat Account + entité Movement, AccountFactory, IAccounts, TransferService)
+Ddd.AccountKeeping.Application      AccountsService (cas d'utilisation), EventPublisher (domaine → langage publié)
+Ddd.AccountKeeping.Infrastructure   EF Core (mapping des objets-valeurs), couche anti-corruption vers le système de change hérité
+Ddd.AccountKeeping.Contracts        LANGAGE PUBLIÉ : TransferSent, IAccountKeepingSubscriber, IAccountKeepingApi (service hôte ouvert)
+Ddd.Compliance                      2e contexte délimité : LANGUAGE.md, VigilanceFile, Alert, TransferMonitoring
+Ddd.Api                             héberge les deux contextes
 ```
 
 Le DDD n'est pas une organisation de dossiers comme les démos précédentes. C'est une **façon de concevoir** :
@@ -370,39 +370,39 @@ partir du métier, parler sa langue, et laisser le modèle guider le code. On pe
 hexagonale, Onion ou Clean (ici, l'Onion de la démo 2). Il a deux volets.
 
 **Le volet tactique : bien modéliser à l'intérieur d'un contexte**
-- **Langage omniprésent** : `LANGAGE.md` liste les termes du métier ; on retrouve chacun tel quel dans le code
-  (`PlafondRetraitJournalier`, `Titulaire`, `Virement`…).
-- **Objets-valeurs** (`ObjetsValeurs\`) : définis par leur valeur, immuables, **toujours valides**. Un `Iban` vérifie sa clé
-  modulo 97 à la création, donc recevoir un `Iban` suffit à savoir qu'il est valide. `Argent` porte sa devise et refuse
-  d'additionner des euros et des dollars. `CompteId` évite de confondre deux `Guid`. Comparez avec les `decimal` et `string`
+- **Langage omniprésent** : `LANGUAGE.md` liste les termes du métier ; on retrouve chacun tel quel dans le code
+  (`DailyWithdrawalLimit`, `Owner`, `Transfer`…).
+- **Objets-valeurs** (`ValueObjects\`) : définis par leur valeur, immuables, **toujours valides**. Un `Iban` vérifie sa clé
+  modulo 97 à la création, donc recevoir un `Iban` suffit à savoir qu'il est valide. `Money` porte sa devise et refuse
+  d'additionner des euros et des dollars. `AccountId` évite de confondre deux `Guid`. Comparez avec les `decimal` et `string`
   nus des autres démos (« primitive obsession »).
-- **Agrégat** (`Compte`) : une racine qui garantit ses invariants. Sa **frontière** est dictée par une règle : le plafond de
-  retrait journalier oblige les `Mouvement`s à faire partie de l'agrégat. On ne charge et on n'enregistre jamais un mouvement seul.
-- **Fabrique** (`FabriqueDeComptes`) : l'ouverture d'un compte (numéro, calcul de l'IBAN, plafond) est une logique de création
+- **Agrégat** (`Account`) : une racine qui garantit ses invariants. Sa **frontière** est dictée par une règle : le plafond de
+  retrait journalier oblige les `Movement`s à faire partie de l'agrégat. On ne charge et on n'enregistre jamais un mouvement seul.
+- **Fabrique** (`AccountFactory`) : l'ouverture d'un compte (numéro, calcul de l'IBAN, plafond) est une logique de création
   qui n'appartient ni au compte ni à l'application.
-- **Service de domaine** (`ServiceDeVirement`) : le virement touche deux agrégats et un taux de change. Il vit dans un service
+- **Service de domaine** (`TransferService`) : le virement touche deux agrégats et un taux de change. Il vit dans un service
   sans état, toujours dans le langage du domaine.
-- **Dépôt** (`IComptes`) : un par racine d'agrégat, défini dans le domaine, implémenté dans l'infrastructure.
+- **Dépôt** (`IAccounts`) : un par racine d'agrégat, défini dans le domaine, implémenté dans l'infrastructure.
 - **Événements de domaine** : levés par l'agrégat, publiés après l'enregistrement.
 
 **Le volet stratégique : découper en contextes et organiser leurs relations**
 - **Deux contextes délimités**, deux modèles pour la même réalité. Pour la *Tenue de compte*, un compte a un solde, un plafond
-  et des mouvements. Pour la *Conformité*, c'est un `DossierDeVigilance` avec des virements observés **en euros** et des
-  alertes, sans solde (voir les deux `LANGAGE.md`). Vouloir un seul modèle « Compte » pour tout le monde produirait un modèle obèse.
-- **Langage publié** (`Ddd.TenueDeCompte.Contrats`) : les autres contextes ne voient que des événements d'intégration en
-  types simples. `PublicateurEvenements` traduit les événements de domaine (riches, internes) en événements d'intégration.
+  et des mouvements. Pour la *Conformité*, c'est un `VigilanceFile` avec des virements observés **en euros** et des
+  alertes, sans solde (voir les deux `LANGUAGE.md`). Vouloir un seul modèle « Compte » pour tout le monde produirait un modèle obèse.
+- **Langage publié** (`Ddd.AccountKeeping.Contracts`) : les autres contextes ne voient que des événements d'intégration en
+  types simples. `EventPublisher` traduit les événements de domaine (riches, internes) en événements d'intégration.
   La Conformité ne référence que ce projet (vérifié par un test d'architecture).
-- **Service hôte ouvert** (`ITenueDeCompteApi`) : ce que la Tenue de compte accepte de faire pour les autres. Au 3e virement
+- **Service hôte ouvert** (`IAccountKeepingApi`) : ce que la Tenue de compte accepte de faire pour les autres. Au 3e virement
   en 10 minutes, la Conformité soupçonne un fractionnement et **demande** le blocage du compte : elle ne le bloque pas elle-même.
-- **Couche anti-corruption** (`CoucheAntiCorruption.cs`) : le système de change hérité renvoie `"EURUSD=10832;EURGBP=8571;…"`
-  (taux × 10 000, depuis l'euro seulement, avec des devises que la banque ne tient pas). `AdaptateurTauxDeChange` traduit
-  ce format vers `Argent`/`Devise`, calcule les taux croisés (USD → CHF) et écarte GBP et JPY. Rien de ce format ne fuit
+- **Couche anti-corruption** (`AntiCorruptionLayer.cs`) : le système de change hérité renvoie `"EURUSD=10832;EURGBP=8571;…"`
+  (taux × 10 000, depuis l'euro seulement, avec des devises que la banque ne tient pas). `ExchangeRateAdapter` traduit
+  ce format vers `Money`/`Currency`, calcule les taux croisés (USD → CHF) et écarte GBP et JPY. Rien de ce format ne fuit
   dans le domaine.
 - **Carte des contextes** de cette démo :
   ```
   [Système de change hérité] ──(couche anti-corruption)──▶ [Tenue de compte] ──(langage publié + service hôte ouvert)──▶ [Conformité]
                                                                ▲                                                            │
-                                                               └──────────── demande de blocage (ITenueDeCompteApi) ───────┘
+                                                               └──────────── demande de blocage (IAccountKeepingApi) ───────┘
   ```
 - Quand l'utiliser : quand le métier est **complexe** et que des experts sont disponibles pour construire le langage avec vous.
   Pour un CRUD, c'est beaucoup de cérémonie pour peu de gain.
@@ -410,11 +410,11 @@ hexagonale, Onion ou Clean (ici, l'Onion de la démo 2). Il a deux volets.
 ## 12. Serverless — `12-Serverless`
 
 ```
-Sls.Plateforme   LE FOURNISSEUR CLOUD SIMULÉ (on ne l'écrit jamais en vrai) : MoteurExecution (instances, démarrage à froid,
-                 mise à l'échelle, recyclage, étranglement, délai max, facturation), services gérés (TableGeree avec ETag,
-                 ServiceFiles avec nouveaux essais et file poison, ServiceStockage, réglages, journal), console /plateforme
-Sls.Fonctions    LE CODE QU'ON ÉCRIT : Deploiement.cs (manifeste) + des fonctions statiques sans état
-Sls.Hote         fait tourner la plateforme en local (l'équivalent de « func start » ou « sam local »)
+Sls.Platform    LE FOURNISSEUR CLOUD SIMULÉ (on ne l'écrit jamais en vrai) : ExecutionEngine (instances, démarrage à froid,
+                mise à l'échelle, recyclage, étranglement, délai max, facturation), services gérés (ManagedTable avec ETag,
+                QueueService avec nouveaux essais et file poison, StorageService, réglages, journal), console /platform
+Sls.Functions   LE CODE QU'ON ÉCRIT : Deployment.cs (manifeste) + des fonctions statiques sans état
+Sls.Host        fait tourner la plateforme en local (l'équivalent de « func start » ou « sam local »)
 ```
 
 En serverless (*Function as a Service* : AWS Lambda, Azure Functions…), on ne déploie plus une application qui tourne en
@@ -422,31 +422,31 @@ continu, mais des **fonctions** que le fournisseur exécute à la demande, quand
 message en file, fichier déposé, horloge). Pas de serveur à gérer, et on ne paie que l'exécution.
 
 La plateforme est simulée (aucun téléchargement), mais elle reproduit les comportements qui changent la façon de coder.
-`Sls.Fonctions` ne contient que ce qu'on écrirait réellement.
+`Sls.Functions` ne contient que ce qu'on écrirait réellement.
 
-**À observer** (requêtes prêtes dans `Sls.Hote\Banque.http`, en-têtes `X-Instance`, `X-Demarrage-A-Froid`, `X-Duree-Ms`)
-- **Pas de serveur à écrire** : `Deploiement.cs` déclare les fonctions et leurs déclencheurs (HTTP, file, stockage, minuterie),
-  avec la mémoire allouée. Chaque fonction est une méthode statique `(déclencheur, contexte) → réponse`.
+**À observer** (requêtes prêtes dans `Sls.Host\Bank.http`, en-têtes `X-Instance`, `X-Cold-Start`, `X-Duration-Ms`)
+- **Pas de serveur à écrire** : `Deployment.cs` déclare les fonctions et leurs déclencheurs (HTTP, file, stockage, minuterie),
+  avec la mémoire allouée. Chaque fonction est une méthode statique `(déclencheur, context) → réponse`.
 - **Démarrage à froid** : le premier appel d'une fonction crée une instance (≈ 600 ms ici) ; les suivants réutilisent
   l'instance « chaude » (quelques ms). Après 20 s sans appel, l'instance est recyclée : **mise à zéro**, plus rien ne tourne.
 - **Mise à l'échelle automatique** : une instance ne traite qu'un appel à la fois. Déposer un fichier de 8 virements
-  (`POST /imports`) déclenche `TraiterImport`, qui crée 8 messages (*fan-out*) ; `ExecuterVirement` monte alors à
-  8 instances en parallèle (`GET /plateforme/fonctions` → `picInstances`). Au-delà du maximum : étranglement (429).
-- **Sans état** : `GET /visites` compare un compteur gardé dans la mémoire de l'instance (faux dès qu'il y a plusieurs
+  (`POST /imports`) déclenche `ProcessImport`, qui crée 8 messages (*fan-out*) ; `ExecuteTransfer` monte alors à
+  8 instances en parallèle (`GET /platform/functions` → `peakInstances`). Au-delà du maximum : étranglement (429).
+- **Sans état** : `GET /visits` compare un compteur gardé dans la mémoire de l'instance (faux dès qu'il y a plusieurs
   instances, remis à zéro au recyclage) et un compteur dans la table gérée (juste). Tout ce qui compte va dans les services gérés.
 - **Concurrence** : des dizaines d'instances peuvent modifier le même compte. Les écritures sont conditionnelles (ETag) :
   30 retraits simultanés de 100 € sur un compte de 1 000 € → exactement 10 réussissent (test `Des_retraits_simultanes…`).
-- **Asynchrone par défaut** : `POST /virements` répond `202` tout de suite ; le virement est exécuté par une autre fonction,
+- **Asynchrone par défaut** : `POST /transfers` répond `202` tout de suite ; le virement est exécuté par une autre fonction,
   déclenchée par la file, qui envoie ensuite des notifications dans une 2e file.
 - **Nouveaux essais et messages empoisonnés** : une exception fait relivrer le message (attente croissante). Après 3 échecs,
-  il part dans `notifications-poison`. Scénario : `PUT /plateforme/reglages/Sms:EnPanne` à `true`, faire un virement,
-  constater les messages empoisonnés, remettre à `false`, puis `POST /plateforme/files/notifications-poison/rejouer`.
-- **Idempotence obligatoire** : un message peut être livré deux fois. `Compte.Appliquer` ignore une opération déjà connue,
+  il part dans `notifications-poison`. Scénario : `PUT /platform/settings/Sms:Down` à `true`, faire un virement,
+  constater les messages empoisonnés, remettre à `false`, puis `POST /platform/queues/notifications-poison/replay`.
+- **Idempotence obligatoire** : un message peut être livré deux fois. `Account.Apply` ignore une opération déjà connue,
   les notifications ont une clé déterministe, et un fichier d'import retraité ne crée pas de doublons.
 - **Délai maximal** : une fonction qui dépasse son délai est arrêtée et son instance détruite (504).
-- **Facturation** : `GET /plateforme/facture` donne invocations × prix + durée × mémoire (Go-s), aux tarifs d'AWS Lambda.
+- **Facturation** : `GET /platform/bill` donne invocations × prix + durée × mémoire (Go-s), aux tarifs d'AWS Lambda.
   Une démo complète coûte quelques millièmes de centime ; mais un trafic constant et élevé peut coûter plus cher qu'un serveur.
-- **Tests** : les fonctions sont de simples méthodes, testées directement avec `ContexteFonction.PourTests` (sans plateforme) ;
+- **Tests** : les fonctions sont de simples méthodes, testées directement avec `FunctionContext.ForTests` (sans plateforme) ;
   la plateforme et le système complet ont leurs propres tests.
 - Pour passer au réel : Azure Functions (isolated worker) ou AWS Lambda, avec Azurite / LocalStack en local, et Durable
   Functions / Step Functions pour orchestrer des enchaînements longs.
@@ -456,30 +456,30 @@ La plateforme est simulée (aucun téléchargement), mais elle reproduit les com
 ## 13. Microkernel — `13-Microkernel`
 
 ```
-Mk.Contrats      le SDK des plugins : IPlugin, IControleOperation, IRegleFrais, IFormatReleve
-Mk.Noyau         NoyauBancaire (comptes, débit, crédit), RegistrePlugins, ChargeurPlugins (AssemblyLoadContext)
-Mk.Hote          API + surveillance du dossier plugins/ (rechargement automatique)
-Mk.Plugins.*     PlafondNocturne, ListeNoire, FraisVirement, Exports (CSV + QIF) → compilés dans plugins/{Nom}/
+Mk.Contracts     le SDK des plugins : IPlugin, IOperationCheck, IFeeRule, IStatementFormat
+Mk.Kernel        BankingKernel (comptes, débit, crédit), PluginRegistry, PluginLoader (AssemblyLoadContext)
+Mk.Host          API + surveillance du dossier plugins/ (rechargement automatique)
+Mk.Plugins.*     NightLimit, Blocklist, TransferFees, Exports (CSV + QIF) → compilés dans plugins/{Nom}/
 ```
 
 Un noyau minimal qui ne référence **aucun** plugin ; tout ce qui varie est branché à des points d'extension.
 
 **À observer** (détails : [Docs/13-microkernel.md](Docs/13-microkernel.md))
 - `GET /admin/plugins` : 5 extensions dans 4 DLL, avec leur état et leurs points d'extension.
-- **Rechargement à chaud** : modifier `plugins\Mk.Plugins.ListeNoire\plugin.json`, ou recompiler un plugin **pendant que
-  l'API tourne** (`dotnet build Mk.Plugins.ListeNoire`) : il est rechargé automatiquement. Les DLL sont lues en mémoire,
+- **Rechargement à chaud** : modifier `plugins\Mk.Plugins.Blocklist\plugin.json`, ou recompiler un plugin **pendant que
+  l'API tourne** (`dotnet build Mk.Plugins.Blocklist`) : il est rechargé automatiquement. Les DLL sont lues en mémoire,
   donc jamais verrouillées ; les anciens contextes de chargement sont déchargés.
-- `POST /admin/plugins/{nom}/desactiver` / `activer` : changer le comportement sans redémarrer.
-- **Le piège classique**, évité : `Mk.Contrats` n'est **pas** copié dans le dossier des plugins (`Private="false"`) ; sinon
+- `POST /admin/plugins/{nom}/disable` / `activer` : changer le comportement sans redémarrer.
+- **Le piège classique**, évité : `Mk.Contracts` n'est **pas** copié dans le dossier des plugins (`Private="false"`) ; sinon
   l'`IPlugin` du plugin serait un autre type que celui du noyau. Un test vérifie qu'il n'y en a qu'un exemplaire.
 - Un plugin qui plante est mis « en erreur » et écarté (l'opération en cours est refusée par sécurité) ; un plugin qui
   exige un noyau plus récent est refusé.
 
-## 14. Saga orchestrée — `14-SagaOrchestree`
+## 14. Saga orchestrée — `14-OrchestratedSaga`
 
 ```
-Saga.Participants   services simulés et idempotents : Comptes (réserver / capturer), Conformité, Change, Notifications
-Saga.Orchestrateur  DefinitionVirement (les 6 étapes et leurs compensations), MoteurSaga, EtatSaga, MagasinSagas
+Saga.Participants   services simulés et idempotents : AccountsService (réserver / capturer), ComplianceService, ExchangeService, NotificationsService
+Saga.Orchestrator   TransferDefinition (les 6 étapes et leurs compensations), SagaEngine, SagaState, SagaStore
 Saga.Api            démarrer / suivre une saga, décision de l'analyste, pannes simulées (PUT /chaos), arrêt / relance
 ```
 
@@ -487,49 +487,49 @@ Les démos 7 et 8 coordonnent par **chorégraphie** (chacun réagit aux événem
 explicite conduit le processus : ① réserver les fonds, ② contrôle de conformité, ③ change, ④ crédit, ⑤ débit définitif
 (point de non-retour), ⑥ notification.
 
-**À observer** (détails : [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md), requêtes dans `Saga.Api\Banque.http`)
+**À observer** (détails : [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md), requêtes dans `Saga.Api\Bank.http`)
 - `GET /sagas/{id}` : l'état de chaque étape et le journal complet de la saga.
 - **Panne passagère** : `PUT /chaos {"echecsChangeRestants":2}` puis un virement Alice → Carla (USD) : 2 nouveaux essais, puis succès.
 - **Panne durable** : `{"changeHorsService":true}` : abandon au 4e échec, puis compensation en ordre inverse (fonds libérés).
 - **Attente d'un événement extérieur** : un virement ≥ 10 000 € attend la décision d'un analyste
-  (`POST /sagas/{id}/conformite`) ; sans décision avant l'échéance (60 s), il est compensé.
+  (`POST /sagas/{id}/compliance`) ; sans décision avant l'échéance (60 s), il est compensé.
 - **Point de non-retour** : `{"notificationsHorsService":true}` : après le débit définitif on ne compense plus, la saga
-  passe en `ATraiterManuellement`.
-- **Reprise** : `POST /admin/orchestrateur/arreter` pendant une saga, puis `relancer` : elle reprend exactement où elle était,
+  passe en `ManualInterventionRequired`.
+- **Reprise** : `POST /admin/orchestrator/stop` pendant une saga, puis `relancer` : elle reprend exactement où elle était,
   car tout son état est dans le magasin.
 - En production : Temporal, Azure Durable Functions, AWS Step Functions, ou les sagas de MassTransit / NServiceBus.
 
 ## 15. Multi-tenant — `15-MultiTenant`
 
 ```
-Mt.Locataires   la LOCATION, sans métier : Locataire (formule, isolation, règles, quotas), CatalogueLocataires,
-                ContexteLocataire, résolveurs (sous-domaine, en-tête), MiddlewareLocataire, limitation de débit par locataire
-Mt.Banque       le métier, écrit comme pour une seule banque : ServiceBancaire ;
-                BanqueDbContext (filtre global, estampillage, refus des écritures croisées), FabriqueBanque (base partagée ou dédiée)
-Mt.Api          API des clients + back-office de la plateforme (/plateforme : inscription, formule, suspension, départ, tâches)
+Mt.Tenants   la LOCATION, sans métier : Tenant (formule, isolation, règles, quotas), TenantCatalog,
+             TenantContext, résolveurs (subdomain, header), TenantMiddleware, limitation de débit par locataire
+Mt.Bank      le métier, écrit comme pour une seule banque : BankingService ;
+             BankDbContext (filtre global, estampillage, refus des écritures croisées), BankFactory (base partagée ou dédiée)
+Mt.Api       API des clients + back-office de la plateforme (/platform : inscription, formule, suspension, départ, tâches)
 ```
 
 Une **seule application, un seul déploiement**, pour plusieurs clients (les *locataires*, ici trois banques) qui ne doivent
 jamais voir les données les uns des autres. C'est le modèle des SaaS. La question n'est plus « comment organiser le code »,
 mais « comment partager l'application **sans mélanger** les clients ».
 
-**À observer** (détails : [Docs/15-multi-tenant.md](Docs/15-multi-tenant.md), requêtes dans `Mt.Api\Banque.http`)
-- **Le métier ignore le locataire** : `ServiceBancaire` ne contient aucun `where LocataireId = …`. Le locataire est identifié
-  une fois, par `MiddlewareLocataire` (sous-domaine `beta.localhost:5114` ou en-tête `X-Locataire`), puis lu dans `ContexteLocataire`.
-- **La même URL, trois réponses** : `GET /comptes/1111…` donne Alice à 1 000 €, 3 000 € ou 25 000 € selon la banque. La clé
-  primaire est composite (`LocataireId`, `Id`) : les mêmes identifiants coexistent dans la base partagée.
-- **Le garde-fou est dans le DbContext** : filtre global sur toutes les entités qui implémentent `IAppartientAUnLocataire`,
+**À observer** (détails : [Docs/15-multi-tenant.md](Docs/15-multi-tenant.md), requêtes dans `Mt.Api\Bank.http`)
+- **Le métier ignore le locataire** : `BankingService` ne contient aucun `where TenantId = …`. Le locataire est identifié
+  une fois, par `TenantMiddleware` (sous-domaine `beta.localhost:5114` ou en-tête `X-Tenant`), puis lu dans `TenantContext`.
+- **La même URL, trois réponses** : `GET /accounts/1111…` donne Alice à 1 000 €, 3 000 € ou 25 000 € selon la banque. La clé
+  primaire est composite (`TenantId`, `Id`) : les mêmes identifiants coexistent dans la base partagée.
+- **Le garde-fou est dans le DbContext** : filtre global sur toutes les entités qui implémentent `IBelongsToTenant`,
   estampillage des insertions, exception si une écriture vise un autre locataire. **Sans locataire, toute requête échoue**
   au lieu de tout renvoyer ; la plateforme doit écrire `IgnoreQueryFilters()` pour voir plusieurs clients.
-- **Deux modèles d'isolation côte à côte** (`GET /plateforme/stockage`) : Alpha et Bêta (Standard) partagent `banque-partagee`,
-  Gamma (Premium) a sa base `banque-gamma`. Seule `FabriqueBanque` connaît cette différence.
-- **Changer de formule** : `POST /plateforme/locataires/alpha/formule` (Premium) déménage les données d'Alpha dans une base
+- **Deux modèles d'isolation côte à côte** (`GET /platform/storage`) : Alpha et Bêta (Standard) partagent `bank-shared`,
+  Gamma (Premium) a sa base `bank-gamma`. Seule `BankFactory` connaît cette différence.
+- **Changer de formule** : `POST /platform/tenants/alpha/plan` (Premium) déménage les données d'Alpha dans une base
   dédiée, le locataire étant suspendu le temps de la copie.
 - **Règles et quotas par client** : plafond de virement, frais, nombre de comptes (contrat de chaque banque) ; requêtes par
   minute (formule). Un **voisin bruyant** reçoit 429 sans ralentir les autres : un limiteur par locataire, et non un global.
-- **Une tâche de fond n'a pas de locataire** : `POST /plateforme/taches/frais-mensuels` ouvre un scope par banque et y fixe le
+- **Une tâche de fond n'a pas de locataire** : `POST /platform/tasks/monthly-fees` ouvre un scope par banque et y fixe le
   locataire elle-même. L'oublier lève une exception, plutôt que de prélever sur toutes les banques.
-- **Arrivée et départ d'un client** sans déploiement : `POST /plateforme/locataires` puis `DELETE` (base supprimée en Premium,
+- **Arrivée et départ d'un client** sans déploiement : `POST /platform/tenants` puis `DELETE` (base supprimée en Premium,
   lignes supprimées en Standard).
 - Un compte d'une autre banque répond **404**, comme un compte inexistant : on ne révèle pas son existence.
 - En production : le locataire vient du **jeton** de l'utilisateur authentifié (ou est vérifié contre lui), le catalogue est
@@ -547,7 +547,7 @@ Bff.Mobile    :5116  le BFF de l'APPLICATION MOBILE : réponses compactes, un ap
 ```
 
 ```powershell
-dotnet run --project 16-BFF\Bff.Services     # puis, dans deux autres terminaux :
+dotnet run --project 16-BFF\Bff.Services     # then, in two other terminals:
 dotnet run --project 16-BFF\Bff.Web          # http://localhost:5115 (alice / demo)
 dotnet run --project 16-BFF\Bff.Mobile
 ```
@@ -556,9 +556,9 @@ Des services génériques servent plusieurs applications aux besoins opposés : 
 application mobile sur petit écran et réseau lent. Plutôt que de faire choisir les services entre les deux, chaque application
 a **son propre backend**, écrit et déployé par son équipe, qui fait l'interface entre elle et les services.
 
-**À observer** (détails : [Docs/16-bff.md](Docs/16-bff.md), requêtes dans `Bff.Web\Banque.http` et `Bff.Mobile\Banque.http`)
-- **Un écran, une requête** : `GET /api/tableau-de-bord` déclenche 7 appels aux services, faits côté serveur et **en parallèle**.
-  Les en-têtes `X-Appels-Aval`, `X-Duree-Totale-Ms` (≈ 2 latences) et `X-Duree-Aval-Cumulee-Ms` (≈ 7 latences) le montrent.
+**À observer** (détails : [Docs/16-bff.md](Docs/16-bff.md), requêtes dans `Bff.Web\Bank.http` et `Bff.Mobile\Bank.http`)
+- **Un écran, une requête** : `GET /api/dashboard` déclenche 7 appels aux services, faits côté serveur et **en parallèle**.
+  Les en-têtes `X-Downstream-Calls`, `X-Total-Duration-Ms` (≈ 2 latences) et `X-Downstream-Cumulative-Ms` (≈ 7 latences) le montrent.
 - **Le jeton reste sur le serveur** (`Bff.Web\Session.cs`) : le navigateur ne reçoit qu'un cookie `HttpOnly`, `SameSite=Strict`,
   qui désigne une session gardée par le BFF. La page affiche `document.cookie = ""` : un script injecté (XSS) n'a rien à voler.
   Se déconnecter supprime la session, et un cookie copié auparavant ne vaut plus rien.
@@ -568,8 +568,8 @@ a **son propre backend**, écrit et déployé par son équipe, qui fait l'interf
 - **Une réponse par écran** : le mobile reçoit une réponse plus de 5 fois plus légère que le site, sans IBAN ni champ inutile,
   avec des libellés raccourcis (« CB CARREFOUR 0910 PARIS 15 » → « Carrefour »).
 - **Dégradation** : si les offres sont en panne ou trop lentes (budget de 800 ms), le tableau de bord s'affiche sans elles
-  (`"degrade": ["offres"]`) au lieu d'échouer.
-- **Versions** : `/mobile/v2/accueil` ajoute un bandeau d'offre pour la nouvelle version de l'application ; `/v1` reste servie
+  (`"degraded": ["offers"]`) au lieu d'échouer.
+- **Versions** : `/mobile/v2/home` ajoute un bandeau d'offre pour la nouvelle version de l'application ; `/v1` reste servie
   aux téléphones pas encore mis à jour. Les services n'ont pas changé.
 - **Deux BFF indépendants** : aucun code partagé entre eux ni avec les services (vérifié par un test). Les contrats sont
   recopiés, avec seulement les champs utiles à chaque écran.
@@ -580,17 +580,17 @@ a **son propre backend**, écrit et déployé par son équipe, qui fait l'interf
 ## 17. Architecture cellulaire (cell-based) — `17-CellBased`
 
 ```
-Cell.Cellule   L'APPLICATION COMPLÈTE (API, données, règles), identique dans chaque cellule ; chaque instance ne sert que
-               ses clients. Lancée en c1 :5231, c2 :5232, c3 :5233 (+ c4 :5234 en réserve)
-Cell.Routeur   :5117  plan de DONNÉES : clé de partition (le client) → cellule → relais, rien d'autre
-                      plan de CONTRÔLE (/plateforme) : placement, ajout de cellules, migration, déploiement par vagues
-Cell.Lanceur          démarre le routeur et les cellules (le même programme, lancé trois fois)
+Cell.App        L'APPLICATION COMPLÈTE (API, données, règles), identique dans chaque cellule ; chaque instance ne sert que
+                ses clients. Lancée en c1 :5231, c2 :5232, c3 :5233 (+ c4 :5234 en réserve)
+Cell.Router     :5117  plan de DONNÉES : clé de partition (le client) → cellule → relais, rien d'autre
+                       plan de CONTRÔLE (/platform) : placement, ajout de cellules, migration, déploiement par vagues
+Cell.Launcher   démarre le routeur et les cellules (le même programme, lancé trois fois)
 ```
 
 ```powershell
 dotnet build 17-CellBased\CellBased.slnx
-dotnet run --project 17-CellBased\Cell.Lanceur            # routeur + c1, c2, c3
-dotnet run --project 17-CellBased\Cell.Lanceur -- c4      # plus tard : une 4e cellule, à enregistrer
+dotnet run --project 17-CellBased\Cell.Launcher            # router + c1, c2, c3
+dotnet run --project 17-CellBased\Cell.Launcher -- c4      # later: a 4th cell, to register
 ```
 
 Au lieu d'un seul système qui grossit, on fait tourner **plusieurs copies complètes et indépendantes** de l'application,
@@ -598,16 +598,16 @@ les **cellules**, chacune servant une partie des clients. Une panne, un mauvais 
 n'atteint qu'une cellule : c'est le **rayon d'impact** qui est borné. Approche décrite par AWS pour ses propres services,
 adoptée notamment par Slack, et proche des « pods » de Salesforce.
 
-**À observer** (détails : [Docs/17-cell-based.md](Docs/17-cell-based.md), requêtes dans `Cell.Routeur\Banque.http`)
-- **Le routeur est minuscule** (`Relais.cs`) : il lit le client dans l'URL, trouve sa cellule dans la table de placement,
-  relaie, et ajoute `X-Cellule`. Pas de métier, pas de base : c'est le seul composant partagé, il doit être increvable.
+**À observer** (détails : [Docs/17-cell-based.md](Docs/17-cell-based.md), requêtes dans `Cell.Router\Bank.http`)
+- **Le routeur est minuscule** (`Relay.cs`) : il lit le client dans l'URL, trouve sa cellule dans la table de placement,
+  relaie, et ajoute `X-Cell`. Pas de métier, pas de base : c'est le seul composant partagé, il doit être increvable.
 - **Rayon d'impact** : arrêter le processus de c2 → Bob et Emma reçoivent 503, Alice, Carla et David ne voient rien.
 - **Placement** : un nouveau client va dans la cellule ouverte la moins chargée. Quand toutes sont pleines (3 places chacune),
-  on **ajoute** une cellule (`POST /plateforme/cellules`) au lieu d'en agrandir une : toutes gardent une taille connue et testée.
-- **Déploiement par vagues** : `POST /plateforme/deploiements` met d'abord à jour **une** cellule (le canari), vérifie sa
+  on **ajoute** une cellule (`POST /platform/cells`) au lieu d'en agrandir une : toutes gardent une taille connue et testée.
+- **Déploiement par vagues** : `POST /platform/deployments` met d'abord à jour **une** cellule (le canari), vérifie sa
   sonde de santé, puis les autres. La version 1.1 (bogue : un retrait débité deux fois) est arrêtée au canari et annulée ;
   l'historique des versions montre que c2 et c3 ne l'ont jamais reçue.
-- **Migration** : `POST /plateforme/clients/carla/migrer` déplace un client (données, historique, opérations déjà traitées)
+- **Migration** : `POST /platform/customers/carla/migrate` déplace un client (données, historique, opérations déjà traitées)
   vers une autre cellule ; il est indisponible un instant (503 + `Retry-After`), les autres non.
 - **Le prix : les échanges entre cellules.** Un virement entre deux clients de la même cellule est une transaction locale ;
   entre deux cellules, c'est un débit, puis un crédit idempotent via le routeur, et une compensation si la cellule du
@@ -619,14 +619,14 @@ adoptée notamment par Slack, et proche des « pods » de Salesforce.
   multi-tenant à l'intérieur. Ni avec les **microservices** (démo 8), qui découpent par fonction : une cellule contient
   toutes les fonctions, éventuellement sous forme de microservices.
 
-## 18. Modèle d'acteurs — `18-ModeleActeurs`
+## 18. Modèle d'acteurs — `18-ActorModel`
 
 ```
-Acteurs.Noyau    le RUNTIME, écrit pour la démo (≈ 300 lignes, sans package) : Acteur, ReferenceActeur (une adresse),
-                 SystemeActeurs (une boîte aux lettres par acteur, activation, supervision, passivation)
-Acteurs.Banque   CompteActeur (un par compte), VirementActeur (un par virement), messages immuables,
-                 MagasinEtats (stockage durable, une ligne par acteur), Pieges (pannes et lenteurs à la demande)
-Acteurs.Api      :5118  une route = un message à un acteur ; /systeme pour observer et provoquer des pannes ; /demo
+Actors.Runtime   le RUNTIME, écrit pour la démo (≈ 300 lignes, sans package) : Actor, ActorRef (une adresse),
+                 ActorSystem (une boîte aux lettres par acteur, activation, supervision, passivation)
+Actors.Bank      AccountActor (un par compte), TransferActor (un par virement), messages immuables,
+                 StateStore (stockage durable, une ligne par acteur), Traps (pannes et lenteurs à la demande)
+Actors.Api       :5118  une route = un message à un acteur ; /system pour observer et provoquer des pannes ; /demo
 ```
 
 Chaque compte est un **acteur** : un objet qui a son propre état, ne le partage avec personne, et ne reçoit que des
@@ -634,31 +634,31 @@ Chaque compte est un **acteur** : un objet qui a son propre état, ne le partage
 le solde : personne d'autre ne peut y toucher. Le modèle d'Erlang, d'Akka et d'Orleans (Halo, Xbox) ; ici, des acteurs
 *virtuels* à la Orleans, activés au premier message et endormis après 30 s d'inactivité.
 
-**À observer** (détails : [Docs/18-modele-acteurs.md](Docs/18-modele-acteurs.md), requêtes dans `Acteurs.Api\Banque.http`)
-- **Concurrence sans verrou** : `POST /demo/retraits-simultanes` lance 1 000 retraits de 3 € **en même temps** sur le
-  compte d'Alice : exactement 333 acceptés, solde final 1 €, jamais négatif. `CompteActeur` lit, vérifie et modifie son
+**À observer** (détails : [Docs/18-modele-acteurs.md](Docs/18-modele-acteurs.md), requêtes dans `Actors.Api\Bank.http`)
+- **Concurrence sans verrou** : `POST /demo/simultaneous-withdrawals` lance 1 000 retraits de 3 € **en même temps** sur le
+  compte d'Alice : exactement 333 acceptés, solde final 1 €, jamais négatif. `AccountActor` lit, vérifie et modifie son
   solde comme un programme séquentiel.
 - **Virements sans interblocage** : un acteur par virement converse avec les deux comptes (débit, crédit, compensation si
-  la cible refuse). `POST /demo/virements-croises` lance des virements Alice → Bob et Bob → Alice simultanés : le total
-  est conservé. L'identifiant du virement est l'adresse de son acteur : rejouer `facture-42` renvoie la même réponse.
-- **« Let it crash »** : `POST /systeme/pannes` fait planter un acteur au pire moment (solde modifié en mémoire, pas
+  la cible refuse). `POST /demo/crossed-transfers` lance des virements Alice → Bob et Bob → Alice simultanés : le total
+  est conservé. L'identifiant du virement est l'adresse de son acteur : rejouer `invoice-42` renvoie la même réponse.
+- **« Let it crash »** : `POST /system/failures` fait planter un acteur au pire moment (solde modifié en mémoire, pas
   encore écrit) → `500`, le superviseur le **remplace** par une incarnation neuve qui relit le stockage : le retrait n'a
   pas eu lieu. Plus de 3 pannes par minute → l'acteur est arrêté (`503`) ; les autres comptes ne voient rien.
-- **Reprise d'un virement** : planté après le débit, il est noté `DebitFait` ; rejoué, il termine sans débiter deux fois.
-- **Activation et passivation** : `GET /systeme` liste les acteurs en mémoire ; `POST /systeme/passivation` les endort,
-  leur état reste dans `/systeme/stockage`, et le message suivant ne réveille que l'acteur concerné.
-- **Le prix** : pas de `GET /comptes` (il faudrait réveiller et interroger chaque acteur : on ajouterait une vue de
+- **Reprise d'un virement** : planté après le débit, il est noté `DebitDone` ; rejoué, il termine sans débiter deux fois.
+- **Activation et passivation** : `GET /system` liste les acteurs en mémoire ; `POST /system/passivation` les endort,
+  leur état reste dans `/system/storage`, et le message suivant ne réveille que l'acteur concerné.
+- **Le prix** : pas de `GET /accounts` (il faudrait réveiller et interroger chaque acteur : on ajouterait une vue de
   lecture, cf. CQRS) ; pas de transaction entre acteurs ; deux acteurs qui s'attendent mutuellement s'interbloquent.
 - En production : **Orleans**, **Akka.NET** ou **Proto.Actor**, qui répartissent les acteurs sur plusieurs serveurs.
 
 ## 19. Architecture spatiale (space-based) — `19-SpaceBased`
 
 ```
-Espace.Grille    l'INTERGICIEL VIRTUALISÉ, simulé (sans package) : grille de données (une réplique par unité, réplication
-                 asynchrone, versions, détection des collisions), grille de messages (affinité / tourniquet), pompe et
-                 écrivain de données, lecteur de données, gestionnaire de déploiement (élasticité)
-Espace.Banque    le métier d'une unité : il ne lit et n'écrit que dans la réplique de son unité
-Espace.Api       :5119  /comptes, /virements ; /grille pour observer et provoquer des pannes ; /demo
+Space.Grid    l'INTERGICIEL VIRTUALISÉ, simulé (sans package) : grille de données (une réplique par unité, réplication
+              asynchrone, versions, détection des collisions), grille de messages (affinité / tourniquet), pompe et
+              écrivain de données, lecteur de données, gestionnaire de déploiement (élasticité)
+Space.Bank    le métier d'une unité : il ne lit et n'écrit que dans la réplique de son unité
+Space.Api     :5119  /accounts, /transfers ; /grid pour observer et provoquer des pannes ; /demo
 ```
 
 La base de données est le goulot de toutes les autres démos. Ici, elle sort du chemin des requêtes : chaque **unité de
@@ -666,85 +666,85 @@ traitement** a **toutes les données en mémoire**, dans une grille répliquée 
 la base en arrière-plan. On ajoute des unités quand la charge monte, on les retire quand elle baisse. Le modèle de
 GigaSpaces, Hazelcast ou Apache Ignite (billetterie, enchères, trading).
 
-**À observer** (détails : [Docs/19-space-based.md](Docs/19-space-based.md), requêtes dans `Espace.Api\Banque.http`)
-- **La base peut tomber** (`POST /grille/base/panne`) : les requêtes répondent toujours `200`, `pompeEnAttente` grossit,
+**À observer** (détails : [Docs/19-space-based.md](Docs/19-space-based.md), requêtes dans `Space.Api\Bank.http`)
+- **La base peut tomber** (`POST /grid/database/failure`) : les requêtes répondent toujours `200`, `pumpPending` grossit,
   puis se vide quand la base revient.
-- **Les collisions**, le prix de la grille répliquée : `POST /demo/retraits-concurrents` en **affinité** (chaque compte
-  toujours sur la même unité) ne perd rien ; au **tourniquet** (`POST /grille/routage`), deux unités écrivent le même
+- **Les collisions**, le prix de la grille répliquée : `POST /demo/concurrent-withdrawals` en **affinité** (chaque compte
+  toujours sur la même unité) ne perd rien ; au **tourniquet** (`POST /grid/routing`), deux unités écrivent le même
   compte en même temps et des écritures acceptées se perdent (essai réel : 200 retraits de 1 € acceptés, 100 € débités).
-- **Élasticité** : `POST /demo/charge` (600 ouvertures simultanées) fait passer de 2 à 6 unités, chacune démarrée par une
-  simple copie mémoire d'une autre ; au calme, retour à 2. Le journal (`GET /grille/journal`) raconte.
-- **Démarrage à froid** : `POST /grille/panne-totale` vide la grille ; la requête suivante attend que la pompe ait tout
+- **Élasticité** : `POST /demo/load` (600 ouvertures simultanées) fait passer de 2 à 6 unités, chacune démarrée par une
+  simple copie mémoire d'une autre ; au calme, retour à 2. Le journal (`GET /grid/log`) raconte.
+- **Démarrage à froid** : `POST /grid/total-failure` vide la grille ; la requête suivante attend que la pompe ait tout
   écrit, puis recharge la grille depuis la base (`503` si la base est aussi en panne).
-- `GET /grille/comparaison/{id}` montre une donnée dans chaque réplique et dans la base, et la fenêtre de réplication.
+- `GET /grid/comparison/{id}` montre une donnée dans chaque réplique et dans la base, et la fenêtre de réplication.
 - Même en affinité, un changement du nombre d'unités ouvre une courte fenêtre de collision (clés qui changent d'unité).
 
 ## 20. Pipeline (pipes & filters) — `20-Pipeline`
 
 ```
-Pipeline.Noyau   le MOTEUR, générique (sans package) : IFiltre, étages reliés par des tuyaux bornés (Channels),
-                 étages parallèles ordonnés ou non, rejets par motif, mesures par étage, arrêt sur panne
-Pipeline.Banque  les filtres de l'import d'un fichier de virements : Analyser, Valider (IBAN), Dédupliquer, Convertir,
-                 Contrôler la fraude, Exécuter ; et leur assemblage en deux pipelines (import, import à blanc)
-Pipeline.Api     :5120  POST /imports (le corps est le fichier CSV, lu en flux) ; /demo/import-massif
+Pipeline.Core   le MOTEUR, générique (sans package) : IFilter, étages reliés par des tuyaux bornés (Channels),
+                étages parallèles ordonnés ou non, rejets par motif, mesures par étage, arrêt sur panne
+Pipeline.Bank   les filtres de l'import d'un fichier de virements : Parse, Validate (IBAN), Deduplicate, ConvertCurrency,
+                CheckFraud, Execute ; et leur assemblage en deux pipelines (import, import à blanc)
+Pipeline.Api    :5120  POST /imports (le corps est le fichier CSV, lu en flux) ; /demo/bulk-import
 ```
 
 Un traitement de données découpé en **filtres** indépendants, reliés par des **tuyaux** : le modèle du shell Unix, des
 compilateurs et des ETL. Ici, l'import d'un fichier de virements envoyé par une entreprise ; chaque filtre fait une seule
 chose, et tous travaillent en même temps, chacun sur une ligne différente.
 
-**À observer** (détails : [Docs/20-pipeline.md](Docs/20-pipeline.md), requêtes dans `Pipeline.Api\Banque.http`)
+**À observer** (détails : [Docs/20-pipeline.md](Docs/20-pipeline.md), requêtes dans `Pipeline.Api\Bank.http`)
 - **Les rejets** : le fichier d'exemple (11 lignes) donne 3 virements et 8 rejets, chacun écarté par le filtre qui le
   concerne (ligne mal formée, IBAN invalide, doublon, devise inconnue, liste noire, plafond, solde insuffisant).
-- **Recomposition** : `POST /imports?aBlanc=true` est le même pipeline sans le dernier filtre : il dit ce qui passerait.
-- **Contre-pression** : `POST /demo/import-massif` importe 100 000 lignes générées à la volée ; jamais plus de quelques
+- **Recomposition** : `POST /imports?dryRun=true` est le même pipeline sans le dernier filtre : il dit ce qui passerait.
+- **Contre-pression** : `POST /demo/bulk-import` importe 100 000 lignes générées à la volée ; jamais plus de quelques
   centaines en mémoire (`maxEnTransit`).
 - **Le goulot** : le bilan mesure chaque étage ; avec 1 copie, le contrôle de fraude est occupé à 94 % et les autres
-  attendent. Avec 8 copies (`parallelismeFraude`), l'import va 5 fois plus vite, et les lignes ressortent dans l'ordre du
+  attendent. Avec 8 copies (`fraudParallelism`), l'import va 5 fois plus vite, et les lignes ressortent dans l'ordre du
   fichier (l'ordre compte : un virement peut dépendre du précédent).
-- **Reprise** : `?panneALaReference=VIR-010` arrête l'import en plein milieu (500) ; rejouer le fichier termine le
+- **Reprise** : `?failureAtReference=VIR-010` arrête l'import en plein milieu (500) ; rejouer le fichier termine le
   travail sans rien exécuter deux fois (dédoublonnage par référence).
 
-## 21. Chorégraphie (événementiel pur) — `21-Choregraphie`
+## 21. Chorégraphie (événementiel pur) — `21-Choreography`
 
 ```
 Choreo.Bus       le COURTIER, simulé (sans package) : une file par abonné, livraison « au moins une fois », nouveaux essais,
                  lettres mortes, journal de tous les événements (corrélation + cause)
-Choreo.Services  les contrats d'événements, et les services, qui ne se connaissent pas : Comptes, Conformité, Change,
-                 Notifications, Fidélité (ajouté après coup), Suivi (la projection qui reconstitue l'état des virements)
-Choreo.Api       :5121  POST /virements (202) ; /conformite pour l'analyste ; /bus, /chaos pour observer et casser
+Choreo.Services  les contrats d'événements, et les services, qui ne se connaissent pas : Accounts, Compliance, Exchange,
+                 Notifications, Loyalty (ajouté après coup), Tracking (la projection qui reconstitue l'état des virements)
+Choreo.Api       :5121  POST /transfers (202) ; /compliance pour l'analyste ; /bus, /chaos pour observer et casser
 ```
 
 Le **même virement que la démo 14**, avec les mêmes données et les mêmes règles, mais **sans orchestrateur** : chaque
 service réagit aux événements des autres et publie les siens. Le processus n'est écrit nulle part ; il émerge des
 abonnements. Les démos 7 et 8 utilisaient la chorégraphie pour notifier ; ici, elle conduit tout un processus métier.
 
-**À observer** (détails : [Docs/21-choregraphie.md](Docs/21-choregraphie.md), requêtes dans `Choreo.Api\Banque.http`)
-- **L'historique causal** : `GET /virements/{id}` montre chaque événement, qui l'a publié, en réaction à quoi. C'est le
+**À observer** (détails : [Docs/21-choregraphie.md](Docs/21-choregraphie.md), requêtes dans `Choreo.Api\Bank.http`)
+- **L'historique causal** : `GET /transfers/{id}` montre chaque événement, qui l'a publié, en réaction à quoi. C'est le
   seul fil du processus ; « où en est le virement » demande un service de plus (le Suivi).
 - **Compensations dispersées** : un refus de la conformité ou un échec du change sont compensés par Comptes, qui doit
   écouter ces deux événements.
-- **Une panne, c'est du silence** : `POST /chaos {"changeEnPanne": true}` → le virement reste en plan, l'événement finit
-  aux lettres mortes (`/bus/lettres-mortes`), le virement apparaît dans `/virements/bloques` ; 30 s plus tard, Comptes
+- **Une panne, c'est du silence** : `POST /chaos {"exchangeDown": true}` → le virement reste en plan, l'événement finit
+  aux lettres mortes (`/bus/dead-letters`), le virement apparaît dans `/transfers/stuck` ; 30 s plus tard, Comptes
   libère de lui-même la réservation.
 - **Livré deux fois, traité une fois** : chaque service a sa boîte de réception (testé avec un courtier qui double tout).
-- **Ajouter un participant** : le service Fidélité s'abonne à `VirementRegle`, sans qu'aucun autre service ne change.
+- **Ajouter un participant** : le service Fidélité s'abonne à `TransferSettled`, sans qu'aucun autre service ne change.
 - `GET /bus` : qui écoute quoi, la seule carte du système, et elle n'existe qu'à l'exécution.
 
 ## 22. Strangler Fig (migration progressive) — `22-StranglerFig`
 
 ```
-Fig.Ancien   :5240  le système à REMPLACER, écrit à l'ancienne (centimes, dates sans fuseau, libellés tronqués) ; deux routes
+Fig.Legacy   :5240  le système à REMPLACER, écrit à l'ancienne (centimes, dates sans fuseau, libellés tronqués) ; deux routes
                     internes ajoutées pour la migration : son journal des modifications et l'import des opérations du nouveau
-Fig.Nouveau  :5241  le REMPLAÇANT : son propre modèle, sa propre base, une couche anti-corruption, une synchronisation dans
+Fig.Modern   :5241  le REMPLAÇANT : son propre modèle, sa propre base, une couche anti-corruption, une synchronisation dans
                     les deux sens, et le contrat historique de l'ancien reproduit à l'identique
-Fig.Facade   :5122  le seul point d'entrée des clients : table de routage (Ancien / Ombre / Nouveau) modifiable à chaud,
-                    comparaisons du mode ombre, suivi de la migration (/facade, en-tête X-Cle-Admin: demo)
+Fig.Facade   :5122  le seul point d'entrée des clients : table de routage (Legacy / Shadow / Modern) modifiable à chaud,
+                    comparaisons du mode ombre, suivi de la migration (/facade, en-tête X-Admin-Key: demo)
 ```
 
 ```powershell
-dotnet run --project 22-StranglerFig\Fig.Ancien     # puis, dans deux autres terminaux :
-dotnet run --project 22-StranglerFig\Fig.Nouveau
+dotnet run --project 22-StranglerFig\Fig.Legacy     # then, in two other terminals:
+dotnet run --project 22-StranglerFig\Fig.Modern
 dotnet run --project 22-StranglerFig\Fig.Facade     # http://localhost:5122
 ```
 
@@ -752,12 +752,12 @@ Toutes les autres démos partent de zéro ; celle-ci part d'un **système exista
 d'un coup. Une façade se place devant lui, puis lui retire ses fonctions une route à la fois au profit d'un nouveau
 service, jusqu'au jour où plus rien ne l'appelle.
 
-**À observer** (détails : [Docs/22-strangler-fig.md](Docs/22-strangler-fig.md), requêtes dans `Fig.Facade\Banque.http`)
-- **Qui répond ?** L'en-tête `X-Servi-Par` de chaque réponse. Au départ, la consultation est migrée, les opérations en mode
-  ombre, le relevé et les virements encore à l'ancien. Tout ce qui n'est pas déclaré (`/agences`) va à l'ancien.
-- **Bascule à chaud, dans les deux sens** : `PUT /facade/routes/virements {"mode": "Nouveau"}`, puis `"Ancien"` pour revenir
+**À observer** (détails : [Docs/22-strangler-fig.md](Docs/22-strangler-fig.md), requêtes dans `Fig.Facade\Bank.http`)
+- **Qui répond ?** L'en-tête `X-Served-By` de chaque réponse. Au départ, la consultation est migrée, les opérations en mode
+  ombre, le relevé et les virements encore à l'ancien. Tout ce qui n'est pas déclaré (`/branches`) va à l'ancien.
+- **Bascule à chaud, dans les deux sens** : `PUT /facade/routes/transfers {"mode": "Modern"}`, puis `"Legacy"` pour revenir
   en arrière. L'ancien connaît les virements faits entre-temps par le nouveau : il les a reçus par la synchronisation.
-- **Mode ombre** : l'ancien répond, le nouveau est appelé en parallèle et comparé (`GET /facade/comparaisons` : identiques,
+- **Mode ombre** : l'ancien répond, le nouveau est appelé en parallèle et comparé (`GET /facade/comparisons` : identiques,
   divergences avec les deux corps, appels abandonnés). Le client n'attend jamais le nouveau. Refusé pour une écriture.
 - **Synchronisation dans les deux sens** : le nouveau lit le journal de l'ancien (y compris les frais du traitement de
   nuit, qui ne passent pas par la façade) et y reporte ses propres écritures par une boîte d'envoi ; l'écho de ses
@@ -766,64 +766,64 @@ service, jusqu'au jour où plus rien ne l'appelle.
   30 caractères, relevé identique au caractère près. 20 tests de contrat envoient les mêmes requêtes aux deux systèmes.
 - **Limite visible** : juste après un virement servi par l'ancien, la consultation servie par le nouveau montre l'ancien
   solde, jusqu'à la synchronisation suivante (500 ms). D'où le conseil de migrer ensemble lectures et écritures d'une donnée.
-- **Fin de la migration** : `GET /facade/progression` ; `ancienRetirable` n'est vrai que si toutes les routes sont
-  migrées **et** que plus aucun appel n'atteint l'ancien. Un appel à `/agences`, la fonction oubliée, suffit à l'empêcher.
+- **Fin de la migration** : `GET /facade/progress` ; `legacyRemovable` n'est vrai que si toutes les routes sont
+  migrées **et** que plus aucun appel n'atteint l'ancien. Un appel à `/branches`, la fonction oubliée, suffit à l'empêcher.
 
 ## 23. REST, gRPC, GraphQL (styles d'API) — `23-RestGrpcGraphQL`
 
 ```
-Styles.Banque     le MÉTIER, commun aux trois API, qui ignore tout de HTTP (test d'archi) : lectures unitaires ET groupées,
-                  virement, abonnement aux nouvelles opérations, compteur de lectures « en base »
-Styles.Outillage  ce que fourniraient Google.Protobuf, Grpc.AspNetCore et HotChocolate, écrit à la main (aucun package) :
-                  encodeur Protobuf, trames et trailers gRPC, client et hébergement gRPC, mini-moteur GraphQL
-Styles.Contrats   banque.proto et ses classes (un test vérifie qu'elles correspondent champ par champ)
-Styles.Serveur    :5123  REST (/clients, /comptes, /virements) et GraphQL (POST /graphql), en HTTP/1.1
-                  :5250  gRPC (banque.Banque/…), en HTTP/2 seulement
-Styles.Client     la même application écrite trois fois ; joue les mêmes scénarios en comptant requêtes et octets
+Styles.Bank        le MÉTIER, commun aux trois API, qui ignore tout de HTTP (test d'archi) : lectures unitaires ET groupées,
+                   virement, abonnement aux nouvelles opérations, compteur de lectures « en base »
+Styles.Tooling     ce que fourniraient Google.Protobuf, Grpc.AspNetCore et HotChocolate, écrit à la main (aucun package) :
+                   encodeur Protobuf, trames et trailers gRPC, client et hébergement gRPC, mini-moteur GraphQL
+Styles.Contracts   bank.proto et ses classes (un test vérifie qu'elles correspondent champ par champ)
+Styles.Server      :5123  REST (/customers, /accounts, /transfers) et GraphQL (POST /graphql), en HTTP/1.1
+                   :5250  gRPC (bank.Bank/…), en HTTP/2 seulement
+Styles.Client      la même application écrite trois fois ; joue les mêmes scénarios en comptant requêtes et octets
 ```
 
 ```powershell
-dotnet run --project 23-RestGrpcGraphQL\Styles.Serveur    # puis, dans un autre terminal :
-dotnet run --project 23-RestGrpcGraphQL\Styles.Client     # (-- --latence 0 pour ne pas simuler de réseau mobile)
+dotnet run --project 23-RestGrpcGraphQL\Styles.Server    # then, in another terminal:
+dotnet run --project 23-RestGrpcGraphQL\Styles.Client    # (-- --latency 0 to not simulate a mobile network)
 ```
 
 Les autres démos changent l'intérieur du système ; celle-ci garde un intérieur unique et change sa **surface**. Ce qui
 varie : qui décide de la forme des réponses, ce qui circule sur le réseau, et ce que HTTP fait encore pour vous.
 
-**À observer** (détails : [Docs/23-rest-grpc-graphql.md](Docs/23-rest-grpc-graphql.md), requêtes dans `Styles.Serveur\Banque.http`)
+**À observer** (détails : [Docs/23-rest-grpc-graphql.md](Docs/23-rest-grpc-graphql.md), requêtes dans `Styles.Server\Bank.http`)
 - **L'écran d'accueil d'Alice** (3 comptes et leurs dernières opérations) : REST **5 requêtes** (le client, ses comptes,
   puis une par compte), GraphQL et gRPC **une seule**. Corps reçus : 2 014, 881 et 378 octets ; mêmes données à l'octet près.
 - **Le N+1 se déplace** : la requête GraphQL unique pourrait lire la base une fois par compte ; le moteur exécute par
-  niveaux et le champ `operations` a un résolveur groupé : une lecture (`GET /statistiques`).
+  niveaux et le champ `operations` a un résolveur groupé : une lecture (`GET /statistics`).
 - **Une erreur, trois langues** : `422` + `problem+json` ; `200` + `grpc-status: 9` dans les **trailers** HTTP/2 ;
   `200` + `errors` à côté des données obtenues, avec le chemin du champ et la propagation des `null` non nuls.
-- **Pousser ou interroger** : le flux gRPC `SuivreOperations` reçoit chaque opération dès qu'elle a lieu, jusqu'à
+- **Pousser ou interroger** : le flux gRPC `FollowOperations` reçoit chaque opération dès qu'elle a lieu, jusqu'à
   l'échéance (`grpc-timeout`, appliquée aussi par le serveur) ; en REST, l'**ETag** rend l'interrogation peu coûteuse (`304`).
 - **Faire évoluer** : numéros de champs Protobuf et champs inconnus ignorés ; `@deprecated` dans le schéma GraphQL
-  (`GET /graphql/schema`) et le compteur de ceux qui lisent encore le champ (`GET /graphql/utilisation`).
+  (`GET /graphql/schema`) et le compteur de ceux qui lisent encore le champ (`GET /graphql/usage`).
 - **GraphQL se protège** : requête validée contre le schéma avant exécution, profondeur limitée à 6 niveaux.
 
 ## 24. MVC et MVVM (patterns de présentation) — `24-MvcMvvm`
 
 ```
-Ihm.Banque        le MODÈLE, commun aux deux : IBanque asynchrone (latence réglable), règles du virement ; ignore les écrans
-Ihm.Mvc           :5124  MVC web (ASP.NET Core MVC) : Controllers/, Views/ (Razor), Models/ (données préparées pour chaque vue)
-Ihm.Presentation  MVVM : les ViewModels en .NET pur (sans WPF, test d'archi) + ObservableObject, Commande, CommandeAsync
-Ihm.Wpf           la vue WPF : que des liaisons, code-behind réduit à InitializeComponent (Windows)
-Ihm.Console       une deuxième vue sur les MÊMES ViewModels ; Liaison.cs = un {Binding} démonté en 20 lignes
+Ui.Bank          le MODÈLE, commun aux deux : IBank asynchrone (latence réglable), règles du virement ; ignore les écrans
+Ui.Mvc           :5124  MVC web (ASP.NET Core MVC) : Controllers/, Views/ (Razor), Models/ (données préparées pour chaque vue)
+Ui.Presentation  MVVM : les ViewModels en .NET pur (sans WPF, test d'archi) + ObservableObject, Command, AsyncCommand
+Ui.Wpf           la vue WPF : que des liaisons, code-behind réduit à InitializeComponent (Windows)
+Ui.Console       une deuxième vue sur les MÊMES ViewModels ; Binding.cs = un {Binding} démonté en 20 lignes
 ```
 
 ```powershell
-dotnet run --project 24-MvcMvvm\Ihm.Mvc        # puis http://localhost:5124
-dotnet run --project 24-MvcMvvm\Ihm.Wpf        # la fenêtre ; 400 ms par appel, pour voir l'écran attendre
-dotnet run --project 24-MvcMvvm\Ihm.Console    # la même logique au clavier (« aide »)
+dotnet run --project 24-MvcMvvm\Ui.Mvc        # then http://localhost:5124
+dotnet run --project 24-MvcMvvm\Ui.Wpf        # the window; 400 ms per call, to see the screen wait
+dotnet run --project 24-MvcMvvm\Ui.Console    # the same logic at the keyboard ("help")
 ```
 
 Les autres démos organisent le système ou son API ; celle-ci organise le **dernier mètre**, entre le modèle et
 l'utilisateur. Ce qui change : qui reçoit l'action (le contrôleur, ou la vue qui la transmet au ViewModel), et combien
 de temps vit l'écran (une requête, ou tant que la fenêtre est ouverte).
 
-**À observer** (détails : [Docs/24-mvc-mvvm.md](Docs/24-mvc-mvvm.md), requêtes dans `Ihm.Mvc\Banque.http`)
+**À observer** (détails : [Docs/24-mvc-mvvm.md](Docs/24-mvc-mvvm.md), requêtes dans `Ui.Mvc\Bank.http`)
 - **MVC** : le contrôleur décide (quelle vue, quelles données, quelle redirection), la vue met en forme. Formulaire
   invalide : la **même vue réaffichée** (200) avec les erreurs et la saisie, même « abc » ; formulaire bon :
   **Post/Redirect/Get** (302), message passé par **TempData** et affiché une seule fois ; POST sans jeton : 400.
@@ -836,7 +836,7 @@ de temps vit l'écran (une requête, ou tant que la fenêtre est ouverte).
   page de confirmation en MVC, qui ne connaît pas le solde sans appeler la banque.
 - **L'écran vit, donc il attend** : bouton grisé pendant l'appel (pas de double virement), réponses arrivées dans le
   désordre écartées (clic sur Bob puis sur le Livret), soldes mis à jour sur place sans perdre la sélection.
-- **Deux vues, mêmes ViewModels** : la console affiche d'elle-même les lignes `⚠`, `»` et `[Virer] actif`, poussées par
+- **Deux vues, mêmes ViewModels** : la console affiche d'elle-même les lignes `⚠`, `»` et `[Transfer] enabled`, poussées par
   les liaisons. Et les liaisons du XAML, que le compilateur ne vérifie pas, le sont par un test (30 chemins suivis).
 
 ---
@@ -922,7 +922,7 @@ simplicité comptent ; **GraphQL** devant des écrans riches et variés, là où
 application (démo 16), avec lequel il partage l'idée d'une réponse taillée pour l'écran.
 
 La démo **MVC et MVVM** (24) descend jusqu'au **dernier mètre**, l'interface, que toutes les autres laissaient à des
-fichiers `Banque.http`. Elle n'est pas concurrente des autres : le modèle reste derrière, organisé comme on veut, et
+fichiers `Bank.http`. Elle n'est pas concurrente des autres : le modèle reste derrière, organisé comme on veut, et
 MVC ou MVVM n'est que la **couche de présentation** de la démo 0, découpée à son tour. Le choix suit la plateforme :
 **MVC** pour un site rendu par le serveur, où chaque clic est une requête sans état ; **MVVM** pour une application de
 bureau ou mobile, dont l'écran vit et réagit à chaque frappe, et se teste entièrement sans écran. Les deux se

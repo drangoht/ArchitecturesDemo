@@ -61,19 +61,19 @@ flowchart LR
 ```
 
 Au démarrage à froid (plus aucune unité), le **lecteur de données** recharge la grille depuis la base.
-Ce qu'on appelle l'**intergiciel virtualisé** ([Espace.Grille](../19-SpaceBased/Espace.Grille), simulé dans le
+Ce qu'on appelle l'**intergiciel virtualisé** ([Space.Grid](../19-SpaceBased/Space.Grid), simulé dans le
 processus pour la démo, sans package) :
 
-- la **grille de données** ([GrilleDeDonnees.cs](../19-SpaceBased/Espace.Grille/GrilleDeDonnees.cs),
-  [Replique.cs](../19-SpaceBased/Espace.Grille/Replique.cs)) : une réplique complète par unité, et la réplication
+- la **grille de données** ([DataGrid.cs](../19-SpaceBased/Space.Grid/DataGrid.cs),
+  [Replica.cs](../19-SpaceBased/Space.Grid/Replica.cs)) : une réplique complète par unité, et la réplication
   asynchrone de chaque écriture vers les autres (100 ms de latence, réglable) ;
-- la **grille de messages** ([GrilleDeMessages.cs](../19-SpaceBased/Espace.Grille/GrilleDeMessages.cs)) : le point
+- la **grille de messages** ([MessagingGrid.cs](../19-SpaceBased/Space.Grid/MessagingGrid.cs)) : le point
   d'entrée, qui choisit l'unité de chaque requête ;
-- la **pompe de données** et son **écrivain**, le **lecteur de données** ([Base.cs](../19-SpaceBased/Espace.Grille/Base.cs)) ;
-- le **gestionnaire de déploiement** ([GestionnaireDeDeploiement.cs](../19-SpaceBased/Espace.Grille/GestionnaireDeDeploiement.cs)).
+- la **pompe de données** et son **écrivain**, le **lecteur de données** ([Database.cs](../19-SpaceBased/Space.Grid/Database.cs)) ;
+- le **gestionnaire de déploiement** ([DeploymentManager.cs](../19-SpaceBased/Space.Grid/DeploymentManager.cs)).
 
-Les **unités de traitement** ([UniteDeTraitement.cs](../19-SpaceBased/Espace.Grille/UniteDeTraitement.cs)) contiennent
-le métier ([Banque.cs](../19-SpaceBased/Espace.Banque/Banque.cs)), qui ne voit que la réplique de son unité :
+Les **unités de traitement** ([ProcessingUnit.cs](../19-SpaceBased/Space.Grid/ProcessingUnit.cs)) contiennent
+le métier ([Bank.cs](../19-SpaceBased/Space.Bank/Bank.cs)), qui ne voit que la réplique de son unité :
 
 ```csharp
 private static object Movement(UnitContext unit, Guid id, decimal amount, bool debit, string label) =>
@@ -105,15 +105,15 @@ private void Publish(string origin, Modification modification)
 ```
 
 La conséquence est spectaculaire : **la base peut tomber, les requêtes continuent**. Les écritures s'accumulent dans la
-pompe et sont écrites quand la base revient (test `Les_requetes_n_attendent_jamais_la_base`). Pendant ce temps, la base
+pompe et sont écrites quand la base revient (test `Requests_never_wait_for_the_database`). Pendant ce temps, la base
 est en retard : un rapport qui la lirait verrait des données périmées.
 
-`GET /grille/comparaison/{id}`, juste après un retrait, montre la **fenêtre de réplication** (essai réel) :
+`GET /grid/comparison/{id}`, juste après un retrait, montre la **fenêtre de réplication** (essai réel) :
 
 ```text
-{ "repliques": [ { "ou": "u8", "version": "v2@u8", "solde": 495 },
-                 { "ou": "u9", "version": "v1@base", "solde": 500 } ],     ← u9 n'a pas encore reçu l'écriture
-  "base": { "version": "v2@u8", "solde": 495 } }
+{ "replicas": [ { "where": "u8", "version": "v2@u8", "balance": 495 },
+                { "where": "u9", "version": "v1@database", "balance": 500 } ],     ← u9 n'a pas encore reçu l'écriture
+  "database": { "version": "v2@u8", "balance": 495 } }
 300 ms plus tard : v2@u8 et 495 partout.
 ```
 
@@ -177,7 +177,7 @@ pourtant cohérentes entre elles : rien ne signale l'erreur, sauf le compteur de
 ⚠ **L'affinité ne suffit pas toujours.** Quand une unité arrive ou part, certaines clés changent de propriétaire ;
 pendant la fenêtre de réplication, l'ancienne et la nouvelle unité peuvent écrire la même clé. L'essai réel l'a montré :
 juste après un pic de charge, pendant que le gestionnaire retirait des unités, un retrait de Bob a été perdu (test
-`En_affinite_un_changement_d_unites_ouvre_une_fenetre_de_collision`). Les vrais produits réduisent ce risque en
+`With_affinity_a_change_of_units_opens_a_collision_window`). Les vrais produits réduisent ce risque en
 migrant les partitions une à une, ou en n'en gardant qu'une copie maîtresse par donnée (cache **distribué** plutôt que
 **répliqué**, au prix d'un appel réseau quand la donnée est ailleurs).
 
@@ -210,10 +210,10 @@ POST /demo/load  { "count": 600 }
 ```
 
 ```text
-08:23:43.612 u10 démarrée : grille copiée depuis u8 (46 entrées)
-08:23:43.858 u11 démarrée : grille copiée depuis u8 (106 entrées)
+08:23:43.612 u10 started: grid copied from u8 (46 entries)
+08:23:43.858 u11 started: grid copied from u8 (106 entries)
 ...
-08:23:46.099 u9 arrêtée (292 requêtes traitées)
+08:23:46.099 u9 stopped (292 requests processed)
 ```
 
 Démarrer une unité ne coûte qu'une copie mémoire : c'est ce qui rend l'élasticité rapide. Les requêtes en file restent
@@ -225,7 +225,7 @@ sur leur unité ; seules les nouvelles profitent des unités ajoutées.
 
 - **Une unité tombe** : ses données sont aussi dans les autres répliques. La grille de messages lui retire ses requêtes,
   y compris celles qui attendaient dans sa file, et les confie à une autre (test
-  `Les_requetes_d_une_unite_tombee_sont_confiees_a_une_autre`). D'où le minimum de **2 unités** : une seule panne ne
+  `The_requests_of_a_failed_unit_are_handed_to_another_one`). D'où le minimum de **2 unités** : une seule panne ne
   doit jamais vider la grille.
 - **Toutes les unités tombent** : la grille en mémoire a disparu. La requête suivante provoque un **démarrage à froid** :
   le lecteur de données recharge la grille depuis la base. Mais seulement **après que la pompe a tout écrit** :
@@ -243,9 +243,9 @@ sur leur unité ; seules les nouvelles profitent des unités ajoutées.
 
 ## Les tests
 
-Des tests de la plateforme avec le vrai métier ([PlateformeTests.cs](../19-SpaceBased/Espace.Tests/PlateformeTests.cs)),
+Des tests de la plateforme avec le vrai métier ([PlatformTests.cs](../19-SpaceBased/Space.Tests/PlatformTests.cs)),
 où la réplication peut être **retenue à la main** pour rendre une collision certaine, et des tests de l'API
-([ApiTests.cs](../19-SpaceBased/Espace.Tests/ApiTests.cs)).
+([ApiTests.cs](../19-SpaceBased/Space.Tests/ApiTests.cs)).
 
 ```csharp
 _p.Messages.Mode = RoutingMode.RoundRobin;
@@ -257,19 +257,19 @@ var second = await Send(new Withdraw(Alice, 50m));    // u1
 
 | Test | Ce qui est vérifié |
 |---|---|
-| `Une_ecriture_est_repliquee_dans_toutes_les_unites_puis_dans_la_base` | réplication, pompe |
-| `Les_requetes_n_attendent_jamais_la_base` | base en panne : les requêtes passent, la pompe rattrape |
-| `En_affinite_une_meme_cle_va_toujours_a_la_meme_unite`, `En_affinite_des_retraits_simultanes_ne_perdent_rien` | affinité |
-| `Au_tourniquet_deux_unites_qui_ecrivent_la_meme_donnee_entrent_en_collision` | collision, écriture perdue, base identique à la grille |
-| `En_affinite_un_changement_d_unites_ouvre_une_fenetre_de_collision` | la limite de l'affinité |
-| `La_charge_ajoute_des_unites_et_le_calme_les_retire` | élasticité, plafond, plancher |
-| `Une_nouvelle_unite_recoit_une_copie_de_la_grille_sans_lire_la_base` | copie entre unités |
-| `La_panne_d_une_unite_ne_perd_aucune_donnee`, `Les_requetes_d_une_unite_tombee_sont_confiees_a_une_autre` | panne d'une unité |
-| `Apres_une_panne_totale_le_demarrage_a_froid_recharge_la_grille_depuis_la_base`, `Le_demarrage_a_froid_attend_que_la_pompe_ait_tout_ecrit` | démarrage à froid |
-| `Un_virement_debite_dans_l_unite_de_la_source_et_credite_dans_celle_de_la_cible`, `Un_credit_refuse_par_l_unite_de_la_cible_est_compense` | virement entre unités, compensation |
-| `Des_virements_croises_entre_deux_unites_pleines_ne_se_bloquent_pas` | les requêtes internes ne prennent pas de place en file |
-| `Base_en_panne_les_requetes_passent_mais_un_demarrage_a_froid_est_impossible` | `200`, puis `503`, puis reprise, par HTTP |
-| `Chaque_reponse_dit_quelle_unite_l_a_traitee`, `On_peut_ajouter_arreter_et_faire_tomber_des_unites`, `La_comparaison_montre_la_meme_version_partout_au_repos` | l'API : en-tête `X-Unite`, gestion des unités, convergence |
+| `A_write_is_replicated_in_all_the_units_then_in_the_database` | réplication, pompe |
+| `Requests_never_wait_for_the_database` | base en panne : les requêtes passent, la pompe rattrape |
+| `With_affinity_a_given_key_always_goes_to_the_same_unit`, `With_affinity_simultaneous_withdrawals_lose_nothing` | affinité |
+| `With_round_robin_two_units_writing_the_same_data_collide` | collision, écriture perdue, base identique à la grille |
+| `With_affinity_a_change_of_units_opens_a_collision_window` | la limite de l'affinité |
+| `Load_adds_units_and_calm_removes_them` | élasticité, plafond, plancher |
+| `A_new_unit_receives_a_copy_of_the_grid_without_reading_the_database` | copie entre unités |
+| `The_failure_of_a_unit_loses_no_data`, `The_requests_of_a_failed_unit_are_handed_to_another_one` | panne d'une unité |
+| `After_a_total_failure_the_cold_start_reloads_the_grid_from_the_database`, `The_cold_start_waits_for_the_pump_to_have_written_everything` | démarrage à froid |
+| `A_transfer_debits_in_the_source_unit_and_credits_in_the_target_unit`, `A_credit_refused_by_the_target_unit_is_compensated` | virement entre unités, compensation |
+| `Crossed_transfers_between_two_full_units_do_not_block` | les requêtes internes ne prennent pas de place en file |
+| `Database_down_requests_go_through_but_a_cold_start_is_impossible` | `200`, puis `503`, puis reprise, par HTTP |
+| `Each_response_tells_which_unit_handled_it`, `Units_can_be_added_stopped_and_brought_down`, `The_comparison_shows_the_same_version_everywhere_at_rest` | l'API : en-tête `X-Unit`, gestion des unités, convergence |
 
 Vérifiés par mutation : routage toujours au tourniquet, pas de détection de collision, base ou répliques qui ignorent
 les versions, démarrage à froid sans attendre la pompe, nouvelle unité chargée depuis la base, pompe sans nouvel essai,

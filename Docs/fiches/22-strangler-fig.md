@@ -10,8 +10,8 @@
 ```mermaid
 flowchart LR
     CL(["Clients"]) -->|"contrat historique"| FA["Façade<br/>table de routage"]
-    FA -->|"Ancien / Ombre"| AN["Ancien"]
-    FA -->|"Nouveau / Ombre"| NO["Nouveau<br/>+ anti-corruption"]
+    FA -->|"Legacy / Shadow"| AN["Legacy"]
+    FA -->|"Modern / Shadow"| NO["Modern<br/>+ anti-corruption"]
     AN <-.->|"synchronisation<br/>dans les deux sens"| NO
 ```
 

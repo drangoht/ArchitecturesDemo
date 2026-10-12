@@ -3,7 +3,7 @@
 > **En une phrase** : chaque composant regroupe métier et données derrière **une seule interface publique** ;
 > tout le reste est `internal`, et c'est le compilateur qui fait respecter l'architecture.
 
-📁 Code : [`06-Composants`](../06-Composants) · ⬅️ [Vertical Slice](05-vertical-slice.md) · ➡️ [Monolithe modulaire](07-monolithe-modulaire.md) · 🌐 [English](en/06-composants.md)
+📁 Code : [`06-Components`](../06-Components) · ⬅️ [Vertical Slice](05-vertical-slice.md) · ➡️ [Monolithe modulaire](07-monolithe-modulaire.md) · 🌐 [English](en/06-composants.md)
 
 ---
 
@@ -22,8 +22,8 @@ flowchart LR
     end
     subgraph ParComposant["Par composant"]
         direction TB
-        b1["Web"] --> b2["IComptesComposant<br/>(public)"]
-        b2 -.- b3["ComptesComposant<br/>Compte<br/>ComptesDbContext<br/>(internal)"]
+        b1["Web"] --> b2["IAccountsComponent<br/>(public)"]
+        b2 -.- b3["AccountsComponent<br/>Account<br/>AccountsDbContext<br/>(internal)"]
         b1 -. "ne compile pas" .-x b3
     end
 ```
@@ -34,27 +34,27 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    Api["Composants.Api<br/>(couche web)"]
+    Api["Components.Api<br/>(couche web)"]
 
-    subgraph CC["Composants.Comptes"]
+    subgraph CC["Components.Accounts"]
         direction TB
-        IC["IComptesComposant<br/>CompteDto, Resultat<br/>AddComposantComptes()"]
-        ICi["ComptesComposant<br/>Compte<br/>ComptesDbContext"]
+        IC["IAccountsComponent<br/>AccountDto, Result<br/>AddAccountsComponent()"]
+        ICi["AccountsComponent<br/>Account<br/>AccountsDbContext"]
         IC -.- ICi
     end
 
-    subgraph CV["Composants.Virements"]
+    subgraph CV["Components.Transfers"]
         direction TB
-        IV["IVirementsComposant<br/>VirementDto<br/>AddComposantVirements()"]
-        IVi["VirementsComposant<br/>Virement<br/>VirementsDbContext"]
+        IV["ITransfersComponent<br/>TransferDto<br/>AddTransfersComponent()"]
+        IVi["TransfersComponent<br/>Transfer<br/>TransfersDbContext"]
         IV -.- IVi
     end
 
     Api --> IC
     Api --> IV
     IVi -->|"uniquement par l'interface"| IC
-    ICi --> DB1[("base Comptes")]
-    IVi --> DB2[("base Virements")]
+    ICi --> DB1[("base Accounts")]
+    IVi --> DB2[("base Transfers")]
 
     classDef public fill:#dafbe1,stroke:#1a7f37
     classDef interne fill:#f6f8fa,stroke:#8c959f,stroke-dasharray: 5 5
@@ -71,7 +71,7 @@ Virements ne lit jamais les tables de Comptes.
 
 ### 1. La surface publique d'un composant
 
-([IComptesComposant.cs](../06-Composants/Composants.Comptes/IComptesComposant.cs))
+([IAccountsComponent.cs](../06-Components/Components.Accounts/IAccountsComponent.cs))
 
 ```csharp
 // ─── Public surface of the component: this is all the rest of the application can see. ───
@@ -86,7 +86,7 @@ public interface IAccountsComponent
 
 ### 2. Tout le reste est `internal`
 
-([Compte.cs](../06-Composants/Composants.Comptes/Interne/Compte.cs), [ComptesComposant.cs](../06-Composants/Composants.Comptes/Interne/ComptesComposant.cs))
+([Account.cs](../06-Components/Components.Accounts/Internal/Account.cs), [AccountsComponent.cs](../06-Components/Components.Accounts/Internal/AccountsComponent.cs))
 
 ```csharp
 // internal: invisible outside the component. Nobody can do "new Account()" from the API.
@@ -97,7 +97,7 @@ internal class AccountsComponent(AccountsDbContext db) : IAccountsComponent { /*
 ```
 
 Le seul autre point public : le branchement dans l'injection de dépendances.
-([ComptesExtensions.cs](../06-Composants/Composants.Comptes/ComptesExtensions.cs))
+([AccountsExtensions.cs](../06-Components/Components.Accounts/AccountsExtensions.cs))
 
 ```csharp
 public static IServiceCollection AddAccountsComponent(this IServiceCollection services, string databaseName = "Accounts")
@@ -112,7 +112,7 @@ public static IServiceCollection AddAccountsComponent(this IServiceCollection se
 ### 3. Un composant en utilise un autre… par son interface
 
 Sans transaction commune entre deux bases, il faut **compenser** si la deuxième étape échoue.
-([VirementsComposant.cs](../06-Composants/Composants.Virements/Interne/VirementsComposant.cs))
+([TransfersComponent.cs](../06-Components/Components.Transfers/Internal/TransfersComponent.cs))
 
 ```csharp
 var withdrawal = await accounts.Withdraw(sourceId, amount);
@@ -131,26 +131,26 @@ if (!deposit.Success)
 
 ```mermaid
 sequenceDiagram
-    participant V as VirementsComposant
-    participant C as IComptesComposant
-    participant DB as base Virements
-    V->>C: Consulter(cible) — existe ?
-    V->>C: Retirer(source, 40)
+    participant V as TransfersComponent
+    participant C as IAccountsComponent
+    participant DB as base Transfers
+    V->>C: Get(cible) — existe ?
+    V->>C: Withdraw(source, 40)
     C-->>V: Ok
-    V->>C: Deposer(cible, 40)
+    V->>C: Deposit(cible, 40)
     alt dépôt réussi
         C-->>V: Ok
         V->>DB: enregistrer le virement
     else dépôt refusé
-        C-->>V: Refuse
-        V->>C: Deposer(source, 40) — compensation
+        C-->>V: Refused
+        V->>C: Deposit(source, 40) — compensation
         Note over V,C: le solde de la source est rétabli
     end
 ```
 
 ### 4. L'API ne peut pas tricher
 
-([Program.cs](../06-Composants/Composants.Api/Program.cs))
+([Program.cs](../06-Components/Components.Api/Program.cs))
 
 ```csharp
 // Try writing "new AccountsDbContext(...)" or "new Account(...)" here: it does not compile.
@@ -163,15 +163,15 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest 
 ## Les tests
 
 - **Boîte noire** : chaque composant est testé par son interface publique, avec sa vraie base en mémoire.
-- **Isolation** : le composant Virements est testé avec un **faux** `IComptesComposant` dont le dépôt échoue, pour vérifier
-  la compensation ([VirementsComposantTests.cs](../06-Composants/Composants.Tests/VirementsComposantTests.cs)) :
+- **Isolation** : le composant Virements est testé avec un **faux** `IAccountsComponent` dont le dépôt échoue, pour vérifier
+  la compensation ([TransfersComponentTests.cs](../06-Components/Components.Tests/TransfersComponentTests.cs)) :
 
 ```csharp
 Assert.Equal(["withdrawal source 40", "deposit target 40 (refused)", "deposit source 40"], fake.Log);
 ```
 
 - **Garde-fou** : la surface publique est verrouillée. Rendre un type interne `public` fait échouer le test
-  ([ArchitectureTests.cs](../06-Composants/Composants.Tests/ArchitectureTests.cs)) :
+  ([ArchitectureTests.cs](../06-Components/Components.Tests/ArchitectureTests.cs)) :
 
 ```csharp
 var publics = typeof(IAccountsComponent).Assembly.GetExportedTypes().Select(t => t.Name).Order();
@@ -181,7 +181,7 @@ Assert.Equal(
     publics);
 ```
 
-- `InternalsVisibleTo` (dans le `.csproj`) ouvre l'intérieur au seul projet de tests, pour tester l'entité `Compte` directement.
+- `InternalsVisibleTo` (dans le `.csproj`) ouvre l'intérieur au seul projet de tests, pour tester l'entité `Account` directement.
 
 ---
 

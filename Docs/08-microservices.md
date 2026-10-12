@@ -17,22 +17,22 @@ L'essentiel du code de cette démo sert à gérer ces échecs.
 flowchart LR
     Client(["Client"])
     subgraph Systeme["5 processus"]
-        P["Micro.Passerelle<br/>:5200<br/>API gateway"]
-        C["Micro.Comptes<br/>:5201"]
-        V["Micro.Virements<br/>:5202"]
+        P["Micro.Gateway<br/>:5200<br/>API gateway"]
+        C["Micro.Accounts<br/>:5201"]
+        V["Micro.Transfers<br/>:5202"]
         N["Micro.Notifications<br/>:5203"]
-        K["Micro.Courtier<br/>:5209<br/>messages"]
-        DC[("base<br/>Comptes")]
-        DV[("base<br/>Virements")]
+        K["Micro.Broker<br/>:5209<br/>messages"]
+        DC[("base<br/>Accounts")]
+        DV[("base<br/>Transfers")]
         DN[("base<br/>Notifications")]
     end
     Client -->|"HTTP"| P
-    P -->|"/comptes"| C
-    P -->|"/virements"| V
+    P -->|"/accounts"| C
+    P -->|"/transfers"| V
     P -->|"/notifications"| N
-    V -->|"HTTP /interne/…<br/>retry, timeout,<br/>circuit breaker"| C
-    C -. "outbox → publie<br/>retrait-effectue" .-> K
-    V -. "outbox → publie<br/>virement-effectue" .-> K
+    V -->|"HTTP /internal/…<br/>retry, timeout,<br/>circuit breaker"| C
+    C -. "outbox → publie<br/>withdrawal-made" .-> K
+    V -. "outbox → publie<br/>transfer-made" .-> K
     K -. "livre (au moins une fois)" .-> N
     C --- DC
     V --- DV
@@ -41,7 +41,7 @@ flowchart LR
 
 | Service | Rôle | Particularités |
 |---|---|---|
-| **Passerelle** | Point d'entrée unique des clients | Ne relaie que les routes publiques ; `/interne/…` répond 404 ; `GET /sante` agrégé |
+| **Passerelle** | Point d'entrée unique des clients | Ne relaie que les routes publiques ; `/internal/…` répond 404 ; `GET /health` agrégé |
 | **Comptes** | Tenue des comptes | API interne **idempotente** (`operationId`) ; **outbox** |
 | **Virements** | Orchestre un virement | Client HTTP **résilient** ; **saga** avec statut et **compensation** ; outbox |
 | **Notifications** | Envoie les notifications | Ne connaît aucun service ; ignore les **doublons** (`Message-Id`) |
@@ -57,7 +57,7 @@ volontairement dupliqué dans Comptes et Virements.
 
 ### 1. Appeler un autre service : se préparer à l'échec
 
-([Micro.Virements/Program.cs](../08-Microservices/Micro.Virements/Program.cs))
+([Micro.Transfers/Program.cs](../08-Microservices/Micro.Transfers/Program.cs))
 
 ```csharp
 // Calls to the Accounts service: the network can fail, so we protect ourselves.
@@ -72,7 +72,7 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
     });
 ```
 
-Le client a sa **propre copie** du modèle distant ([ClientComptes.cs](../08-Microservices/Micro.Virements/ClientComptes.cs)) :
+Le client a sa **propre copie** du modèle distant ([AccountsClient.cs](../08-Microservices/Micro.Transfers/AccountsClient.cs)) :
 
 ```csharp
 // LOCAL representation of an account: no library shared with the Accounts service,
@@ -83,7 +83,7 @@ internal record RemoteAccount(Guid Id, string Owner, decimal Balance);
 ### 2. Rendre l'appel rejouable : l'idempotence
 
 Si la réponse se perd, le retry renvoie le même débit. Sans précaution : double débit.
-([Micro.Comptes/Endpoints.cs](../08-Microservices/Micro.Comptes/Endpoints.cs))
+([Micro.Accounts/Endpoints.cs](../08-Microservices/Micro.Accounts/Endpoints.cs))
 
 ```csharp
 /// Internal API, called by the other services (the gateway does not expose it).
@@ -98,10 +98,10 @@ private static async Task<IResult> Apply(Guid id, MovementRequest request, Accou
 
 ```mermaid
 sequenceDiagram
-    participant V as Virements
+    participant V as Transfers
     participant R as Resilience handler
-    participant C as Comptes
-    V->>R: POST /interne/comptes/alice/debits {operationId: "v42-debit", 250}
+    participant C as Accounts
+    V->>R: POST /internal/accounts/alice/debits {operationId: "v42-debit", 250}
     R->>C: tentative 1
     C->>C: débit appliqué, opération mémorisée
     C--xR: réponse perdue (timeout)
@@ -115,7 +115,7 @@ sequenceDiagram
 ### 3. La saga : un virement à statut, avec compensation
 
 Le virement est enregistré **avant** les appels ; son statut dit où il en est si quelque chose échoue.
-([Micro.Virements/Endpoints.cs](../08-Microservices/Micro.Virements/Endpoints.cs))
+([Micro.Transfers/Endpoints.cs](../08-Microservices/Micro.Transfers/Endpoints.cs))
 
 ```csharp
 // Step 2: credit the target. On failure: compensation (the source is credited back).
@@ -136,22 +136,22 @@ if (creditFailure is not null)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> EnCours : virement enregistré
-    EnCours --> Refuse : compte introuvable / solde insuffisant
-    EnCours --> AReprendre : Comptes injoignable pendant le débit
-    EnCours --> Effectue : débit + crédit OK, événement dans l'outbox
-    EnCours --> Annule : crédit refusé, débit compensé
-    EnCours --> AReprendre : crédit ET compensation impossibles
-    Refuse --> [*]
-    Effectue --> [*]
-    Annule --> [*]
-    AReprendre --> [*] : reprise manuelle ou automatique (idempotente)
+    [*] --> InProgress : virement enregistré
+    InProgress --> Refused : compte introuvable / solde insuffisant
+    InProgress --> ToResume : Accounts injoignable pendant le débit
+    InProgress --> Done : débit + crédit OK, événement dans l'outbox
+    InProgress --> Cancelled : crédit refusé, débit compensé
+    InProgress --> ToResume : crédit ET compensation impossibles
+    Refused --> [*]
+    Done --> [*]
+    Cancelled --> [*]
+    ToResume --> [*] : reprise manuelle ou automatique (idempotente)
 ```
 
 ### 4. L'outbox : ne jamais perdre un événement
 
 La donnée et le message sont enregistrés dans **la même transaction** ; un relais envoie ensuite le message au courtier.
-([Micro.Comptes/Endpoints.cs](../08-Microservices/Micro.Comptes/Endpoints.cs), [RelaisOutbox.cs](../08-Microservices/Micro.Comptes/RelaisOutbox.cs))
+([Micro.Accounts/Endpoints.cs](../08-Microservices/Micro.Accounts/Endpoints.cs), [OutboxRelay.cs](../08-Microservices/Micro.Accounts/OutboxRelay.cs))
 
 ```csharp
 // Change AND event saved together: either both, or neither.
@@ -174,7 +174,7 @@ foreach (var message in pending)
 
 ### 5. Le courtier : réessayer, puis abandonner proprement
 
-([Courtier.cs](../08-Microservices/Micro.Courtier/Courtier.cs))
+([Broker.cs](../08-Microservices/Micro.Broker/Broker.cs))
 
 ```csharp
 // Exponential backoff: 0.25 s, 0.5 s, 1 s, 2 s… capped at 30 s.
@@ -209,17 +209,17 @@ Scénario vérifié en lançant réellement les 5 processus :
 ```mermaid
 sequenceDiagram
     actor Client
-    participant P as Passerelle
-    participant V as Virements
-    participant C as Comptes
-    participant K as Courtier
+    participant P as Gateway
+    participant V as Transfers
+    participant C as Accounts
+    participant K as Broker
     participant N as Notifications (arrêté)
-    Client->>P: POST /virements
-    P->>V: POST /virements
+    Client->>P: POST /transfers
+    P->>V: POST /transfers
     V->>C: débit + crédit (HTTP)
-    V->>V: statut Effectue + outbox (même transaction)
-    V-->>Client: 200 Effectue
-    V->>K: relais outbox → virement-effectue
+    V->>V: statut Done + outbox (même transaction)
+    V-->>Client: 200 Done
+    V->>K: relais outbox → transfer-made
     K-xN: livraison : connexion refusée
     K->>K: nouvel essai dans 0,25 s, 0,5 s, 1 s…
     Client->>P: GET /notifications/bob
@@ -228,15 +228,15 @@ sequenceDiagram
     K->>N: livraison réussie
     N->>N: notifications créées
     Client->>P: GET /notifications/bob
-    P-->>Client: « Virement de 250,00 € reçu de Alice. »
+    P-->>Client: « Transfer of 250,00 € received from Alice. »
 ```
 
 ---
 
 ## Les tests
 
-Chaque service est testé **seul** : les autres sont remplacés par de **faux serveurs HTTP** (`FauxHttp`).
-([VirementsTests.cs](../08-Microservices/Micro.Tests/VirementsTests.cs))
+Chaque service est testé **seul** : les autres sont remplacés par de **faux serveurs HTTP** (`FakeHttp`).
+([TransfersTests.cs](../08-Microservices/Micro.Tests/TransfersTests.cs))
 
 ```csharp
 [Fact]
@@ -257,9 +257,9 @@ public async Task A_transient_failure_is_absorbed_by_the_retry_without_double_de
 }
 ```
 
-Autres tests : idempotence de l'API interne, outbox quand le courtier est en panne, compensation, `AReprendre` quand
-Comptes est injoignable (1 appel + 3 retries), courtier qui relivre, passerelle qui masque `/interne/…`.
-Le parcours complet se vérifie en lançant le système (`dotnet run --project Micro.Lanceur`).
+Autres tests : idempotence de l'API interne, outbox quand le courtier est en panne, compensation, `ToResume` quand
+Comptes est injoignable (1 appel + 3 retries), courtier qui relivre, passerelle qui masque `/internal/…`.
+Le parcours complet se vérifie en lançant le système (`dotnet run --project Micro.Launcher`).
 
 ---
 

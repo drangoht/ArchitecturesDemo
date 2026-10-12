@@ -54,22 +54,22 @@ Ils se combinent : une cellule peut contenir des microservices, et elle est en g
 
 ```mermaid
 flowchart TB
-    PC["<b>Plan de contrôle</b> (/plateforme)<br/>placer · migrer · déployer · sonder"] -->|"écrit"| TP[("Table de placement<br/>client → cellule")]
-    CL["Clients"] -->|"/clients/bob/…"| RT["<b>Routeur</b> (plan de données)<br/>lit la table, relaie"]
+    PC["<b>Plan de contrôle</b> (/platform)<br/>placer · migrer · déployer · sonder"] -->|"écrit"| TP[("Table de placement<br/>client → cellule")]
+    CL["Clients"] -->|"/customers/bob/…"| RT["<b>Routeur</b> (plan de données)<br/>lit la table, relaie"]
     TP -.->|"lue par"| RT
     RT --> C1["Cellule c1 :5231<br/>alice, david"]
     RT --> C2["Cellule c2 :5232<br/>bob, emma"]
     RT --> C3["Cellule c3 :5233<br/>carla"]
 ```
 
-- **Les cellules** ([Cell.Cellule](../17-CellBased/Cell.Cellule)) : un seul programme, lancé plusieurs fois avec un
+- **Les cellules** ([Cell.App](../17-CellBased/Cell.App)) : un seul programme, lancé plusieurs fois avec un
   identifiant différent. Chacune n'a que les données de ses clients.
-- **Le routeur** (plan de données, [Relais.cs](../17-CellBased/Cell.Routeur/Relais.cs)) : lire la **clé de partition**
+- **Le routeur** (plan de données, [Relay.cs](../17-CellBased/Cell.Router/Relay.cs)) : lire la **clé de partition**
   (ici le client, dans l'URL), trouver sa cellule, relayer. C'est le **seul composant partagé** : il doit être le plus
   simple possible, sans métier ni base, pour ne jamais devenir lui-même la panne générale.
-- **Le plan de contrôle** ([PlanDeControle.cs](../17-CellBased/Cell.Routeur/PlanDeControle.cs)) : il décide (placer,
+- **Le plan de contrôle** ([ControlPlane.cs](../17-CellBased/Cell.Router/ControlPlane.cs)) : il décide (placer,
   ajouter une cellule, migrer, déployer) et écrit la table de placement ; pour migrer, déployer ou sonder, il s'adresse aussi directement aux cellules
-  (API `/interne` et `/admin`). Il est **hors du chemin des requêtes** : s'il
+  (API `/internal` et `/admin`). Il est **hors du chemin des requêtes** : s'il
   tombe, on ne peut plus placer ni déployer, mais le trafic continue. Dans la démo, il vit dans le même processus que le
   routeur par simplicité ; en production, c'est un service à part.
 
@@ -117,8 +117,8 @@ public CellInfo? ChooseCell() => registry.All()
 
 Parcours dans la démo : 9 places pour 5 clients ; 4 nouveaux clients remplissent les trois cellules ; le suivant reçoit
 503 « Toutes les cellules sont pleines : provisionner une nouvelle cellule » ; on lance c4
-(`dotnet run --project Cell.Lanceur -- c4`), on l'enregistre (`POST /plateforme/cellules`), et le client suivant y est placé.
-Une cellule peut aussi être **fermée** aux nouveaux clients (`POST /plateforme/cellules/c1/fermer`) tout en continuant à
+(`dotnet run --project Cell.Launcher -- c4`), on l'enregistre (`POST /platform/cells`), et le client suivant y est placé.
+Une cellule peut aussi être **fermée** aux nouveaux clients (`POST /platform/cells/c1/close`) tout en continuant à
 servir les siens.
 
 ---
@@ -136,14 +136,14 @@ sequenceDiagram
     participant C2 as c2
     participant C3 as c3
     PC->>C1: version 1.1
-    PC->>C1: GET /sante
+    PC->>C1: GET /health
     C1-->>PC: sain = false (100 - 10 = 80)
     PC->>C1: retour à 1.0
     Note over C2,C3: jamais touchées :<br/>historique = [1.0]
 ```
 
 La version 1.1 contient un bogue (un retrait débité deux fois) qui ne se voit qu'à l'exécution. La **sonde de santé** de
-chaque cellule rejoue un retrait de contrôle ([Version.cs](../17-CellBased/Cell.Cellule/Version.cs)) :
+chaque cellule rejoue un retrait de contrôle ([Version.cs](../17-CellBased/Cell.App/Version.cs)) :
 
 ```csharp
 public (bool Healthy, string Detail) Probe()
@@ -155,7 +155,7 @@ public (bool Healthy, string Detail) Probe()
 }
 ```
 
-Résultat réel de `POST /plateforme/deploiements {"version":"1.1"}` :
+Résultat réel de `POST /platform/deployments {"version":"1.1"}` :
 
 ```json
 {"version":"1.1","status":"Cancelled","waves":[{"wave":1,"cells":["c1"],
@@ -184,7 +184,7 @@ try
 
 Pendant la copie, le routeur répond `503` avec `Retry-After: 2` pour **ce** client seulement. Les identifiants
 d'opérations déjà traitées voyagent avec ses données : un crédit rejoué après la migration n'est pas appliqué deux fois
-(test `Les_operations_deja_traitees_suivent_le_client_dans_sa_nouvelle_cellule`).
+(test `The_already_processed_operations_follow_the_customer_into_its_new_cell`).
 
 ---
 
@@ -200,7 +200,7 @@ sequenceDiagram
     participant R as Routeur
     participant B as c2 (bob)
     A->>A: débiter alice (opération 42)
-    A->>R: POST /interne/clients/bob/credits (opération 42)
+    A->>R: POST /internal/customers/bob/credits (opération 42)
     R->>B: relais vers la cellule de bob
     alt c2 répond
         B->>B: créditer bob (une seule fois pour l'opération 42)
@@ -221,21 +221,21 @@ avec les inconvénients des cellules et des microservices à la fois.
 ## Les tests
 
 Les quatre cellules et le routeur tournent en mémoire, reliés par leurs serveurs de test
-([Systeme.cs](../17-CellBased/Cell.Tests/Systeme.cs)).
+([CellSystem.cs](../17-CellBased/Cell.Tests/CellSystem.cs)).
 
 | Test | Ce qui est vérifié |
 |---|---|
-| `Les_clients_de_demo_sont_repartis_entre_les_cellules` | placement initial |
-| `Le_routeur_envoie_chaque_client_vers_sa_cellule`, `Une_cellule_ne_contient_que_ses_clients` | routage, cloisonnement |
-| `Une_panne_de_cellule_ne_touche_que_ses_clients` | rayon d'impact : 2 clients sur 5 |
-| `Un_virement_dans_une_meme_cellule_reste_local` | transaction locale |
-| `Un_virement_entre_cellules_passe_par_le_routeur_et_ne_credite_qu_une_fois` | crédit idempotent |
-| `Si_la_cellule_du_beneficiaire_est_en_panne_le_virement_est_compense` | compensation |
-| `Quand_les_cellules_sont_pleines_on_en_ajoute_une_au_lieu_de_les_agrandir` | capacité, enregistrement de c4 |
+| `The_demo_customers_are_spread_across_the_cells` | placement initial |
+| `The_router_sends_each_customer_to_its_cell`, `A_cell_only_contains_its_customers` | routage, cloisonnement |
+| `A_cell_failure_only_affects_its_customers` | rayon d'impact : 2 clients sur 5 |
+| `A_transfer_within_the_same_cell_stays_local` | transaction locale |
+| `A_transfer_between_cells_goes_through_the_router_and_credits_only_once` | crédit idempotent |
+| `If_the_beneficiary_s_cell_is_down_the_transfer_is_compensated` | compensation |
+| `When_the_cells_are_full_one_is_added_instead_of_enlarging_them` | capacité, enregistrement de c4 |
 | `Migrer_un_client…`, `Les_operations_deja_traitees_suivent…` | migration, idempotence conservée |
-| `Un_deploiement_defectueux_s_arrete_a_la_cellule_canari` | canari, retour arrière, historique des versions |
-| `Un_deploiement_sain_passe_vague_par_vague`, `Une_cellule_malade_arrete_le_deploiement_a_sa_vague` | vagues |
-| `Le_routeur_et_les_cellules_ne_partagent_aucun_code` | **test d'architecture** |
+| `A_faulty_deployment_stops_at_the_canary_cell` | canari, retour arrière, historique des versions |
+| `A_healthy_deployment_goes_wave_by_wave`, `A_sick_cell_stops_the_deployment_at_its_wave` | vagues |
+| `The_router_and_the_cells_share_no_code` | **test d'architecture** |
 
 Vérifiés par mutation : un déploiement en une seule vague, la suppression de l'idempotence, de la compensation, ou des
 opérations traitées dans l'export, font chacun échouer les tests correspondants.

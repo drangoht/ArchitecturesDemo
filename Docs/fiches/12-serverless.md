@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart LR
-    E["HTTP · file · fichier · minuterie"] --> Mo["Plateforme<br/>instances, démarrage à froid,<br/>mise à l'échelle, facturation"]
+    E["HTTP · file · fichier · minuterie"] --> Mo["Platform<br/>instances, démarrage à froid,<br/>mise à l'échelle, facturation"]
     Mo --> F["Fonctions<br/>(votre code)"]
     F --> G[("Services gérés<br/>tables, files, stockage")]
     G -.->|"nouvel événement"| Mo
@@ -20,7 +20,7 @@ flowchart LR
 - « Serverless » = **sans serveur à gérer**. On écrit des fonctions courtes et un **manifeste** (quelle fonction, quel déclencheur).
 - Boucle **événementielle** : une fonction écrit dans une file ou le stockage, ce qui en déclenche une autre.
 - État uniquement dans des **services gérés** (concurrence par ETag) ; files avec file *poison*.
-- Dans la démo, `Sls.Plateforme` joue le fournisseur ; seul `Sls.Fonctions` serait écrit en vrai.
+- Dans la démo, `Sls.Platform` joue le fournisseur ; seul `Sls.Functions` serait écrit en vrai.
 
 | ✅ Quand l'utiliser | ❌ Éviter si |
 |---|---|

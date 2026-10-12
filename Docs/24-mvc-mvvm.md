@@ -15,9 +15,9 @@ Les autres démos organisent le système, ou son API. Celle-ci regarde le dernie
 ne disent rien de l'intérieur du modèle (qui peut être hexagonal, en couches, en microservices…). Ils répondent à une
 autre question : comment séparer ce qu'on **affiche** de ce qu'on **décide**, pour pouvoir tester l'un sans l'autre.
 
-Le modèle est commun ([Ihm.Banque](../24-MvcMvvm/Ihm.Banque)) : comptes, opérations, virements et leurs règles, derrière
-une interface asynchrone `IBanque`, comme un vrai service distant. Un test vérifie qu'il ignore tout des écrans
-(`Le_modele_ignore_les_ecrans`).
+Le modèle est commun ([Ui.Bank](../24-MvcMvvm/Ui.Bank)) : comptes, opérations, virements et leurs règles, derrière
+une interface asynchrone `IBank`, comme un vrai service distant. Un test vérifie qu'il ignore tout des écrans
+(`The_model_knows_nothing_about_the_screens`).
 
 ```mermaid
 flowchart LR
@@ -38,7 +38,7 @@ flowchart LR
         U -->|"frappe, clic"| W
         W <-->|"liaisons :<br/>valeurs, commandes,<br/>PropertyChanged"| VM
     end
-    M["Modèle<br/>(Ihm.Banque)"]
+    M["Modèle<br/>(Ui.Bank)"]
     C -->|"② lit, écrit"| M
     VM -->|"lit, écrit"| M
 ```
@@ -58,25 +58,25 @@ flowchart LR
 ## Les projets
 
 ```
-Ihm.Banque        le MODÈLE, commun : IBanque (asynchrone), BanqueEnMemoire (latence réglable), règles du virement
-Ihm.Mvc           :5124  MVC web : Controllers/ (une action par page), Views/ (Razor), Models/ (données des vues)
-Ihm.Presentation  MVVM : les ViewModels, en .NET pur (sans WPF, vérifié par un test) + ObservableObject, commandes
-Ihm.Wpf           la vue WPF : MainWindow.xaml, que des liaisons ; code-behind réduit à InitializeComponent
-Ihm.Console       une deuxième vue sur les mêmes ViewModels, et Liaison.cs : un {Binding} démonté en 20 lignes
-Ihm.Tests         51 tests : modèle, contrôleurs, site complet, ViewModels, vue console, liaisons du XAML
+Ui.Bank          le MODÈLE, commun : IBank (asynchrone), InMemoryBank (latence réglable), règles du virement
+Ui.Mvc           :5124  MVC web : Controllers/ (une action par page), Views/ (Razor), Models/ (données des vues)
+Ui.Presentation  MVVM : les ViewModels, en .NET pur (sans WPF, vérifié par un test) + ObservableObject, commandes
+Ui.Wpf           la vue WPF : MainWindow.xaml, que des liaisons ; code-behind réduit à InitializeComponent
+Ui.Console       une deuxième vue sur les mêmes ViewModels, et Binding.cs : un {Binding} démonté en 20 lignes
+Ui.Tests         51 tests : modèle, contrôleurs, site complet, ViewModels, vue console, liaisons du XAML
 ```
 
 ```powershell
-dotnet run --project 24-MvcMvvm\Ihm.Mvc        # puis http://localhost:5124
-dotnet run --project 24-MvcMvvm\Ihm.Wpf        # la fenêtre (Windows) ; 400 ms par appel à la banque
-dotnet run --project 24-MvcMvvm\Ihm.Console    # la même chose au clavier (« aide »)
+dotnet run --project 24-MvcMvvm\Ui.Mvc        # then http://localhost:5124
+dotnet run --project 24-MvcMvvm\Ui.Wpf        # the window (Windows); 400 ms per call to the bank
+dotnet run --project 24-MvcMvvm\Ui.Console    # the same thing at the keyboard ("help")
 ```
 
 Données : **Alice** a un compte courant `11111111-…` (1 000 €) et un Livret A `44444444-…` (8 000 €), **Bob** un compte
 courant `22222222-…` (500 €). Au-delà de 1 000 €, les deux interfaces demandent une confirmation.
 
 Le vocabulaire piège : ASP.NET Core appelle souvent « view models » les classes que le contrôleur passe à la vue
-([Models/Modeles.cs](../24-MvcMvvm/Ihm.Mvc/Models/Modeles.cs)). Ce ne sont **pas** des ViewModels au sens de MVVM : de
+([Models/Modeles.cs](../24-MvcMvvm/Ui.Mvc/Models/PageModels.cs)). Ce ne sont **pas** des ViewModels au sens de MVVM : de
 simples sacs de données, préparés pour un rendu puis jetés, sans état ni commande.
 
 ---
@@ -89,26 +89,26 @@ Chaque clic est une requête HTTP, qui traverse le même chemin :
 sequenceDiagram
     participant N as Navigateur
     participant P as Pipeline MVC
-    participant C as VirementsController
-    participant B as IBanque
+    participant C as TransfersController
+    participant B as IBank
     participant V as Vue Razor
-    N->>P: POST /Virements/Nouveau (champs + jeton)
+    N->>P: POST /Transfers/New (champs + jeton)
     P->>P: routage, jeton anti-falsification
     P->>P: liaison de modèle et validation → ModelState
     P->>C: Nouveau(formulaire)
-    C->>B: VirerAsync(…)
-    B-->>C: Virement
-    C-->>N: 302 vers /Comptes/Detail/{id} (+ message dans TempData)
-    N->>P: GET /Comptes/Detail/{id}
-    P->>V: ComptesController.Detail → View(DetailCompte)
+    C->>B: TransferAsync(…)
+    B-->>C: Transfer
+    C-->>N: 302 vers /Accounts/Detail/{id} (+ message dans TempData)
+    N->>P: GET /Accounts/Detail/{id}
+    P->>V: AccountsController.Detail → View(AccountDetail)
     V-->>N: page HTML (message lu, donc effacé)
 ```
 
 Le contrôleur ne produit pas de HTML et la vue ne lit pas la banque : il **décide**, elle **met en forme**
-([ComptesController.cs](../24-MvcMvvm/Ihm.Mvc/Controllers/ComptesController.cs),
-[Index.cshtml](../24-MvcMvvm/Ihm.Mvc/Views/Comptes/Index.cshtml)). La vue est désignée par convention
+([AccountsController.cs](../24-MvcMvvm/Ui.Mvc/Controllers/AccountsController.cs),
+[Index.cshtml](../24-MvcMvvm/Ui.Mvc/Views/Accounts/Index.cshtml)). La vue est désignée par convention
 (`Views/{contrôleur}/{action}.cshtml`) ou par son nom. C'est ce qu'on teste en appelant le contrôleur comme une simple
-méthode (`La_liste_choisit_sa_vue_et_lui_passe_des_donnees_pretes_a_afficher`) : le résultat est une **décision**
+méthode (`The_list_chooses_its_view_and_passes_it_data_ready_to_display`) : le résultat est une **décision**
 (`ViewResult`, `RedirectToActionResult`, `NotFoundResult`), pas du HTML.
 
 Entre deux requêtes, le serveur ne garde **rien** de l'écran. Tout ce qu'il faut pour la suivante voyage dans la
@@ -118,7 +118,7 @@ requête : l'identifiant dans l'URL, les champs du formulaire, le jeton, et un c
 
 ## 2. Le formulaire en MVC : réafficher ou rediriger
 
-[VirementsController.cs](../24-MvcMvvm/Ihm.Mvc/Controllers/VirementsController.cs) suit le schéma classique du web.
+[TransfersController.cs](../24-MvcMvvm/Ui.Mvc/Controllers/TransfersController.cs) suit le schéma classique du web.
 Quand l'action s'exécute, la liaison de modèle a déjà rempli le formulaire et noté dans `ModelState` tout ce qui ne va
 pas : champ manquant (`[Required]`), « abc » au lieu d'un nombre, règles entre champs
 (`IValidatableObject`, les mêmes que celles de la banque). S'il y a une erreur, **la même vue est réaffichée** (200),
@@ -145,8 +145,8 @@ Un refus de la banque (solde insuffisant) devient une erreur du formulaire, sans
 helper `<form>` ajoute de lui-même : sans lui, `400` (filtre global `AutoValidateAntiforgeryTokenAttribute`).
 
 **La confirmation des gros montants** est une **autre vue** pour la même action. Le serveur n'ayant rien gardé, la
-page [Confirmer.cshtml](../24-MvcMvvm/Ihm.Mvc/Views/Virements/Confirmer.cshtml) renvoie tous les champs, cachés, plus
-`Confirme=true` :
+page [Confirm.cshtml](../24-MvcMvvm/Ui.Mvc/Views/Transfers/Confirm.cshtml) renvoie tous les champs, cachés, plus
+`Confirmed=true` :
 
 ```csharp
         if (amount >= TransferRules.ConfirmationThreshold && !form.Confirmed)
@@ -166,10 +166,10 @@ une lecture de plus pour le vérifier plus tôt. Le ViewModel, lui, a les soldes
 ## 3. MVVM : la vue observe le ViewModel
 
 En MVVM, l'écran est **un objet qui vit** : le ViewModel
-([Ihm.Presentation](../24-MvcMvvm/Ihm.Presentation)). Il contient l'état (comptes affichés, compte sélectionné, texte
+([Ui.Presentation](../24-MvcMvvm/Ui.Presentation)). Il contient l'état (comptes affichés, compte sélectionné, texte
 saisi, erreurs, message, « en cours ») et les commandes (Virer, Échanger). Il ne connaît pas la vue : il **prévient**
 quand une propriété change, par `INotifyPropertyChanged`
-([Outillage.cs](../24-MvcMvvm/Ihm.Presentation/Outillage.cs)) :
+([Tooling.cs](../24-MvcMvvm/Ui.Presentation/Tooling.cs)) :
 
 ```csharp
     protected bool Set<T>(ref T storage, T value, [CallerMemberName] string? property = null)
@@ -182,7 +182,7 @@ quand une propriété change, par `INotifyPropertyChanged`
     }
 ```
 
-La vue WPF ([MainWindow.xaml](../24-MvcMvvm/Ihm.Wpf/MainWindow.xaml)) ne contient **que des liaisons**. Chacune lit
+La vue WPF ([MainWindow.xaml](../24-MvcMvvm/Ui.Wpf/MainWindow.xaml)) ne contient **que des liaisons**. Chacune lit
 une propriété et s'abonne à ses changements ; dans l'autre sens, une frappe ou une sélection écrit dans le ViewModel ;
 `Command` relie un bouton à une commande, dont `CanExecute` grise ou active le bouton :
 
@@ -197,42 +197,42 @@ une propriété et s'abonne à ses changements ; dans l'autre sens, une frappe o
 sequenceDiagram
     actor U as Utilisateur
     participant V as Vue (liaisons)
-    participant VM as VirementViewModel
+    participant VM as TransferViewModel
     U->>V: tape « abc »
-    V->>VM: MontantSaisi = "abc"
-    VM-->>V: PropertyChanged(MontantSaisi)
-    VM->>VM: Valider()
-    VM-->>V: ErrorsChanged(MontantSaisi) → bordure rouge
-    VM-->>V: PropertyChanged(ErreurMontant, HasErrors)
+    V->>VM: AmountText = "abc"
+    VM-->>V: PropertyChanged(AmountText)
+    VM->>VM: Validate()
+    VM-->>V: ErrorsChanged(AmountText) → bordure rouge
+    VM-->>V: PropertyChanged(AmountError, HasErrors)
     VM-->>V: CanExecuteChanged → CanExecute = false
     V-->>U: message d'erreur, bouton grisé
 ```
 
 Le code-behind de la fenêtre se réduit à `InitializeComponent`, et le XAML ne contient aucun gestionnaire d'événement
-(`La_vue_WPF_ne_contient_pas_de_code`). L'assemblage (banque, ViewModel, fenêtre) est fait une fois, dans
-[App.xaml.cs](../24-MvcMvvm/Ihm.Wpf/App.xaml.cs). Les ViewModels n'ont aucune référence à WPF
-(`Les_ViewModels_ignorent_WPF_et_le_web`) : `INotifyPropertyChanged`, `INotifyDataErrorInfo`, `ICommand` et
-`ObservableCollection` font partie de .NET lui-même. `ObservableObject`, `Commande` et `CommandeAsync` sont ce
+(`The_WPF_view_contains_no_code`). L'assemblage (banque, ViewModel, fenêtre) est fait une fois, dans
+[App.xaml.cs](../24-MvcMvvm/Ui.Wpf/App.xaml.cs). Les ViewModels n'ont aucune référence à WPF
+(`The_ViewModels_know_nothing_about_WPF_and_the_web`) : `INotifyPropertyChanged`, `INotifyDataErrorInfo`, `ICommand` et
+`ObservableCollection` font partie de .NET lui-même. `ObservableObject`, `Command` et `AsyncCommand` sont ce
 qu'apporteraient CommunityToolkit.Mvvm ou Prism, écrits à la main : une centaine de lignes, sans magie.
 
 ---
 
 ## 4. Valider pendant la saisie
 
-[VirementViewModel.cs](../24-MvcMvvm/Ihm.Presentation/VirementViewModel.cs) revérifie tout à chaque changement : montant
+[TransferViewModel.cs](../24-MvcMvvm/Ui.Presentation/TransferViewModel.cs) revérifie tout à chaque changement : montant
 lisible (« 250 », « 250,5 », « 250.50 », « 1 000 € »), positif, au centime, inférieur au solde de la source, comptes
-différents. Les règles sont celles de la banque (`ReglesVirement`, publiques pour cela) ; la banque les applique de
-nouveau, et c'est elle qui fait foi. Les erreurs sont exposées deux fois : en texte (`ErreurMontant`, `ErreurCible`,
+différents. Les règles sont celles de la banque (`TransferRules`, publiques pour cela) ; la banque les applique de
+nouveau, et c'est elle qui fait foi. Les erreurs sont exposées deux fois : en texte (`AmountError`, `TargetError`,
 qu'une console peut afficher) et par `INotifyDataErrorInfo` (la bordure rouge de WPF).
 
 Quelques détails qui font la différence, chacun couvert par un test :
 - ce qui a été tapé reste affiché, même « abc » : la propriété liée est le **texte**, le montant en est déduit ;
-- une erreur identique n'est pas renotifiée, et une valeur identique non plus (`Chaque_frappe_est_verifiee_et_la_vue_en_est_prevenue`) :
+- une erreur identique n'est pas renotifiée, et une valeur identique non plus (`Each_keystroke_is_checked_and_the_view_is_told`) :
   WPF réécrit souvent la valeur affichée, chaque notification inutile redessine l'écran ;
 - le **solde de la source est suivi** : s'il change ailleurs (autre fenêtre, autre appareil, puis actualisation),
   l'erreur « solde insuffisant » apparaît ou disparaît seule ; quand on change de source, l'ancienne n'est plus suivie,
-  sinon fuite et erreurs fantômes (`Le_solde_de_la_source_est_suivi_meme_quand_il_change_ailleurs`) ;
-- après un virement, les soldes sont mis à jour **sur place** (le même objet `CompteViewModel`) : la sélection dans la
+  sinon fuite et erreurs fantômes (`The_source_balance_is_followed_even_when_it_changes_elsewhere`) ;
+- après un virement, les soldes sont mis à jour **sur place** (le même objet `AccountViewModel`) : la sélection dans la
   liste et dans les listes déroulantes ne saute pas.
 
 ---
@@ -243,13 +243,13 @@ Une page MVC n'existe qu'une fois la réponse prête. Un écran MVVM, lui, est *
 montrer qu'on attend, empêcher de refaire, et se méfier des réponses qui arrivent dans le désordre. Avec la vraie
 fenêtre (400 ms par appel), on voit le bouton se griser et la barre d'activité défiler.
 
-**Le double clic** : `CommandeAsync` se désactive pendant son exécution ; un second clic sur le bouton grisé ne fait
-rien (`Pendant_le_virement_l_ecran_attend_et_un_double_clic_ne_vire_pas_deux_fois`, qui retient l'appel à la banque
+**Le double clic** : `AsyncCommand` se désactive pendant son exécution ; un second clic sur le bouton grisé ne fait
+rien (`During_the_transfer_the_screen_waits_and_a_double_click_does_not_transfer_twice`, qui retient l'appel à la banque
 le temps de cliquer encore).
 
 **Les réponses périmées** : cliquer sur Bob, puis aussitôt sur le Livret ; si la réponse pour Bob arrive après celle du
 Livret, l'écran afficherait les opérations de Bob sous le titre du Livret. Chaque chargement a un numéro, seule la
-réponse du dernier est gardée ([ComptesViewModel.cs](../24-MvcMvvm/Ihm.Presentation/ComptesViewModel.cs)) :
+réponse du dernier est gardée ([AccountsViewModel.cs](../24-MvcMvvm/Ui.Presentation/AccountsViewModel.cs)) :
 
 ```csharp
         var request = ++_lastRequest;
@@ -261,7 +261,7 @@ réponse du dernier est gardée ([ComptesViewModel.cs](../24-MvcMvvm/Ihm.Present
 ```
 
 Le test fait arriver les réponses dans le mauvais ordre, sans `Thread.Sleep` : la banque de test « retient » un appel
-jusqu'à ce qu'on le relâche (`Une_reponse_qui_arrive_trop_tard_n_ecrase_pas_la_selection_suivante`). Il vérifie aussi
+jusqu'à ce qu'on le relâche (`A_response_that_arrives_too_late_does_not_overwrite_the_next_selection`). Il vérifie aussi
 que la réponse périmée n'éteint pas l'indicateur du chargement toujours en cours.
 
 ---
@@ -289,8 +289,8 @@ l'aller-retour dans des champs cachés ; ici, c'est **un appel attendu au milieu
 
 ## 7. Une deuxième vue sur les mêmes ViewModels
 
-[Ihm.Console](../24-MvcMvvm/Ihm.Console) branche une console sur les **mêmes** ViewModels, sans en changer une ligne.
-Ses liaisons sont faites à la main par [Liaison.cs](../24-MvcMvvm/Ihm.Console/Liaison.cs), ce que fait un `{Binding}`
+[Ui.Console](../24-MvcMvvm/Ui.Console) branche une console sur les **mêmes** ViewModels, sans en changer une ligne.
+Ses liaisons sont faites à la main par [Binding.cs](../24-MvcMvvm/Ui.Console/Binding.cs), ce que fait un `{Binding}`
 de WPF sans la machinerie : lire la propriété, s'abonner à `PropertyChanged`, recopier à chaque changement.
 
 ```csharp
@@ -302,30 +302,30 @@ de WPF sans la machinerie : lire la propriété, s'abonner à `PropertyChanged`,
     }
 ```
 
-Les lignes `⚠`, `»` et `[Virer]` apparaissent d'elles-mêmes, poussées par le ViewModel au moment où il change :
+Les lignes `⚠`, `»` et `[Transfer]` apparaissent d'elles-mêmes, poussées par le ViewModel au moment où il change :
 
 ```text
-> de 1
-> vers 1
-  ⚠ comptes Choisissez deux comptes différents.
-> vers 3
-> montant abc
-  ⚠ montant Saisissez un montant, par exemple 250,50.
-> montant 2000
-  ⚠ montant Solde insuffisant : 1 000,00 € disponibles.
-> virer
-  (le bouton Virer est grisé)
+> from 1
+> to 1
+  ⚠ accounts Choose two different accounts.
+> to 3
+> amount abc
+  ⚠ amount Enter an amount, for example 250.50.
+> amount 2000
+  ⚠ amount Insufficient balance: 1,000.00 € available.
+> transfer
+  (the Transfer button is greyed out)
 …
-> montant 250,5
-  [Virer] actif
-> virer
-  [Virer] grisé
-  » Virement en cours…
-  » Virement de 250,50 € effectué. Nouveau solde : 749,50 €.
+> amount 250.5
+  [Transfer] enabled
+> transfer
+  [Transfer] greyed out
+  » Transfer in progress…
+  » Transfer of 250.50 € done. New balance: 749.50 €.
 ```
 
-(Essai réel, `dotnet run --project 24-MvcMvvm\Ihm.Console`.) Le test
-`La_console_pilote_les_memes_ViewModels_que_la_fenetre_WPF` joue une session au clavier, confirmation refusée comprise.
+(Essai réel, `dotnet run --project 24-MvcMvvm\Ui.Console`.) Le test
+`The_console_drives_the_same_ViewModels_as_the_WPF_window` joue une session au clavier, confirmation refusée comprise.
 
 ---
 
@@ -337,10 +337,10 @@ la fenêtre de sortie du débogueur. C'est la faiblesse classique de MVVM en WPF
 
 La démo la compense par un test qui lit le XAML : les indications de conception (`d:DataContext`, et `DataType` sur les
 modèles d'éléments) disent quel ViewModel est lié où, et le vérificateur
-([ArchitectureTests.cs](../24-MvcMvvm/Ihm.Tests/ArchitectureTests.cs)) suit chaque chemin de liaison. Il vérifie aussi
-que ces indications disent vrai : un `DataContext="{Binding Virement}"` annoncé comme `ComptesViewModel`, une liste de
+([ArchitectureTests.cs](../24-MvcMvvm/Ui.Tests/ArchitectureTests.cs)) suit chaque chemin de liaison. Il vérifie aussi
+que ces indications disent vrai : un `DataContext="{Binding Transfer}"` annoncé comme `AccountsViewModel`, une liste de
 comptes affichée avec un modèle prévu pour des opérations, un `DisplayMemberPath` mal orthographié
-(`Le_verificateur_trouve_les_fautes_de_frappe_que_WPF_laisserait_passer`). Sur la vraie fenêtre, 30 liaisons sont
+(`The_checker_finds_the_typos_that_WPF_would_let_through`). Sur la vraie fenêtre, 30 liaisons sont
 vérifiées.
 
 ---
@@ -365,7 +365,7 @@ Tous séparent le **modèle** de sa **présentation** ; ils diffèrent par l'obj
 
 ## Les tests
 
-51 tests, sans écran ni `Thread.Sleep` ([Ihm.Tests](../24-MvcMvvm/Ihm.Tests)) :
+51 tests, sans écran ni `Thread.Sleep` ([Ui.Tests](../24-MvcMvvm/Ui.Tests)) :
 - **le modèle** (6) : les règles du virement, que les deux interfaces affichent mais que seule la banque fait respecter ;
 - **les contrôleurs MVC** appelés comme des méthodes (6) : la décision (vue choisie, données, redirection, erreur
   ajoutée à `ModelState`) ; la liaison et la validation n'ont pas lieu ici ;

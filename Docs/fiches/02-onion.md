@@ -11,14 +11,14 @@ flowchart LR
     Api["Onion.Api"] --> App["Onion.Application<br/>services applicatifs"]
     Api --> Infra["Onion.Infrastructure<br/>EF Core, dépôts"]
     Infra --> App
-    App --> Dom["Onion.Domain<br/>Compte, ServiceVirement,<br/>IComptesRepository, IUnitOfWork"]
+    App --> Dom["Onion.Domain<br/>Account, TransferService,<br/>IAccountsRepository, IUnitOfWork"]
     Infra -. implémente .-> Dom
 ```
 
 ## L'essentiel
 
 - Même règle que l'hexagonale, mais le **centre est découpé** : modèle du domaine → services de domaine → services applicatifs.
-- Les interfaces d'accès aux données (`IComptesRepository`, `IUnitOfWork`) sont **dans le domaine** ; l'infrastructure les implémente.
+- Les interfaces d'accès aux données (`IAccountsRepository`, `IUnitOfWork`) sont **dans le domaine** ; l'infrastructure les implémente.
 - Le service applicatif orchestre : charger, déléguer au domaine, enregistrer (unité de travail, tout ou rien).
 
 | ✅ Quand l'utiliser | ❌ Moins utile si |

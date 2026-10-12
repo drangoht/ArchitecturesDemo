@@ -6,7 +6,7 @@
 > l'assemblage**, dans un même processus ; dans une chorégraphie, des **faits** circulent entre services, et le chemin
 > **émerge** des abonnements.
 
-📁 Démos : [`20-Pipeline`](../../20-Pipeline) · [`21-Choregraphie`](../../21-Choregraphie) · · 🌐 [English](../en/differences/13-pipeline-vs-choregraphie.md)
+📁 Démos : [`20-Pipeline`](../../20-Pipeline) · [`21-Choreography`](../../21-Choreography) · · 🌐 [English](../en/differences/13-pipeline-vs-choregraphie.md)
 📖 Pages : [Pipeline](../20-pipeline.md) · [Chorégraphie](../21-choregraphie.md) ·
 🗂️ Fiches : [20](../fiches/20-pipeline.md) · [21](../fiches/21-choregraphie.md)
 
@@ -30,7 +30,7 @@ personne n'appelle explicitement.
 | L'intermédiaire | un tuyau **borné** (64 éléments) : plein, il fait attendre l'étage d'avant | un courtier qui **stocke** : pas de contre-pression |
 | Débit | celui de l'étage le plus lent ; on **parallélise le goulot** (8 copies du contrôle de fraude) | chaque service à son rythme |
 | Ordre | **préservé** (l'étage parallèle ré-ordonne) : la ligne 2 peut dépendre de la ligne 1 | aucune garantie entre virements différents |
-| Un élément refusé | **rejeté avec un motif**, compté au bilan | un événement de refus (`ConformiteRefusee`), auquel d'autres réagissent |
+| Un élément refusé | **rejeté avec un motif**, compté au bilan | un événement de refus (`ComplianceRefused`), auquel d'autres réagissent |
 | Une panne | une exception **arrête tout** le pipeline ; on rejoue le fichier | **silence** : lettres mortes, puis expiration |
 | Ajouter une étape | réassembler le pipeline | s'abonner |
 | Vue d'ensemble | le code d'assemblage | les abonnements, à l'exécution |
@@ -41,15 +41,15 @@ personne n'appelle explicitement.
 flowchart LR
     subgraph P["PIPELINE : un processus, un chemin"]
         direction TB
-        F[/"CSV"/] --> A["Analyser"] --> V["Valider"] --> FR["Fraude ×N"] --> E["Exécuter"]
+        F[/"CSV"/] --> A["Analyser"] --> V["Validate"] --> FR["Fraude ×N"] --> E["Execute"]
     end
     subgraph C["CHORÉGRAPHIE : des services, des réactions"]
         direction TB
-        CO["Comptes"] -.->|"FondsReserves"| CF["Conformité"]
-        CF -.->|"ConformiteApprouvee"| CH["Change"]
-        CH -.->|"DevisesConverties"| CO
-        CO -.->|"VirementRegle"| NO["Notifications"]
-        CO -.->|"VirementRegle"| FI["Fidélité"]
+        CO["Accounts"] -.->|"FundsReserved"| CF["Compliance"]
+        CF -.->|"ComplianceApproved"| CH["Exchange"]
+        CH -.->|"CurrenciesConverted"| CO
+        CO -.->|"TransferSettled"| NO["Notifications"]
+        CO -.->|"TransferSettled"| FI["Loyalty"]
     end
     P ~~~ C
 ```
@@ -57,7 +57,7 @@ flowchart LR
 ## Dans le code des démos
 
 **Pipeline** : un tuyau plein **bloque** l'étage qui écrit ; c'est ce qui borne la mémoire, quelle que soit la taille
-du fichier ([Etage.cs](../../20-Pipeline/Pipeline.Noyau/Etage.cs)) :
+du fichier ([Stage.cs](../../20-Pipeline/Pipeline.Core/Stage.cs)) :
 
 ```csharp
 /// <summary>Writing into a full pipe BLOCKS: the stage waits for the next one to have room. That is the back-pressure.</summary>
@@ -65,7 +65,7 @@ private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput
 ```
 
 Et le premier étage en échec arrête tous les autres
-([Pipeline.cs](../../20-Pipeline/Pipeline.Noyau/Pipeline.cs)) :
+([Pipeline.cs](../../20-Pipeline/Pipeline.Core/Pipeline.cs)) :
 
 ```csharp
 // The first stage that fails stops all the others.
@@ -75,7 +75,7 @@ foreach (var task in tasks)
 
 **Chorégraphie** : chaque service garde les identifiants déjà traités, et réagit en publiant la suite ; rien ne le
 ralentit si le suivant est lent, rien ne l'arrête si le suivant tombe
-([Autres.cs](../../21-Choregraphie/Choreo.Services/Autres.cs)) :
+([Others.cs](../../21-Choreography/Choreo.Services/Others.cs)) :
 
 ```csharp
 lock (Lock)

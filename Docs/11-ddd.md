@@ -42,7 +42,7 @@ Deux **contextes délimités** modélisent **la même réalité différemment** 
 | Un compte, c'est… | un solde, un plafond, des mouvements | un **dossier de vigilance** : des virements observés et des alertes |
 | Monnaie | la devise du compte (EUR, USD, CHF) | **toujours en euros** |
 | Préoccupation | exécuter correctement les opérations | détecter blanchiment et fractionnement |
-| Glossaire | [LANGAGE.md](../11-DDD/Ddd.TenueDeCompte.Domaine/LANGAGE.md) | [LANGAGE.md](../11-DDD/Ddd.Conformite/LANGAGE.md) |
+| Glossaire | [LANGUAGE.md](../11-DDD/Ddd.AccountKeeping.Domain/LANGUAGE.md) | [LANGUAGE.md](../11-DDD/Ddd.Compliance/LANGUAGE.md) |
 
 Un modèle « Compte » unique pour tout le monde serait **obèse** : chaque équipe y ajouterait ses champs.
 
@@ -50,19 +50,19 @@ Un modèle « Compte » unique pour tout le monde serait **obèse** : chaque éq
 flowchart TB
     H["Système de change HÉRITÉ<br/>« EURUSD=10832;… »"]
     subgraph TDC["Tenue de compte"]
-        ACL["Couche anti-corruption<br/>AdaptateurTauxDeChange"]
-        Dom["Domaine<br/>Compte, Argent, Iban…"]
-        PL["Langage publié<br/>VirementEmis · ITenueDeCompteApi"]
+        ACL["Couche anti-corruption<br/>ExchangeRateAdapter"]
+        Dom["Domaine<br/>Account, Money, Iban…"]
+        PL["Langage publié<br/>TransferSent · IAccountKeepingApi"]
         ACL --> Dom --> PL
     end
     subgraph CONF["Conformité"]
-        Surv["SurveillanceDesVirements<br/>(traduction)"]
-        Dos["DossierDeVigilance · Alerte"]
+        Surv["TransferMonitoring<br/>(traduction)"]
+        Dos["VigilanceFile · Alert"]
         Surv --> Dos
     end
     H -->|"amont"| ACL
-    PL -->|"VirementEmis<br/>(événement)"| Surv
-    Surv -->|"BloquerCompte<br/>(service hôte ouvert)"| PL
+    PL -->|"TransferSent<br/>(événement)"| Surv
+    Surv -->|"BlockAccount<br/>(service hôte ouvert)"| PL
 
     classDef ext fill:#f6f8fa,stroke:#8c959f,stroke-dasharray: 5 5
     class H ext
@@ -70,10 +70,10 @@ flowchart TB
 
 | Relation | Dans la démo | Pourquoi |
 |---|---|---|
-| **Couche anti-corruption** | `AdaptateurTauxDeChange` devant le système de change hérité | Son format (taux × 10 000, paires depuis l'euro, devises inconnues) ne doit pas polluer notre modèle |
-| **Langage publié** | `Ddd.TenueDeCompte.Contrats` : `VirementEmis` en types simples | Les autres contextes ne voient pas `Argent`, `Iban`… : le modèle interne peut évoluer |
-| **Service hôte ouvert** | `ITenueDeCompteApi.BloquerCompte` | La Conformité **demande** un blocage ; c'est la Tenue de compte qui l'exécute |
-| **Client / fournisseur** | `MontantEnEuros` ajouté à `VirementEmis` | Le contexte aval (Conformité) a exprimé un besoin au contexte amont |
+| **Couche anti-corruption** | `ExchangeRateAdapter` devant le système de change hérité | Son format (taux × 10 000, paires depuis l'euro, devises inconnues) ne doit pas polluer notre modèle |
+| **Langage publié** | `Ddd.AccountKeeping.Contracts` : `TransferSent` en types simples | Les autres contextes ne voient pas `Money`, `Iban`… : le modèle interne peut évoluer |
+| **Service hôte ouvert** | `IAccountKeepingApi.BlockAccount` | La Conformité **demande** un blocage ; c'est la Tenue de compte qui l'exécute |
+| **Client / fournisseur** | `AmountInEuros` ajouté à `TransferSent` | Le contexte aval (Conformité) a exprimé un besoin au contexte amont |
 
 ---
 
@@ -82,71 +82,71 @@ flowchart TB
 ```mermaid
 classDiagram
     direction LR
-    class Compte {
+    class Account {
         <<Racine d'agrégat>>
-        +CompteId Id
+        +AccountId Id
         +Iban Iban
-        +NomTitulaire Titulaire
-        +Argent Solde
-        +Argent PlafondRetraitJournalier
-        +StatutCompte Statut
-        +Retirer(Argent, DateTime)
-        +Bloquer(string, DateTime)
+        +OwnerName Owner
+        +Money Balance
+        +Money DailyWithdrawalLimit
+        +AccountStatus Status
+        +Withdraw(Money, DateTime)
+        +Block(string, DateTime)
     }
-    class Mouvement {
+    class Movement {
         <<Entité interne>>
         +Guid Id
-        +TypeMouvement Type
-        +Argent Montant
-        +string Libelle
+        +MovementType Type
+        +Money Amount
+        +string Label
     }
-    class Argent {
+    class Money {
         <<Objet-valeur>>
-        +decimal Montant
-        +Devise Devise
-        +operator +(Argent, Argent)
+        +decimal Amount
+        +Currency Currency
+        +operator +(Money, Money)
     }
     class Iban {
         <<Objet-valeur>>
-        +string Valeur
-        +Depuis(string)$
-        +Generer(pays, bban)$
+        +string Value
+        +From(string)$
+        +Generate(pays, bban)$
     }
-    class FabriqueDeComptes {
+    class AccountFactory {
         <<Fabrique>>
-        +Ouvrir(...) Compte
+        +Open(...) Account
     }
-    class ServiceDeVirement {
+    class TransferService {
         <<Service de domaine>>
-        +Virer(source, cible, montant, date)
+        +Transfer(source, cible, montant, date)
     }
-    class IComptes {
+    class IAccounts {
         <<Dépôt>>
-        +ParId(CompteId)
-        +ParIban(Iban)
+        +ById(AccountId)
+        +ByIban(Iban)
     }
-    class IConvertisseurDevises {
+    class ICurrencyConverter {
         <<Port>>
-        +Convertir(Argent, Devise)
+        +Convert(Money, Currency)
     }
-    Compte "1" *-- "*" Mouvement : contient
-    Compte --> Argent
-    Compte --> Iban
-    FabriqueDeComptes ..> Compte : crée
-    FabriqueDeComptes ..> IComptes : numérote
-    ServiceDeVirement ..> Compte : débite / crédite
-    ServiceDeVirement ..> IConvertisseurDevises
+    Account "1" *-- "*" Movement : contient
+    Account --> Money
+    Account --> Iban
+    AccountFactory ..> Account : crée
+    AccountFactory ..> IAccounts : numérote
+    TransferService ..> Account : débite / crédite
+    TransferService ..> ICurrencyConverter
 ```
 
 ### 1. Le langage omniprésent
 
 Chaque terme du glossaire existe tel quel dans le code : si un expert dit « plafond de retrait journalier », on trouve
-`PlafondRetraitJournalier`, pas `MaxDailyLimit`.
+`DailyWithdrawalLimit`, pas `MaxDailyLimit`.
 
 ### 2. Des objets-valeurs toujours valides
 
 Un `Iban` invalide **ne peut pas exister** : recevoir un `Iban` suffit à savoir qu'il est valide.
-([Iban.cs](../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Iban.cs))
+([Iban.cs](../11-DDD/Ddd.AccountKeeping.Domain/ValueObjects/Iban.cs))
 
 ```csharp
 public static Iban From(string input)
@@ -159,8 +159,8 @@ public static Iban From(string input)
 }
 ```
 
-`Argent` porte sa devise et **refuse de mélanger** euros et dollars — y compris dans une comparaison.
-([Argent.cs](../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Argent.cs))
+`Money` porte sa devise et **refuse de mélanger** euros et dollars — y compris dans une comparaison.
+([Money.cs](../11-DDD/Ddd.AccountKeeping.Domain/ValueObjects/Money.cs))
 
 ```csharp
 // The operations refuse to mix currencies: it is a domain rule, carried by the type itself.
@@ -178,7 +178,7 @@ Comparez avec les `decimal` et `string` nus des autres démos (*primitive obsess
 
 Pour vérifier le plafond de retrait **journalier**, le compte doit connaître ses mouvements du jour : c'est cette règle
 qui fixe la **frontière** de l'agrégat. On ne charge ni n'enregistre jamais un mouvement seul.
-([Compte.cs](../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Compte.cs))
+([Account.cs](../11-DDD/Ddd.AccountKeeping.Domain/Accounts/Account.cs))
 
 ```csharp
 public void Withdraw(Money amount, DateTime date)
@@ -198,9 +198,9 @@ public void Withdraw(Money amount, DateTime date)
 
 ### 4. Fabrique et service de domaine
 
-La **fabrique** calcule le numéro et l'IBAN ([Fabrique.cs](../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Fabrique.cs)) ;
+La **fabrique** calcule le numéro et l'IBAN ([Factory.cs](../11-DDD/Ddd.AccountKeeping.Domain/Accounts/Factory.cs)) ;
 le **service de domaine** porte le virement, qui touche deux agrégats et un taux de change
-([ServiceDeVirement.cs](../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/ServiceDeVirement.cs)) :
+([TransferService.cs](../11-DDD/Ddd.AccountKeeping.Domain/Accounts/TransferService.cs)) :
 
 ```csharp
 var creditedAmount = target.Currency == amount.Currency ? amount : await converter.Convert(amount, target.Currency);
@@ -214,7 +214,7 @@ source.Report(new TransferMade(Guid.NewGuid(), source.Id, source.Iban, source.Ow
 
 ### 5. La couche anti-corruption
 
-([CoucheAntiCorruption.cs](../11-DDD/Ddd.TenueDeCompte.Infrastructure/CoucheAntiCorruption.cs))
+([AntiCorruptionLayer.cs](../11-DDD/Ddd.AccountKeeping.Infrastructure/AntiCorruptionLayer.cs))
 
 ```csharp
 public class LegacyQuoteSystem
@@ -239,7 +239,7 @@ public class ExchangeRateAdapter(LegacyQuoteSystem legacySystem) : ICurrencyConv
 
 ### 6. Traduire les événements de domaine en langage publié
 
-([Integration.cs](../11-DDD/Ddd.TenueDeCompte.Application/Integration.cs))
+([Integration.cs](../11-DDD/Ddd.AccountKeeping.Application/Integration.cs))
 
 ```csharp
 var integration = new TransferSent(
@@ -255,23 +255,23 @@ foreach (var subscriber in subscribers())
 ```mermaid
 sequenceDiagram
     actor Bob
-    participant SC as ServiceComptes (Tenue de compte)
+    participant SC as AccountsService (Tenue de compte)
     participant C as Compte de Bob (agrégat)
-    participant Pub as PublicateurEvenements
-    participant Surv as SurveillanceDesVirements (Conformité)
-    participant Dos as DossierDeVigilance
-    participant Api as ITenueDeCompteApi
+    participant Pub as EventPublisher
+    participant Surv as TransferMonitoring (Conformité)
+    participant Dos as VigilanceFile
+    participant Api as IAccountKeepingApi
     loop 3 virements de 10 € en quelques secondes
-        Bob->>SC: Virer(ibanAlice, 10)
-        SC->>C: Debiter (via ServiceDeVirement)
-        SC->>SC: Valider (enregistrer)
-        SC->>Pub: VirementEffectue (événement de domaine)
-        Pub->>Surv: VirementEmis (langage publié, en euros)
-        Surv->>Dos: Observer(VirementObserve)
+        Bob->>SC: Transfer(ibanAlice, 10)
+        SC->>C: Debit (via TransferService)
+        SC->>SC: Validate (enregistrer)
+        SC->>Pub: TransferMade (événement de domaine)
+        Pub->>Surv: TransferSent (langage publié, en euros)
+        Surv->>Dos: Observe(ObservedTransfer)
     end
-    Dos-->>Surv: Alerte Critique « fractionnement suspecté »
-    Surv->>Api: BloquerCompte(bob, motif)
-    Api->>C: Bloquer(motif)
+    Dos-->>Surv: Alert Critical « fractionnement suspecté »
+    Surv->>Api: BlockAccount(bob, motif)
+    Api->>C: Block(motif)
     Bob->>SC: 4e virement
     SC-->>Bob: 400 « Ce compte est bloqué (…) »
 ```
@@ -280,9 +280,9 @@ sequenceDiagram
 
 ## Les tests
 
-- **Objets-valeurs** ([ObjetsValeursTests.cs](../11-DDD/Ddd.Tests/ObjetsValeursTests.cs)) : égalité par valeur, devises non
+- **Objets-valeurs** ([ValueObjectsTests.cs](../11-DDD/Ddd.Tests/ValueObjectsTests.cs)) : égalité par valeur, devises non
   mélangeables, montants et IBAN invalides impossibles à créer.
-- **Domaine** ([DomaineTests.cs](../11-DDD/Ddd.Tests/DomaineTests.cs)) : plafond journalier, compte bloqué, conversion via
+- **Domaine** ([DomainTests.cs](../11-DDD/Ddd.Tests/DomainTests.cs)) : plafond journalier, compte bloqué, conversion via
   la couche anti-corruption (100 € → 108,32 $ ; 108,32 $ → 94,15 CHF par croisement), règles de la Conformité.
 - **Frontières des contextes** ([ApiTests.cs](../11-DDD/Ddd.Tests/ApiTests.cs)) :
 

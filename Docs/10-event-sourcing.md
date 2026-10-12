@@ -15,9 +15,9 @@ C'est exactement ainsi que fonctionne une comptabilité : on n'efface jamais une
 
 ```mermaid
 flowchart LR
-    E1["v1 · CompteOuvert<br/>Alice, 1 000 €"] --> E2["v2 · ArgentRetire<br/>100 €, « Courses »"]
-    E2 --> E3["v3 · ArgentRetire<br/>300 €, « Loyer »"]
-    E3 --> E4["v4 · VirementEmis<br/>250 € vers Bob"]
+    E1["v1 · AccountOpened<br/>Alice, 1 000 €"] --> E2["v2 · MoneyWithdrawn<br/>100 €, « Groceries »"]
+    E2 --> E3["v3 · MoneyWithdrawn<br/>300 €, « Rent »"]
+    E3 --> E4["v4 · TransferSent<br/>250 € vers Bob"]
     E4 -. "rejouer v1→v4" .-> S["État actuel<br/>solde : 350 €<br/>version : 4"]
     E2 -. "rejouer v1→v2" .-> T["État à la version 2<br/>solde : 900 €"]
 
@@ -29,12 +29,12 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    C["Commande<br/>POST /comptes/alice/retrait"] --> L["① CHARGER<br/>lire le flux d'Alice<br/>(depuis le dernier instantané)"]
-    L --> R["② RECONSTITUER<br/>Appliquer chaque événement<br/>→ solde, version"]
-    R --> D["③ DÉCIDER<br/>Retirer() vérifie les règles<br/>→ nouvel événement ArgentRetire"]
+    C["Commande<br/>POST /accounts/alice/withdrawal"] --> L["① CHARGER<br/>lire le flux d'Alice<br/>(depuis le dernier instantané)"]
+    L --> R["② RECONSTITUER<br/>Apply chaque événement<br/>→ solde, version"]
+    R --> D["③ DÉCIDER<br/>Withdraw() vérifie les règles<br/>→ nouvel événement MoneyWithdrawn"]
     D --> A["④ AJOUTER au magasin<br/>si la version est toujours<br/>celle qu'on a chargée"]
     A -->|"version a changé"| X["409 Conflit<br/>rien n'est écrit"]
-    A -->|"ok"| M[("Magasin<br/>evenements.jsonl<br/>(ajout seul)")]
+    A -->|"ok"| M[("Magasin<br/>events.jsonl<br/>(ajout seul)")]
     M --> P["Projections<br/>(relevés, plus gros retraits…)"]
 ```
 
@@ -44,12 +44,12 @@ flowchart TB
 
 | Projet | Contenu |
 |---|---|
-| `Es.Domaine` | Événements, agrégat `Compte` (décider / appliquer), `InstantaneCompte` |
-| `Es.Stockage` | `MagasinEvenements` (ajout seul, concurrence optimiste, fichier `.jsonl`), `SerialiseurEvenements` (+ upcasting), `DepotComptes` (instantanés, voyage dans le temps) |
-| `Es.Projections` | `ProjectionReleves`, `ProjectionPlusGrosRetraits`, `MoteurProjections` (suivi, reconstruction) |
+| `Es.Domain` | Événements, agrégat `Account` (décider / appliquer), `AccountSnapshot` |
+| `Es.Storage` | `EventStore` (ajout seul, concurrence optimiste, fichier `.jsonl`), `EventSerializer` (+ upcasting), `AccountRepository` (instantanés, voyage dans le temps) |
+| `Es.Projections` | `StatementsProjection`, `LargestWithdrawalsProjection`, `ProjectionEngine` (suivi, reconstruction) |
 | `Es.Api` | Commandes, audit, voyage dans le temps, administration |
 
-**La base de données est un fichier lisible** : `Es.Api\evenements.jsonl`, une ligne par événement.
+**La base de données est un fichier lisible** : `Es.Api\events.jsonl`, une ligne par événement.
 
 ```json
 {"position":3,"stream":"1111…","version":2,"type":"MoneyWithdrawn.v2","data":{"accountId":"1111…","amount":100,"reason":"Groceries","date":"…"},"date":"…"}
@@ -61,7 +61,7 @@ flowchart TB
 
 ### 1. Décider / appliquer : deux sortes de méthodes, à ne jamais mélanger
 
-([Compte.cs](../10-EventSourcing/Es.Domaine/Compte.cs))
+([Account.cs](../10-EventSourcing/Es.Domain/Account.cs))
 
 ```csharp
 /// <summary>
@@ -118,7 +118,7 @@ public class Account
     }
 ```
 
-Charger un compte, c'est rejouer `Appliquer` sur tout son historique :
+Charger un compte, c'est rejouer `Apply` sur tout son historique :
 
 ```csharp
 public static Account Rehydrate(IEnumerable<IEvent> history) =>
@@ -127,16 +127,16 @@ public static Account Rehydrate(IEnumerable<IEvent> history) =>
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Ouvert : CompteOuvert
-    Ouvert --> Ouvert : ArgentDepose / ArgentRetire / VirementEmis / VirementRecu
-    Ouvert --> Cloture : CompteCloture (seulement si solde = 0)
-    Cloture --> [*]
-    note right of Cloture : toute nouvelle opération est refusée
+    [*] --> Ouvert : AccountOpened
+    Ouvert --> Ouvert : MoneyDeposited / MoneyWithdrawn / TransferSent / TransferReceived
+    Ouvert --> Closed : AccountClosed (seulement si solde = 0)
+    Closed --> [*]
+    note right of Closed : toute nouvelle opération est refusée
 ```
 
 ### 2. Le magasin : ajout seul et concurrence optimiste
 
-([MagasinEvenements.cs](../10-EventSourcing/Es.Stockage/MagasinEvenements.cs))
+([EventStore.cs](../10-EventSourcing/Es.Storage/EventStore.cs))
 
 ```csharp
 /// Appends the events of one or more streams, all or nothing.
@@ -163,10 +163,10 @@ sequenceDiagram
     actor B as Guichetier B
     participant API as Es.Api
     participant M as Magasin
-    A->>API: GET /comptes/alice → version 1
-    B->>API: GET /comptes/alice → version 1
+    A->>API: GET /accounts/alice → version 1
+    B->>API: GET /accounts/alice → version 1
     A->>API: retrait 80 € (If-Match: 1)
-    API->>M: Ajouter(alice, versionAttendue: 1)
+    API->>M: Append(alice, expectedVersion: 1)
     M-->>API: ok → version 2
     B->>API: retrait 80 € (If-Match: 1)
     API-->>B: 409 Conflit « version attendue 1, version actuelle 2 »
@@ -176,7 +176,7 @@ sequenceDiagram
 ### 3. Les instantanés : ne pas tout rejouer
 
 Tous les 5 événements, une photo de l'état est mise en **cache**. On peut l'effacer sans rien perdre.
-([DepotComptes.cs](../10-EventSourcing/Es.Stockage/DepotComptes.cs))
+([AccountRepository.cs](../10-EventSourcing/Es.Storage/AccountRepository.cs))
 
 ```csharp
 public async Task<Account> Load(Guid id)
@@ -202,12 +202,12 @@ public async Task<Account> LoadAtVersion(Guid id, int version)
 }
 ```
 
-`GET /comptes/{id}/etat?version=2` ou `?date=…` ; `GET /comptes/{id}/evenements` donne l'audit complet.
+`GET /accounts/{id}/state?version=2` ou `?date=…` ; `GET /accounts/{id}/events` donne l'audit complet.
 
 ### 5. Faire évoluer un événement sans réécrire l'historique (*upcasting*)
 
-`ArgentRetire` a gagné un champ `Motif` en v2. Les anciens événements v1 restent intacts ; ils sont convertis **à la lecture**.
-([SerialiseurEvenements.cs](../10-EventSourcing/Es.Stockage/SerialiseurEvenements.cs))
+`MoneyWithdrawn` a gagné un champ `Reason` en v2. Les anciens événements v1 restent intacts ; ils sont convertis **à la lecture**.
+([EventSerializer.cs](../10-EventSourcing/Es.Storage/EventSerializer.cs))
 
 ```csharp
 private static readonly Dictionary<string, Func<string, (string Type, string Json)>> Upcasters = new()
@@ -233,14 +233,14 @@ private static readonly Dictionary<string, Func<string, (string Type, string Jso
 public class LargestWithdrawalsProjection : IProjection { /* … */ }
 ```
 
-`POST /admin/projections/reconstruire` efface toutes les vues et rejoue tout le magasin.
+`POST /admin/projections/rebuild` efface toutes les vues et rejoue tout le magasin.
 
 ---
 
 ## Les tests : Given / When / Then
 
 Le style naturel de l'Event Sourcing : *étant donné* des faits, *quand* une commande arrive, *alors* on attend ces nouveaux faits.
-([CompteTests.cs](../10-EventSourcing/Es.Tests/CompteTests.cs))
+([AccountTests.cs](../10-EventSourcing/Es.Tests/AccountTests.cs))
 
 ```csharp
 private static IReadOnlyList<IEvent> When(IEvent[] given, Action<Account> command)
@@ -259,7 +259,7 @@ public void A_possible_withdrawal_produces_MoneyWithdrawn()
 }
 ```
 
-Autres tests ([StockageTests.cs](../10-EventSourcing/Es.Tests/StockageTests.cs), [ApiTests.cs](../10-EventSourcing/Es.Tests/ApiTests.cs)) :
+Autres tests ([StorageTests.cs](../10-EventSourcing/Es.Tests/StorageTests.cs), [ApiTests.cs](../10-EventSourcing/Es.Tests/ApiTests.cs)) :
 conflit de concurrence, virement en tout ou rien sur deux flux, redémarrage depuis le fichier, upcasting, instantanés
 (même résultat, moins d'événements lus), voyage dans le temps, reconstruction des projections.
 

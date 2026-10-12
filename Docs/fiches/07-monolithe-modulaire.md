@@ -6,14 +6,14 @@
 > un seul processus.
 
 **Famille** : découpage du système · **Origine** : popularisé notamment par Shopify ·
-**Démo** : [`07-MonolitheModulaire`](../../07-MonolitheModulaire) (port 5107) · 📖 [Page complète](../07-monolithe-modulaire.md) ·
+**Démo** : [`07-ModularMonolith`](../../07-ModularMonolith) (port 5107) · 📖 [Page complète](../07-monolithe-modulaire.md) ·
 🌐 [English](../en/fiches/07-monolithe-modulaire.md)
 
 ```mermaid
 flowchart LR
-    V["Module Virements"] ==>|"IComptesApi<br/>(appel synchrone)"| C["Module Comptes"]
-    C -.->|RetraitEffectue| B(["Bus d'événements<br/>en mémoire"])
-    V -.->|VirementEffectue| B
+    V["Module Transfers"] ==>|"IAccountsApi<br/>(appel synchrone)"| C["Module Accounts"]
+    C -.->|WithdrawalMade| B(["Bus d'événements<br/>en mémoire"])
+    V -.->|TransferMade| B
     B -.-> N["Module Notifications"]
 ```
 

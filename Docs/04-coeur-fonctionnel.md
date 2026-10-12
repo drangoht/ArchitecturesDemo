@@ -3,7 +3,7 @@
 > **En une phrase** : les règles métier sont des **fonctions pures** qui renvoient une décision ; une fine **coquille**
 > autour fait toutes les entrées/sorties.
 
-📁 Code : [`04-CoeurFonctionnel`](../04-CoeurFonctionnel) · ⬅️ [Clean](03-clean.md) · ➡️ [Vertical Slice](05-vertical-slice.md) · 🌐 [English](en/04-coeur-fonctionnel.md)
+📁 Code : [`04-FunctionalCore`](../04-FunctionalCore) · ⬅️ [Clean](03-clean.md) · ➡️ [Vertical Slice](05-vertical-slice.md) · 🌐 [English](en/04-coeur-fonctionnel.md)
 
 ---
 
@@ -21,10 +21,10 @@ flowchart LR
         A["③ APPLIQUER<br/>écrire, journaliser, répondre"]
     end
     subgraph Coeur["Cœur (pur)"]
-        D["② DÉCIDER<br/>Regles.Virer(source, cible,<br/>montant, dejaVireAujourdhui)<br/>→ DecisionVirement"]
+        D["② DÉCIDER<br/>Rules.Transfer(source, cible,<br/>montant, alreadyTransferredToday)<br/>→ TransferDecision"]
     end
     L -->|"valeurs immuables"| D
-    D -->|"Accepte ou Refuse"| A
+    D -->|"Accepted ou Refused"| A
 
     classDef pur fill:#dafbe1,stroke:#1a7f37
     classDef impur fill:#ffebe9,stroke:#cf222e
@@ -46,7 +46,7 @@ flowchart LR
 
 ### 1. Des valeurs immuables et des décisions fermées
 
-([Compte.cs](../04-CoeurFonctionnel/Fonctionnel.Coeur/Compte.cs), [Decisions.cs](../04-CoeurFonctionnel/Fonctionnel.Coeur/Decisions.cs))
+([Account.cs](../04-FunctionalCore/Functional.Core/Account.cs), [Decisions.cs](../04-FunctionalCore/Functional.Core/Decisions.cs))
 
 ```csharp
 /// Immutable value: an account is never modified, a new version of it is produced.
@@ -63,7 +63,7 @@ public abstract record TransferDecision
 ### 2. Les règles : des fonctions pures
 
 Le **temps** est une donnée d'entrée : le cumul viré aujourd'hui est calculé par la coquille et passé en paramètre.
-([Regles.cs](../04-CoeurFonctionnel/Fonctionnel.Coeur/Regles.cs))
+([Rules.cs](../04-FunctionalCore/Functional.Core/Rules.cs))
 
 ```csharp
 public static WithdrawalDecision Withdraw(Account account, decimal amount) => amount switch
@@ -94,7 +94,7 @@ public static TransferDecision Transfer(Account source, Account target, decimal 
 
 ### 3. La coquille : lire → décider → appliquer
 
-([Endpoints.cs](../04-CoeurFonctionnel/Fonctionnel.Coquille/Endpoints.cs))
+([Endpoints.cs](../04-FunctionalCore/Functional.Shell/Endpoints.cs))
 
 ```csharp
 private static async Task<IResult> Transfer(TransferRequest request, BankDbContext db, TimeProvider clock, ILoggerFactory loggers)
@@ -133,21 +133,21 @@ private static async Task<IResult> Transfer(TransferRequest request, BankDbConte
 }
 ```
 
-La coquille a son **propre modèle de persistance** mutable (`CompteLigne`), converti en valeur du cœur par `VersCoeur()`.
+La coquille a son **propre modèle de persistance** mutable (`AccountRow`), converti en valeur du cœur par `ToCore()`.
 
 ```mermaid
 sequenceDiagram
     actor Client
-    participant S as Coquille (Endpoints.Virer)
-    participant DB as BanqueDbContext
+    participant S as Coquille (Endpoints.Transfer)
+    participant DB as BankDbContext
     participant H as TimeProvider
-    participant R as Regles (cœur pur)
-    Client->>S: POST /virements (1 000 €)
+    participant R as Rules (cœur pur)
+    Client->>S: POST /transfers (1 000 €)
     S->>DB: FindAsync source, cible
     S->>H: GetUtcNow()
     S->>DB: SUM virements émis aujourd'hui → 1 500 €
-    S->>R: Virer(source, cible, 1000, dejaVire: 1500)
-    R-->>S: Refuse(« Plafond journalier de 2000 € dépassé… »)
+    S->>R: Transfer(source, cible, 1000, alreadyTransferred: 1500)
+    R-->>S: Refused(« Daily limit of 2000 € exceeded… »)
     S-->>Client: 400 Bad Request
     Note over R: Aucune I/O, aucun état modifié :<br/>même entrée → toujours même décision
 ```
@@ -157,7 +157,7 @@ sequenceDiagram
 ## Les tests
 
 Tester une fonction pure : des valeurs en entrée, une valeur attendue en sortie. **Rien d'autre.**
-([ReglesTests.cs](../04-CoeurFonctionnel/Fonctionnel.Tests/ReglesTests.cs))
+([RulesTests.cs](../04-FunctionalCore/Functional.Tests/RulesTests.cs))
 
 ```csharp
 [Fact]

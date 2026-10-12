@@ -9,9 +9,9 @@
 
 ```mermaid
 flowchart LR
-    Cl(["Client"]) -->|POST| BC["BusCommandes<br/>valider → traiter"] --> E[("EcritureDb<br/>agrégat + journal")]
-    E -.->|événements| S["Synchroniseur<br/>→ Projecteur"] --> L[("LectureDb<br/>vues dénormalisées")]
-    Cl -->|GET| BR["BusRequetes"] --> L
+    Cl(["Client"]) -->|POST| BC["CommandBus<br/>valider → traiter"] --> E[("WriteDb<br/>agrégat + journal")]
+    E -.->|événements| S["Synchroniseur<br/>→ Projector"] --> L[("ReadDb<br/>vues dénormalisées")]
+    Cl -->|GET| BR["QueryBus"] --> L
 ```
 
 ## L'essentiel

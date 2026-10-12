@@ -11,21 +11,21 @@
 flowchart TB
     H["Système de change hérité"] -->|amont| ACL["Couche anti-corruption"]
     subgraph TDC["Contexte Tenue de compte"]
-        ACL --> Dom["Compte, Argent, Iban"] --> PL["Langage publié<br/>VirementEmis"]
+        ACL --> Dom["Account, Money, Iban"] --> PL["Langage publié<br/>TransferSent"]
     end
     subgraph CONF["Contexte Conformité"]
-        S["Dossier de vigilance, Alerte"]
+        S["Dossier de vigilance, Alert"]
     end
     PL -->|événement| S
-    S -->|"BloquerCompte<br/>(service hôte ouvert)"| PL
+    S -->|"BlockAccount<br/>(service hôte ouvert)"| PL
 ```
 
 ## L'essentiel
 
 - **Stratégique** : contextes délimités (un « compte » n'est pas le même en Tenue de compte et en Conformité),
   carte des contextes, langage publié, couche anti-corruption.
-- **Tactique** : langage omniprésent (glossaire `LANGAGE.md` = noms du code), **objets-valeurs toujours valides**
-  (`Iban`, `Argent`), agrégats, fabriques, services de domaine, dépôts, événements de domaine.
+- **Tactique** : langage omniprésent (glossaire `LANGUAGE.md` = noms du code), **objets-valeurs toujours valides**
+  (`Iban`, `Money`), agrégats, fabriques, services de domaine, dépôts, événements de domaine.
 - Ce n'est **pas une organisation de dossiers** mais une démarche, applicable avec Hexagonale, Onion ou Clean.
 
 | ✅ Quand l'utiliser | ❌ Excessif si |
