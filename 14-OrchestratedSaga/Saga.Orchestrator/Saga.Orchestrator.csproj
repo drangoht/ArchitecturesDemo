@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE ORCHESTRATOR: it knows all the steps of the transfer, chains them, remembers where it stands,
+    retries, waits, and compensates. That is the role of Durable Functions, Temporal, Step Functions or MassTransit.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Saga.Participants\Saga.Participants.csproj" />
+  </ItemGroup>
+
+</Project>

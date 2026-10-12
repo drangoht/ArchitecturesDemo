@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Saga.Orchestrator\Saga.Orchestrator.csproj" />
+  </ItemGroup>
+
+</Project>

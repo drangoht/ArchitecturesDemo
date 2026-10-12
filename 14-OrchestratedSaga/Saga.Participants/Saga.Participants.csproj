@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The PARTICIPANTS of the saga: in reality separate services, called over the network.
+    Simulated here in the same process to focus on the orchestration. Each operation is idempotent.
+  -->
+
+</Project>
