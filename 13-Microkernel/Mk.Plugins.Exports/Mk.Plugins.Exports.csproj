@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Une seule DLL peut contenir plusieurs extensions : ici deux formats de relevé. -->
+  <!-- A single DLL can contain several extensions: here two statement formats. -->
 
   <Import Project="..\Plugins.props" />
 

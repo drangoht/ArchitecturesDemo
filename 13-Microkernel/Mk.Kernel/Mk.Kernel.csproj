@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE KERNEL: the bare minimum (keeping accounts, debiting, crediting) + the plugin mechanism.
+    It references NO plugin: it only knows them through Mk.Contracts.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mk.Contracts\Mk.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

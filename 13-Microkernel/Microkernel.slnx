@@ -1,10 +1,10 @@
 <Solution>
-  <Project Path="Mk.Contrats/Mk.Contrats.csproj" />
-  <Project Path="Mk.Hote/Mk.Hote.csproj" />
-  <Project Path="Mk.Noyau/Mk.Noyau.csproj" />
+  <Project Path="Mk.Contracts/Mk.Contracts.csproj" />
+  <Project Path="Mk.Host/Mk.Host.csproj" />
+  <Project Path="Mk.Kernel/Mk.Kernel.csproj" />
   <Project Path="Mk.Plugins.Exports/Mk.Plugins.Exports.csproj" />
-  <Project Path="Mk.Plugins.FraisVirement/Mk.Plugins.FraisVirement.csproj" />
-  <Project Path="Mk.Plugins.ListeNoire/Mk.Plugins.ListeNoire.csproj" />
-  <Project Path="Mk.Plugins.PlafondNocturne/Mk.Plugins.PlafondNocturne.csproj" />
+  <Project Path="Mk.Plugins.TransferFees/Mk.Plugins.TransferFees.csproj" />
+  <Project Path="Mk.Plugins.Blocklist/Mk.Plugins.Blocklist.csproj" />
+  <Project Path="Mk.Plugins.NightLimit/Mk.Plugins.NightLimit.csproj" />
   <Project Path="Mk.Tests/Mk.Tests.csproj" />
 </Solution>

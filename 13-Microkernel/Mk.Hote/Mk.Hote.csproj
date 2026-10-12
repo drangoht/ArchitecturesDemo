@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <!-- L'hôte : expose le noyau en HTTP. Il ne référence aucun plugin. -->
-
-  <ItemGroup>
-    <ProjectReference Include="..\Mk.Noyau\Mk.Noyau.csproj" />
-  </ItemGroup>
-
-</Project>

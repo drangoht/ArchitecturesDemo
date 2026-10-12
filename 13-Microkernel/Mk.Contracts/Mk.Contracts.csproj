@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The plugins' SDK: the ONLY types shared between the kernel and the plugins.
+    The plugins reference it without copying it (Private="false"): at run time, they use the kernel's copy.
+  -->
+
+</Project>

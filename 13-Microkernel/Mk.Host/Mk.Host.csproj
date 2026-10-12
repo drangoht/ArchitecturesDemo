@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The host: exposes the kernel over HTTP. It references no plugin. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mk.Kernel\Mk.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

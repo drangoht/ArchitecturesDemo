@@ -1,0 +1,51 @@
+# Build the whole solution first (the plugins are produced in 13-Microkernel\plugins\).
+@base = http://localhost:5112
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+@carla = 33333333-3333-3333-3333-333333333333
+
+### Loaded plugins: name, state, extension points
+GET {{base}}/admin/plugins
+
+### Transfer of 300 €: the TransferFees plugin adds 0.30 € of fees
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 300 }
+
+### Transfer to Carla: refused by the Blocklist plugin
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{carla}}", "amount": 10 }
+
+### Withdrawal of 250 €: refused by NightLimit between 10 pm and 6 am, accepted the rest of the time
+#   (change "start"/"end" in plugins\Mk.Plugins.NightLimit\plugin.json: reloaded automatically)
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 250 }
+
+### Statement in CSV format (Exports plugin)
+GET {{base}}/accounts/{{alice}}/statement?format=csv
+
+### Statement in QIF format (same plugin, another extension)
+GET {{base}}/accounts/{{alice}}/statement?format=qif
+
+### Unknown format: the response lists the formats provided by the plugins
+GET {{base}}/accounts/{{alice}}/statement?format=pdf
+
+### Disable a plugin without restarting: no more fees
+POST {{base}}/admin/plugins/TransferFees/disable
+
+###
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 300 }
+
+### Enable it again
+POST {{base}}/admin/plugins/TransferFees/enable
+
+### Reload all the plugins (the old contexts are unloaded)
+POST {{base}}/admin/plugins/reload

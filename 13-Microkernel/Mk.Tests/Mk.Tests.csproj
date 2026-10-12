@@ -16,11 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Mk.Hote\Mk.Hote.csproj" />
-    <!-- Les plugins ne sont PAS référencés comme bibliothèques : on s'assure seulement qu'ils sont compilés avant les tests. -->
-    <ProjectReference Include="..\Mk.Plugins.FraisVirement\Mk.Plugins.FraisVirement.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Mk.Plugins.PlafondNocturne\Mk.Plugins.PlafondNocturne.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Mk.Plugins.ListeNoire\Mk.Plugins.ListeNoire.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mk.Host\Mk.Host.csproj" />
+    <!-- The plugins are NOT referenced as libraries: we only make sure they are built before the tests. -->
+    <ProjectReference Include="..\Mk.Plugins.TransferFees\Mk.Plugins.TransferFees.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mk.Plugins.NightLimit\Mk.Plugins.NightLimit.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Mk.Plugins.Blocklist\Mk.Plugins.Blocklist.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Mk.Plugins.Exports\Mk.Plugins.Exports.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

@@ -1,40 +1,40 @@
 using System.Globalization;
 using System.Text;
-using Mk.Contrats;
+using Mk.Contracts;
 
 namespace Mk.Plugins.Exports;
 
-/// <summary>Point d'extension « format de relevé » : CSV, pour un tableur.</summary>
-public sealed class ExportCsv : IFormatReleve
+/// <summary>"Statement format" extension point: CSV, for a spreadsheet.</summary>
+public sealed class CsvExport : IStatementFormat
 {
-    public string Nom => "ExportCsv";
-    public string Description => "Relevé au format CSV (séparateur point-virgule).";
+    public string Name => "CsvExport";
+    public string Description => "Statement in CSV format (semicolon separator).";
     public string Format => "csv";
-    public string TypeMime => "text/csv";
+    public string MimeType => "text/csv";
 
-    public string Produire(ReleveCompte releve)
+    public string Produce(AccountStatement statement)
     {
-        var csv = new StringBuilder("date;libelle;montant;solde\n");
-        foreach (var ligne in releve.Lignes)
+        var csv = new StringBuilder("date;label;amount;balance\n");
+        foreach (var line in statement.Lines)
             csv.Append(CultureInfo.InvariantCulture,
-                $"{ligne.Date:yyyy-MM-dd HH:mm};{ligne.Libelle};{ligne.Montant:0.00};{ligne.SoldeApres:0.00}\n");
+                $"{line.Date:yyyy-MM-dd HH:mm};{line.Label};{line.Amount:0.00};{line.BalanceAfter:0.00}\n");
         return csv.ToString();
     }
 }
 
-/// <summary>Point d'extension « format de relevé » : QIF, le format d'échange historique des logiciels de comptes.</summary>
-public sealed class ExportQif : IFormatReleve
+/// <summary>"Statement format" extension point: QIF, the historic exchange format of personal finance software.</summary>
+public sealed class QifExport : IStatementFormat
 {
-    public string Nom => "ExportQif";
-    public string Description => "Relevé au format QIF (Quicken Interchange Format).";
+    public string Name => "QifExport";
+    public string Description => "Statement in QIF format (Quicken Interchange Format).";
     public string Format => "qif";
-    public string TypeMime => "application/qif";
+    public string MimeType => "application/qif";
 
-    public string Produire(ReleveCompte releve)
+    public string Produce(AccountStatement statement)
     {
         var qif = new StringBuilder("!Type:Bank\n");
-        foreach (var ligne in releve.Lignes)
-            qif.Append(CultureInfo.InvariantCulture, $"D{ligne.Date:MM/dd/yyyy}\nT{ligne.Montant:0.00}\nP{ligne.Libelle}\n^\n");
+        foreach (var line in statement.Lines)
+            qif.Append(CultureInfo.InvariantCulture, $"D{line.Date:MM/dd/yyyy}\nT{line.Amount:0.00}\nP{line.Label}\n^\n");
         return qif.ToString();
     }
 }
