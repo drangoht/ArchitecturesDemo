@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE SIMULATED SERVERLESS PLATFORM: it plays the role of AWS Lambda, Azure Functions or Google Cloud Functions.
+    For real, this code is never written: it is rented. It is written here to make visible what the provider does
+    (instances, cold starts, scaling, billing, managed services).
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

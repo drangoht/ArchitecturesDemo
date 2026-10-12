@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Runs the simulated platform locally, with the functions deployed on it (the equivalent of "func start"). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sls.Functions\Sls.Functions.csproj" />
+  </ItemGroup>
+
+</Project>

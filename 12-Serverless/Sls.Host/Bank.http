@@ -1,0 +1,86 @@
+# Look at the response headers: X-Instance, X-Cold-Start, X-Duration-Ms.
+@base = http://localhost:5111
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+@carla = 33333333-3333-3333-3333-333333333333
+
+############ Cold start, scaling out, scaling to zero ############
+
+### 1st call: cold start (≈ 600 ms more). Run again right away: warm instance, a few ms.
+GET {{base}}/accounts/{{alice}}
+
+### Instance memory vs managed service: run several times, then wait 20 s (recycling) and run again
+GET {{base}}/visits
+
+############ Asynchronous processing through a queue ############
+
+### The transfer is accepted (202) then executed by another function, triggered by the queue
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 250 }
+
+### Track the transfer (replace the identifier with the one returned above)
+GET {{base}}/transfers/00000000-0000-0000-0000-000000000000
+
+### Bob's notifications
+GET {{base}}/accounts/{{bob}}/notifications
+
+############ Fan-out: an uploaded file → one instance per transfer ############
+
+### Upload a file of 8 transfers: ProcessImport splits it, ExecuteTransfer scales up to several instances
+POST {{base}}/imports
+Content-Type: text/plain
+
+source;target;amount
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;10
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;20
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;30
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;40
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;50
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;60
+33333333-3333-3333-3333-333333333333;11111111-1111-1111-1111-111111111111;70
+33333333-3333-3333-3333-333333333333;22222222-2222-2222-2222-222222222222;80
+
+### Statistics: look at ExecuteTransfer's "peakInstances"
+GET {{base}}/platform/functions
+
+############ Failures: retries and poison messages ############
+
+### Simulate a failure of the text message provider (setting changed without redeploying)
+PUT {{base}}/platform/settings/Sms:Down
+Content-Type: application/json
+
+{ "value": "true" }
+
+### Make a transfer: it succeeds, but its notifications fail 3 times then go to "notifications-poison"
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{carla}}", "target": "{{alice}}", "amount": 5 }
+
+### Queues: see notifications-poison (wait ~2 s)
+GET {{base}}/platform/queues
+
+### Repair, then replay the poison messages
+PUT {{base}}/platform/settings/Sms:Down
+Content-Type: application/json
+
+{ "value": "false" }
+
+###
+POST {{base}}/platform/queues/notifications-poison/replay
+
+############ Provider console ############
+
+### Fire the timer right away (otherwise: every 30 s)
+POST {{base}}/platform/timers/ProduceReport/fire
+
+### Stored objects (imports and reports)
+GET {{base}}/platform/storage
+
+### Centralized log
+GET {{base}}/platform/log?count=30
+
+### Bill: per invocation and per GB-second
+GET {{base}}/platform/bill

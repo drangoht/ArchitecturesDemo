@@ -1,6 +1,6 @@
 <Solution>
-  <Project Path="Sls.Fonctions/Sls.Fonctions.csproj" />
-  <Project Path="Sls.Hote/Sls.Hote.csproj" />
-  <Project Path="Sls.Plateforme/Sls.Plateforme.csproj" />
+  <Project Path="Sls.Functions/Sls.Functions.csproj" />
+  <Project Path="Sls.Host/Sls.Host.csproj" />
+  <Project Path="Sls.Platform/Sls.Platform.csproj" />
   <Project Path="Sls.Tests/Sls.Tests.csproj" />
 </Solution>

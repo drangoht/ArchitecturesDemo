@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE CODE YOU ACTUALLY WRITE with serverless: short, stateless functions, triggered by events.
+    Only dependency: the platform's "SDK" (here Sls.Platform; for real Amazon.Lambda.Core or Microsoft.Azure.Functions.Worker).
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sls.Platform\Sls.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sls.Tests" />
+  </ItemGroup>
+
+</Project>

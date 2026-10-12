@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <!-- Fait tourner la plateforme simulée en local, avec les fonctions déployées dessus (l'équivalent de « func start »). -->
-
-  <ItemGroup>
-    <ProjectReference Include="..\Sls.Fonctions\Sls.Fonctions.csproj" />
-  </ItemGroup>
-
-</Project>

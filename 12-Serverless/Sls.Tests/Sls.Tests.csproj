@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sls.Hote\Sls.Hote.csproj" />
+    <ProjectReference Include="..\Sls.Host\Sls.Host.csproj" />
   </ItemGroup>
 
 </Project>
