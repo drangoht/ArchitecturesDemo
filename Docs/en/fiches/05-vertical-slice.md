@@ -8,9 +8,9 @@
 
 ```mermaid
 flowchart TB
-    P["Program.cs"] --> O["OuvrirCompte.cs"] & C["ConsulterCompte.cs"] & R["RetirerArgent.cs"] & V["EffectuerVirement.cs"]
-    R & V --> D["Domain/Compte<br/>(shared rule)"]
-    O & C & R & V --> DB[("BanqueDbContext")]
+    P["Program.cs"] --> O["OpenAccount.cs"] & C["GetAccount.cs"] & R["WithdrawMoney.cs"] & V["MakeTransfer.cs"]
+    R & V --> D["Domain/Account<br/>(shared rule)"]
+    O & C & R & V --> DB[("BankDbContext")]
 ```
 
 ## Key points

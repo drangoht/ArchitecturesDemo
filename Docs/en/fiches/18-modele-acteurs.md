@@ -6,7 +6,7 @@
 > at a time**; no locks, and an actor that crashes is **replaced**.
 
 **Family**: system decomposition · **Origin**: Carl Hewitt, 1973; popularized by Erlang ·
-**Demo**: [`18-ModeleActeurs`](../../../18-ModeleActeurs) (port 5118; `/systeme` to observe and trigger failures) ·
+**Demo**: [`18-ActorModel`](../../../18-ActorModel) (port 5118; `/system` to observe and trigger failures) ·
 📖 [Full page](../18-modele-acteurs.md) · 🌐 [Français](../../fiches/18-modele-acteurs.md)
 
 ```mermaid

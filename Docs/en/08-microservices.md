@@ -12,29 +12,28 @@
 
 It is [demo 7](07-monolithe-modulaire.md) cut into processes. Everything that was free in the monolith — a method
 call, a transaction, an in-memory event — now goes through the **network, which can fail**. Most of this demo's code
-is there to handle those failures. (In the code: *Passerelle* = gateway, *Comptes* = accounts, *Virements* =
-transfers, *Courtier* = broker, *Lanceur* = launcher.)
+is there to handle those failures.
 
 ```mermaid
 flowchart LR
     Client(["Client"])
     subgraph Systeme["5 processes"]
-        P["Micro.Passerelle<br/>:5200<br/>API gateway"]
-        C["Micro.Comptes<br/>:5201"]
-        V["Micro.Virements<br/>:5202"]
+        P["Micro.Gateway<br/>:5200<br/>API gateway"]
+        C["Micro.Accounts<br/>:5201"]
+        V["Micro.Transfers<br/>:5202"]
         N["Micro.Notifications<br/>:5203"]
-        K["Micro.Courtier<br/>:5209<br/>messages"]
+        K["Micro.Broker<br/>:5209<br/>messages"]
         DC[("Accounts<br/>database")]
         DV[("Transfers<br/>database")]
         DN[("Notifications<br/>database")]
     end
     Client -->|"HTTP"| P
-    P -->|"/comptes"| C
-    P -->|"/virements"| V
+    P -->|"/accounts"| C
+    P -->|"/transfers"| V
     P -->|"/notifications"| N
-    V -->|"HTTP /interne/…<br/>retry, timeout,<br/>circuit breaker"| C
-    C -. "outbox → publishes<br/>retrait-effectue" .-> K
-    V -. "outbox → publishes<br/>virement-effectue" .-> K
+    V -->|"HTTP /internal/…<br/>retry, timeout,<br/>circuit breaker"| C
+    C -. "outbox → publishes<br/>withdrawal-made" .-> K
+    V -. "outbox → publishes<br/>transfer-made" .-> K
     K -. "delivers (at least once)" .-> N
     C --- DC
     V --- DV
@@ -43,7 +42,7 @@ flowchart LR
 
 | Service | Role | Specifics |
 |---|---|---|
-| **Gateway** | Single entry point for clients | Only forwards the public routes; `/interne/…` answers 404; aggregated `GET /sante` (health) |
+| **Gateway** | Single entry point for clients | Only forwards the public routes; `/internal/…` answers 404; aggregated `GET /health` (health) |
 | **Accounts** | Account keeping | **Idempotent** internal API (`operationId`); **outbox** |
 | **Transfers** | Orchestrates a transfer | **Resilient** HTTP client; **saga** with a status and **compensation**; outbox |
 | **Notifications** | Sends the notifications | Knows no service; ignores **duplicates** (`Message-Id`) |
@@ -63,7 +62,7 @@ The code is quoted exactly as it is, French comments included.
 
 The network can fail, so the call is protected: retry (including on POST, safe because the calls carry an idempotent
 `operationId`), a timeout per attempt, and a circuit breaker so as not to insist on a service that is down.
-([Micro.Virements/Program.cs](../../08-Microservices/Micro.Virements/Program.cs))
+([Micro.Transfers/Program.cs](../../08-Microservices/Micro.Transfers/Program.cs))
 
 ```csharp
 // Calls to the Accounts service: the network can fail, so we protect ourselves.
@@ -79,7 +78,7 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
 ```
 
 The client has its **own copy** of the remote model: no library shared with the Accounts service
-([ClientComptes.cs](../../08-Microservices/Micro.Virements/ClientComptes.cs)):
+([AccountsClient.cs](../../08-Microservices/Micro.Transfers/AccountsClient.cs)):
 
 ```csharp
 // LOCAL representation of an account: no library shared with the Accounts service,
@@ -91,7 +90,7 @@ internal record RemoteAccount(Guid Id, string Owner, decimal Balance);
 
 If the response is lost, the retry sends the same debit again. Without precautions: a double debit. A call replayed
 with the same `operationId` doesn't debit twice.
-([Micro.Comptes/Endpoints.cs](../../08-Microservices/Micro.Comptes/Endpoints.cs))
+([Micro.Accounts/Endpoints.cs](../../08-Microservices/Micro.Accounts/Endpoints.cs))
 
 ```csharp
 /// Internal API, called by the other services (the gateway does not expose it).
@@ -109,7 +108,7 @@ sequenceDiagram
     participant V as Transfers
     participant R as Resilience handler
     participant C as Accounts
-    V->>R: POST /interne/comptes/alice/debits {operationId: "v42-debit", 250}
+    V->>R: POST /internal/accounts/alice/debits {operationId: "v42-debit", 250}
     R->>C: attempt 1
     C->>C: debit applied, operation remembered
     C--xR: response lost (timeout)
@@ -124,7 +123,7 @@ sequenceDiagram
 
 The transfer is saved **before** the calls; its status tells where it stands if something fails. Step 2: credit the
 target; on failure, compensation (the source is credited back).
-([Micro.Virements/Endpoints.cs](../../08-Microservices/Micro.Virements/Endpoints.cs))
+([Micro.Transfers/Endpoints.cs](../../08-Microservices/Micro.Transfers/Endpoints.cs))
 
 ```csharp
 // Step 2: credit the target. On failure: compensation (the source is credited back).
@@ -143,27 +142,25 @@ if (creditFailure is not null)
 }
 ```
 
-(Statuses: *EnCours* = in progress, *Refuse* = refused, *Effectue* = done, *Annule* = cancelled, *AReprendre* = to resume.)
-
 ```mermaid
 stateDiagram-v2
-    [*] --> EnCours : transfer saved
-    EnCours --> Refuse : account not found / insufficient balance
-    EnCours --> AReprendre : Accounts unreachable during the debit
-    EnCours --> Effectue : debit + credit OK, event in the outbox
-    EnCours --> Annule : credit refused, debit compensated
-    EnCours --> AReprendre : credit AND compensation impossible
-    Refuse --> [*]
-    Effectue --> [*]
-    Annule --> [*]
-    AReprendre --> [*] : manual or automatic recovery (idempotent)
+    [*] --> InProgress : transfer saved
+    InProgress --> Refused : account not found / insufficient balance
+    InProgress --> ToResume : Accounts unreachable during the debit
+    InProgress --> Done : debit + credit OK, event in the outbox
+    InProgress --> Cancelled : credit refused, debit compensated
+    InProgress --> ToResume : credit AND compensation impossible
+    Refused --> [*]
+    Done --> [*]
+    Cancelled --> [*]
+    ToResume --> [*] : manual or automatic recovery (idempotent)
 ```
 
 ### 4. The outbox: never lose an event
 
 The data and the message are saved in **the same transaction** (both or neither); a relay then sends the message to
 the broker.
-([Micro.Comptes/Endpoints.cs](../../08-Microservices/Micro.Comptes/Endpoints.cs), [RelaisOutbox.cs](../../08-Microservices/Micro.Comptes/RelaisOutbox.cs))
+([Micro.Accounts/Endpoints.cs](../../08-Microservices/Micro.Accounts/Endpoints.cs), [OutboxRelay.cs](../../08-Microservices/Micro.Accounts/OutboxRelay.cs))
 
 ```csharp
 // Change AND event saved together: either both, or neither.
@@ -188,7 +185,7 @@ foreach (var message in pending)
 
 Exponential backoff: 0.25 s, 0.5 s, 1 s, 2 s… capped at 30 s; after the maximum number of attempts, the message goes
 to the dead letters.
-([Courtier.cs](../../08-Microservices/Micro.Courtier/Courtier.cs))
+([Broker.cs](../../08-Microservices/Micro.Broker/Broker.cs))
 
 ```csharp
 // Exponential backoff: 0.25 s, 0.5 s, 1 s, 2 s… capped at 30 s.
@@ -229,12 +226,12 @@ sequenceDiagram
     participant C as Accounts
     participant K as Broker
     participant N as Notifications (stopped)
-    Client->>P: POST /virements
-    P->>V: POST /virements
+    Client->>P: POST /transfers
+    P->>V: POST /transfers
     V->>C: debit + credit (HTTP)
-    V->>V: status Effectue + outbox (same transaction)
-    V-->>Client: 200 Effectue
-    V->>K: outbox relay → virement-effectue
+    V->>V: status Done + outbox (same transaction)
+    V-->>Client: 200 Done
+    V->>K: outbox relay → transfer-made
     K-xN: delivery: connection refused
     K->>K: retry in 0.25 s, 0.5 s, 1 s…
     Client->>P: GET /notifications/bob
@@ -243,17 +240,17 @@ sequenceDiagram
     K->>N: delivery succeeds
     N->>N: notifications created
     Client->>P: GET /notifications/bob
-    P-->>Client: "Virement de 250,00 € reçu de Alice."
+    P-->>Client: "Transfer of 250,00 € received from Alice."
 ```
 
 ---
 
 ## The tests
 
-Each service is tested **alone**: the others are replaced by **fake HTTP servers** (`FauxHttp`). In this test, the
+Each service is tested **alone**: the others are replaced by **fake HTTP servers** (`FakeHttp`). In this test, the
 1st debit call fails (503) and the automatic retry succeeds; two debit calls… with the SAME `operationId`, so
 Accounts debits only once.
-([VirementsTests.cs](../../08-Microservices/Micro.Tests/VirementsTests.cs))
+([TransfersTests.cs](../../08-Microservices/Micro.Tests/TransfersTests.cs))
 
 ```csharp
 [Fact]
@@ -274,9 +271,9 @@ public async Task A_transient_failure_is_absorbed_by_the_retry_without_double_de
 }
 ```
 
-Other tests: idempotency of the internal API, outbox when the broker is down, compensation, `AReprendre` when Accounts
-is unreachable (1 call + 3 retries), a broker that redelivers, a gateway that hides `/interne/…`.
-The full journey is checked by running the system (`dotnet run --project Micro.Lanceur`).
+Other tests: idempotency of the internal API, outbox when the broker is down, compensation, `ToResume` when Accounts
+is unreachable (1 call + 3 retries), a broker that redelivers, a gateway that hides `/internal/…`.
+The full journey is checked by running the system (`dotnet run --project Micro.Launcher`).
 
 ---
 

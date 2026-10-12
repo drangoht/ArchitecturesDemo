@@ -4,7 +4,7 @@
 > **network** (HTTP + messages), no shared code.
 
 **Family**: system decomposition · **Demo**: [`08-Microservices`](../../../08-Microservices) (gateway 5200,
-services 5201–5203, broker 5209; start everything with `Micro.Lanceur`) · 📖 [Full page](../08-microservices.md) ·
+services 5201–5203, broker 5209; start everything with `Micro.Launcher`) · 📖 [Full page](../08-microservices.md) ·
 🌐 [Français](../../fiches/08-microservices.md)
 
 ```mermaid
@@ -22,7 +22,7 @@ flowchart LR
 - Demo 7 cut into processes: method calls, transactions and in-memory events now go through **a network that can fail**.
 - The contract is the **exchanged JSON**: no references between services.
 - Mandatory mechanisms: **idempotency** (`operationId`, `Message-Id`), **outbox**, resilient client,
-  **saga + compensation**, a gateway that hides the `/interne/…` routes.
+  **saga + compensation**, a gateway that hides the `/internal/…` routes.
 
 | ✅ When to use it | ❌ Avoid if |
 |---|---|

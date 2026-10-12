@@ -95,7 +95,7 @@ sequenceDiagram
     N->>P: POST /Transfers/New (champs + jeton)
     P->>P: routage, jeton anti-falsification
     P->>P: liaison de modèle et validation → ModelState
-    P->>C: Nouveau(formulaire)
+    P->>C: New(form)
     C->>B: TransferAsync(…)
     B-->>C: Transfer
     C-->>N: 302 vers /Accounts/Detail/{id} (+ message dans TempData)

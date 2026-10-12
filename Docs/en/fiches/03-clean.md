@@ -9,10 +9,10 @@
 
 ```mermaid
 flowchart TB
-    C["Controller"] -->|DemandeRetrait| IE["IRetraitEntree"]
-    IE -.-> I["RetraitInteracteur"]
-    I --> G["IComptesPasserelle"]
-    I -->|"Succes / Refus"| OS["IRetraitSortie"]
+    C["Controller"] -->|WithdrawalRequest| IE["IWithdrawalInput"]
+    IE -.-> I["WithdrawalInteractor"]
+    I --> G["IAccountsGateway"]
+    I -->|"Success / Refused"| OS["IWithdrawalOutput"]
     OS -.-> P["HTTP presenter"] --> V["View"]
 ```
 

@@ -6,7 +6,7 @@
 > memory**, replicated between units, and the database is updated in the background.
 
 **Family**: system decomposition · **Origin**: *tuple spaces*; described notably by Mark Richards ·
-**Demo**: [`19-SpaceBased`](../../../19-SpaceBased) (port 5119; `/grille` to observe and trigger failures) ·
+**Demo**: [`19-SpaceBased`](../../../19-SpaceBased) (port 5119; `/grid` to observe and trigger failures) ·
 📖 [Full page](../19-space-based.md) · 🌐 [Français](../../fiches/19-space-based.md)
 
 ```mermaid

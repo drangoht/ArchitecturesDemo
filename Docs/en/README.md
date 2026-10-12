@@ -9,7 +9,7 @@ bank: open an account, look it up, withdraw, transfer — so that the *shape* of
 features.
 
 > The demos' code (folders, projects, classes, routes, comments) is written in French. Identifiers such as
-> `ComptesService` (accounts service) or `IRetirerArgent` (withdraw money) are quoted as they are.
+> `AccountsService` (accounts service) or `IWithdrawMoney` (withdraw money) are quoted as they are.
 
 > 📗 **Not a developer?** A no-code version, with simple words and everyday images:
 > [architectures explained to everyone](pour-tous/README.md).
@@ -33,28 +33,28 @@ features.
 
 | # | Architecture | French name | In one sentence | Cheat sheet | Full page | Code |
 |---|---|---|---|---|---|---|
-| 0 | **Layered (N-tier)** | Couches | Presentation → Business → Data: dependencies flow down to the database | [0](fiches/00-couches.md) | [EN](00-couches.md) | [`00-Couches`](../../00-Couches) |
-| 1 | **Hexagonal** (ports & adapters) | Hexagonale | The business at the center, plugged into the world through ports and interchangeable adapters | [1](fiches/01-hexagonale.md) | [EN](01-hexagonale.md) | [`01-Hexagonale`](../../01-Hexagonale) |
+| 0 | **Layered (N-tier)** | Couches | Presentation → Business → Data: dependencies flow down to the database | [0](fiches/00-couches.md) | [EN](00-couches.md) | [`00-Layered`](../../00-Layered) |
+| 1 | **Hexagonal** (ports & adapters) | Hexagonale | The business at the center, plugged into the world through ports and interchangeable adapters | [1](fiches/01-hexagonale.md) | [EN](01-hexagonale.md) | [`01-Hexagonal`](../../01-Hexagonal) |
 | 2 | **Onion** | — | Concentric layers, every dependency points toward the domain | [2](fiches/02-onion.md) | [EN](02-onion.md) | [`02-Onion`](../../02-Onion) |
 | 3 | **Clean Architecture** | — | One interactor per use case; the result goes out through a *presenter* | [3](fiches/03-clean.md) | [EN](03-clean.md) | [`03-Clean`](../../03-Clean) |
-| 4 | **Functional Core, Imperative Shell** | — | 100% pure rules that decide; a shell that does the input/output | [4](fiches/04-coeur-fonctionnel.md) | [EN](04-coeur-fonctionnel.md) | [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) |
+| 4 | **Functional Core, Imperative Shell** | — | 100% pure rules that decide; a shell that does the input/output | [4](fiches/04-coeur-fonctionnel.md) | [EN](04-coeur-fonctionnel.md) | [`04-FunctionalCore`](../../04-FunctionalCore) |
 | 5 | **Vertical Slice** | — | One file per feature, from the route down to the database | [5](fiches/05-vertical-slice.md) | [EN](05-vertical-slice.md) | [`05-VerticalSlice`](../../05-VerticalSlice) |
-| 6 | **Package by Component** | — | One public interface per component, everything else `internal` | [6](fiches/06-composants.md) | [EN](06-composants.md) | [`06-Composants`](../../06-Composants) |
-| 7 | **Modular Monolith** | Monolithe modulaire | Autonomous modules, connected by contracts and events, in a single deployment | [7](fiches/07-monolithe-modulaire.md) | [EN](07-monolithe-modulaire.md) | [`07-MonolitheModulaire`](../../07-MonolitheModulaire) |
+| 6 | **Package by Component** | — | One public interface per component, everything else `internal` | [6](fiches/06-composants.md) | [EN](06-composants.md) | [`06-Components`](../../06-Components) |
+| 7 | **Modular Monolith** | Monolithe modulaire | Autonomous modules, connected by contracts and events, in a single deployment | [7](fiches/07-monolithe-modulaire.md) | [EN](07-monolithe-modulaire.md) | [`07-ModularMonolith`](../../07-ModularMonolith) |
 | 8 | **Microservices** | — | One process per service, HTTP + messages, no shared code | [8](fiches/08-microservices.md) | [EN](08-microservices.md) | [`08-Microservices`](../../08-Microservices) |
 | 9 | **CQRS** | — | One model to write, another to read, connected by events | [9](fiches/09-cqrs.md) | [EN](09-cqrs.md) | [`09-CQRS`](../../09-CQRS) |
 | 10 | **Event Sourcing** | — | Store the events, recompute the state by replaying them | [10](fiches/10-event-sourcing.md) | [EN](10-event-sourcing.md) | [`10-EventSourcing`](../../10-EventSourcing) |
 | 11 | **Domain-Driven Design** | — | Model the business in its own language; split it into bounded contexts | [11](fiches/11-ddd.md) | [EN](11-ddd.md) | [`11-DDD`](../../11-DDD) |
 | 12 | **Serverless** | — | Stateless functions triggered by events, billed per use | [12](fiches/12-serverless.md) | [EN](12-serverless.md) | [`12-Serverless`](../../12-Serverless) |
 | 13 | **Microkernel** (plug-ins) | — | A minimal core and plug-ins loaded, unloaded and updated at runtime | [13](fiches/13-microkernel.md) | [EN](13-microkernel.md) | [`13-Microkernel`](../../13-Microkernel) |
-| 14 | **Orchestrated Saga** | Saga orchestrée | An orchestrator drives a multi-service process: persistent state, retries, waits, compensation | [14](fiches/14-saga-orchestree.md) | [EN](14-saga-orchestree.md) | [`14-SagaOrchestree`](../../14-SagaOrchestree) |
+| 14 | **Orchestrated Saga** | Saga orchestrée | An orchestrator drives a multi-service process: persistent state, retries, waits, compensation | [14](fiches/14-saga-orchestree.md) | [EN](14-saga-orchestree.md) | [`14-OrchestratedSaga`](../../14-OrchestratedSaga) |
 | 15 | **Multi-tenant** (SaaS) | — | A single application for several customers: isolated data, rules and quotas per customer | [15](fiches/15-multi-tenant.md) | [EN](15-multi-tenant.md) | [`15-MultiTenant`](../../15-MultiTenant) |
 | 16 | **Backend for Frontend** (BFF) | — | One backend per client application: aggregation, screen-tailored responses, token kept on the server | [16](fiches/16-bff.md) | [EN](16-bff.md) | [`16-BFF`](../../16-BFF) |
 | 17 | **Cell-Based Architecture** | Architecture cellulaire | Several complete copies of the system, each for part of the customers: bounded blast radius | [17](fiches/17-cell-based.md) | [EN](17-cell-based.md) | [`17-CellBased`](../../17-CellBased) |
-| 18 | **Actor Model** | Modèle d'acteurs | Thousands of actors with private state, talking only through messages handled one at a time; crashed ones are replaced | [18](fiches/18-modele-acteurs.md) | [EN](18-modele-acteurs.md) | [`18-ModeleActeurs`](../../18-ModeleActeurs) |
+| 18 | **Actor Model** | Modèle d'acteurs | Thousands of actors with private state, talking only through messages handled one at a time; crashed ones are replaced | [18](fiches/18-modele-acteurs.md) | [EN](18-modele-acteurs.md) | [`18-ActorModel`](../../18-ActorModel) |
 | 19 | **Space-Based Architecture** | Architecture spatiale | Data in memory, replicated between units added at will; the database updated in the background | [19](fiches/19-space-based.md) | [EN](19-space-based.md) | [`19-SpaceBased`](../../19-SpaceBased) |
 | 20 | **Pipeline** (pipes & filters) | — | Independent filters connected by bounded pipes, all working at the same time on a stream of data | [20](fiches/20-pipeline.md) | [EN](20-pipeline.md) | [`20-Pipeline`](../../20-Pipeline) |
-| 21 | **Event-Driven Choreography** | Chorégraphie | The same transfer as demo 14, without an orchestrator: each service reacts to the others' events | [21](fiches/21-choregraphie.md) | [EN](21-choregraphie.md) | [`21-Choregraphie`](../../21-Choregraphie) |
+| 21 | **Event-Driven Choreography** | Chorégraphie | The same transfer as demo 14, without an orchestrator: each service reacts to the others' events | [21](fiches/21-choregraphie.md) | [EN](21-choregraphie.md) | [`21-Choreography`](../../21-Choreography) |
 | 22 | **Strangler Fig** (progressive migration) | — | A façade in front of the legacy system takes its features away one route at a time in favor of the new one | [22](fiches/22-strangler-fig.md) | [EN](22-strangler-fig.md) | [`22-StranglerFig`](../../22-StranglerFig) |
 | 23 | **REST, gRPC, GraphQL** (API styles) | — | The same business exposed as resources, as procedures and as a graph queried by the client | [23](fiches/23-rest-grpc-graphql.md) | [EN](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) |
 | 24 | **MVC and MVVM** (presentation patterns) | — | The same screen in web MVC (one request, a discarded view) and in MVVM (a living ViewModel the view observes) | [24](fiches/24-mvc-mvvm.md) | [EN](24-mvc-mvvm.md) | [`24-MvcMvvm`](../../24-MvcMvvm) |
@@ -242,7 +242,7 @@ Each page shows its path through the architecture at hand.
 sequenceDiagram
     actor Client
     participant Systeme as Application
-    Client->>Systeme: POST /virements (Alice → Bob, €250)
+    Client->>Systeme: POST /transfers (Alice → Bob, €250)
     Systeme->>Systeme: check the rules (amount, balance, different accounts…)
     Systeme->>Systeme: debit Alice, credit Bob
     Systeme-->>Client: result (200, 202, 400, 404…)
@@ -262,5 +262,5 @@ dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 
-Each API contains a **`Banque.http`** file with the scenario's requests, to run from Visual Studio, Rider or VS Code
+Each API contains a **`Bank.http`** file with the scenario's requests, to run from Visual Studio, Rider or VS Code
 (REST Client extension). The [main README](../../README.en.md) details what to look at in each demo.

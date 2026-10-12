@@ -22,10 +22,10 @@ flowchart TB
     end
     subgraph V["VERTICAL: 1 file"]
         direction LR
-        s1["OuvrirCompte.cs<br/>route · validation<br/>logic · DB access"]
-        s2["ConsulterCompte.cs<br/>route · LINQ projection"]
-        s3["RetirerArgent.cs<br/>route · validation<br/>logic · DB access"]
-        s4["EffectuerVirement.cs<br/>route · validation<br/>logic · DB access"]
+        s1["OpenAccount.cs<br/>route · validation<br/>logic · DB access"]
+        s2["GetAccount.cs<br/>route · LINQ projection"]
+        s3["WithdrawMoney.cs<br/>route · validation<br/>logic · DB access"]
+        s4["MakeTransfer.cs<br/>route · validation<br/>logic · DB access"]
         s1 ~~~ s2 ~~~ s3 ~~~ s4
     end
     H ~~~ V
@@ -50,26 +50,26 @@ flowchart TB
 ```
 Vertical.Api/
 ├── Features/
-│   ├── Comptes/
-│   │   ├── OuvrirCompte.cs       ← transaction script: everything is in the file
-│   │   ├── ConsulterCompte.cs    ← read: direct LINQ projection
-│   │   └── RetirerArgent.cs      ← write: validation + rule + persistence
-│   └── Virements/
-│       └── EffectuerVirement.cs
-├── Domain/Compte.cs              ← only the SHARED rule
-├── Data/BanqueDbContext.cs       ← no repository on top
+│   ├── Accounts/
+│   │   ├── OpenAccount.cs       ← transaction script: everything is in the file
+│   │   ├── GetAccount.cs    ← read: direct LINQ projection
+│   │   └── WithdrawMoney.cs      ← write: validation + rule + persistence
+│   └── Transfers/
+│       └── MakeTransfer.cs
+├── Domain/Account.cs              ← only the SHARED rule
+├── Data/BankDbContext.cs       ← no repository on top
 └── Program.cs
 ```
 
 ```mermaid
 flowchart TB
-    P["Program.cs"] --> O["OuvrirCompte.Map"]
-    P --> C["ConsulterCompte.Map"]
-    P --> R["RetirerArgent.Map"]
-    P --> V["EffectuerVirement.Map"]
-    O --> DB[("BanqueDbContext")]
+    P["Program.cs"] --> O["OpenAccount.Map"]
+    P --> C["GetAccount.Map"]
+    P --> R["WithdrawMoney.Map"]
+    P --> V["MakeTransfer.Map"]
+    O --> DB[("BankDbContext")]
     C --> DB
-    R --> D["Domain/Compte.Retirer<br/>(shared rule)"]
+    R --> D["Domain/Account.Withdraw<br/>(shared rule)"]
     V --> D
     R --> DB
     V --> DB
@@ -84,7 +84,7 @@ The code is quoted exactly as it is, French comments and messages included.
 ### 1. A complete write slice
 
 To understand or change "withdraw money", you open **only this file**.
-([RetirerArgent.cs](../../05-VerticalSlice/Vertical.Api/Features/Comptes/RetirerArgent.cs))
+([WithdrawMoney.cs](../../05-VerticalSlice/Vertical.Api/Features/Accounts/WithdrawMoney.cs))
 
 ```csharp
 public static class WithdrawMoney
@@ -120,7 +120,7 @@ public static class WithdrawMoney
 ### 2. A read slice, with its own technique
 
 A direct projection into the response, read-only, without going through the domain.
-([ConsulterCompte.cs](../../05-VerticalSlice/Vertical.Api/Features/Comptes/ConsulterCompte.cs))
+([GetAccount.cs](../../05-VerticalSlice/Vertical.Api/Features/Accounts/GetAccount.cs))
 
 ```csharp
 var account = await db.Accounts
@@ -140,9 +140,9 @@ var operations = await db.Operations
 
 ### 3. The domain: only what is shared
 
-The "sufficient balance" rule was first in `RetirerArgent`. When `EffectuerVirement` needed it, it was **moved up**
+The "sufficient balance" rule was first in `WithdrawMoney`. When `MakeTransfer` needed it, it was **moved up**
 into the entity. Only what deserves it is extracted into the domain.
-([Compte.cs](../../05-VerticalSlice/Vertical.Api/Domain/Compte.cs))
+([Account.cs](../../05-VerticalSlice/Vertical.Api/Domain/Account.cs))
 
 ```csharp
 /// <returns>null if the withdrawal is done, otherwise the reason for the refusal.</returns>
@@ -172,9 +172,9 @@ MakeTransfer.Map(app);
 
 ## The tests
 
-Mostly **integration tests per slice**, organized like the code (`Features/Comptes/RetirerArgentTests.cs`…), with the
+Mostly **integration tests per slice**, organized like the code (`Features/Accounts/WithdrawMoneyTests.cs`…), with the
 API started in memory and a fresh database per test. (The comments: the slice's validation, the domain rule.)
-([RetirerArgentTests.cs](../../05-VerticalSlice/Vertical.Tests/Features/Comptes/RetirerArgentTests.cs))
+([WithdrawMoneyTests.cs](../../05-VerticalSlice/Vertical.Tests/Features/Accounts/WithdrawMoneyTests.cs))
 
 ```csharp
 [Theory]
@@ -191,7 +191,7 @@ public async Task An_invalid_withdrawal_is_refused(int amount, HttpStatusCode ex
 }
 ```
 
-The tests reuse the slice's types (`RetirerArgent.Requete`, `RetirerArgent.Reponse`): the contract lives in the same
+The tests reuse the slice's types (`WithdrawMoney.Request`, `WithdrawMoney.Response`): the contract lives in the same
 place as the code.
 
 ---

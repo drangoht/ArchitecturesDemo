@@ -38,15 +38,15 @@ other).
 flowchart LR
     subgraph M["MICROSERVICES"]
         direction TB
-        CL1(["Client"]) -->|"POST /virements"| V1["Transfers service<br/>(always there)"]
+        CL1(["Client"]) -->|"POST /transfers"| V1["Transfers service<br/>(always there)"]
         V1 -->|"HTTP debit, credit"| C1["Accounts service"]
-        V1 -->|"200 Effectue"| CL1
+        V1 -->|"200 Done"| CL1
     end
     subgraph S["SERVERLESS"]
         direction TB
-        CL2(["Client"]) -->|"POST /virements"| D2["DemanderVirement"]
+        CL2(["Client"]) -->|"POST /transfers"| D2["RequestTransfer"]
         D2 -->|"202 + message"| Q2[["Transfers queue"]]
-        Q2 --> E2["ExecuterVirement<br/>(N instances)"]
+        Q2 --> E2["ExecuteTransfer<br/>(N instances)"]
         E2 --> T2[("Accounts table<br/>ETag")]
     end
     M ~~~ S
@@ -57,10 +57,10 @@ flowchart LR
 The code is quoted exactly as it is, French comments included.
 
 **Microservices**: the Transfers service makes the transfer **within the request**, calling Accounts over HTTP, and
-answers with the final status ([Micro.Virements/Endpoints.cs](../../../08-Microservices/Micro.Virements/Endpoints.cs)).
+answers with the final status ([Micro.Transfers/Endpoints.cs](../../../08-Microservices/Micro.Transfers/Endpoints.cs)).
 
 **Serverless**: the HTTP function **doesn't** make the transfer; it accepts it and hands it to a queue
-([Fonctions.cs](../../../12-Serverless/Sls.Fonctions/Fonctions.cs)):
+([Functions.cs](../../../12-Serverless/Sls.Functions/Functions.cs)):
 
 ```csharp
 /// <summary>HTTP: the transfer is NOT made here. It is accepted (202) and handed to a queue: immediate response.</summary>
@@ -68,7 +68,7 @@ public static async Task<HttpResponseData> Request(HttpRequestData request, Func
 ```
 
 There is no controller and no service `Program.cs`: a **manifest** declares who reacts to what
-([Deploiement.cs](../../../12-Serverless/Sls.Fonctions/Deploiement.cs)):
+([Deployment.cs](../../../12-Serverless/Sls.Functions/Deployment.cs)):
 
 ```csharp
 .Http("RequestTransfer", "POST", "/transfers", TransfersFunctions.Request)
@@ -80,7 +80,7 @@ There is no controller and no service `Program.cs`: a **manifest** declares who 
 
 **State**: a microservice can keep whatever it wants in memory while it runs. A function can't, and the demo shows it
 side by side (✗ instance memory, reset on every cold start; ✓ managed service, shared and durable)
-([Fonctions.cs](../../../12-Serverless/Sls.Fonctions/Fonctions.cs)):
+([Functions.cs](../../../12-Serverless/Sls.Functions/Functions.cs)):
 
 ```csharp
 // ✗ Instance memory: specific to THIS instance, reset at each cold start.
@@ -94,10 +94,10 @@ var global = await Concurrency.ModifyOrCreate(context.Table(Tables.Counters), "v
 
 **Concurrency**: in microservices, each service has its database and its transactions. In serverless, dozens of
 instances write to the same managed table: you write **only if nobody wrote in the meantime** (ETag), otherwise you
-reread and retry ([Modele.cs](../../../12-Serverless/Sls.Fonctions/Modele.cs)).
+reread and retry ([Model.cs](../../../12-Serverless/Sls.Functions/Model.cs)).
 
-**Scale**: an 8-line import produces 8 messages, hence **8 instances** of `ExecuterVirement` at the same time (measured:
-`picInstances = 8`), without configuring anything. On the microservices side, you would have to start more instances of
+**Scale**: an 8-line import produces 8 messages, hence **8 instances** of `ExecuteTransfer` at the same time (measured:
+`peakInstances = 8`), without configuring anything. On the microservices side, you would have to start more instances of
 the Transfers service yourself.
 
 ## How to choose

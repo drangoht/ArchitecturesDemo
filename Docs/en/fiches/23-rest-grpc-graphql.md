@@ -9,10 +9,10 @@ HTTP/1.1, gRPC 5250 over HTTP/2; Protobuf, gRPC and GraphQL hand-written) · �
 
 ```mermaid
 flowchart LR
-    APP(["Client"]) -->|JSON| R["REST<br/>/comptes…"]
+    APP(["Client"]) -->|JSON| R["REST<br/>/accounts…"]
     APP -->|JSON| Q["GraphQL<br/>POST /graphql"]
-    APP -->|Protobuf| G["gRPC<br/>banque.Banque/…"]
-    R & Q & G --> M["ServiceBancaire<br/>(unaware of all three)"]
+    APP -->|Protobuf| G["gRPC<br/>bank.Bank/…"]
+    R & Q & G --> M["BankService<br/>(unaware of all three)"]
 ```
 
 ## Key points

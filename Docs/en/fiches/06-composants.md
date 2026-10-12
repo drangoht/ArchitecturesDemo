@@ -4,13 +4,13 @@
 > the architecture.
 
 **Family**: system decomposition · **Origin**: Simon Brown, "The Missing Chapter" (*Clean Architecture*) ·
-**Demo**: [`06-Composants`](../../../06-Composants) (port 5106) · 📖 [Full page](../06-composants.md) ·
+**Demo**: [`06-Components`](../../../06-Components) (port 5106) · 📖 [Full page](../06-composants.md) ·
 🌐 [Français](../../fiches/06-composants.md)
 
 ```mermaid
 flowchart TB
-    Api["Composants.Api"] --> IC["IComptesComposant<br/>(public)"]
-    Api --> IV["IVirementsComposant<br/>(public)"]
+    Api["Components.Api"] --> IC["IAccountsComponent<br/>(public)"]
+    Api --> IV["ITransfersComponent<br/>(public)"]
     IV -.- VI["Transfers internals"] -->|"through the interface only"| IC
     IC -.- CI["Accounts internals"]
     CI --> DB1[("Accounts database")]

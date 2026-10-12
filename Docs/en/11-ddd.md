@@ -36,15 +36,14 @@ flowchart TB
 
 ## The strategic side: the context map
 
-Two **bounded contexts** model **the same reality differently** (*Tenue de compte* = Account Keeping, *Conformité* =
-Compliance):
+Two **bounded contexts** model **the same reality differently** (Account Keeping and Compliance):
 
 | | "Account Keeping" context | "Compliance" context |
 |---|---|---|
 | An account is… | a balance, a limit, movements | a **due diligence case**: observed transfers and alerts |
 | Currency | the account's currency (EUR, USD, CHF) | **always in euros** |
 | Concern | executing operations correctly | detecting money laundering and structuring |
-| Glossary | [LANGAGE.md](../../11-DDD/Ddd.TenueDeCompte.Domaine/LANGAGE.md) | [LANGAGE.md](../../11-DDD/Ddd.Conformite/LANGAGE.md) |
+| Glossary | [LANGUAGE.md](../../11-DDD/Ddd.AccountKeeping.Domain/LANGUAGE.md) | [LANGUAGE.md](../../11-DDD/Ddd.Compliance/LANGUAGE.md) |
 
 A single "Account" model for everyone would be **bloated**: each team would add its own fields.
 
@@ -52,19 +51,19 @@ A single "Account" model for everyone would be **bloated**: each team would add 
 flowchart TB
     H["LEGACY exchange system<br/>'EURUSD=10832;…'"]
     subgraph TDC["Account Keeping"]
-        ACL["Anti-corruption layer<br/>AdaptateurTauxDeChange"]
-        Dom["Domain<br/>Compte, Argent, Iban…"]
-        PL["Published language<br/>VirementEmis · ITenueDeCompteApi"]
+        ACL["Anti-corruption layer<br/>ExchangeRateAdapter"]
+        Dom["Domain<br/>Account, Money, Iban…"]
+        PL["Published language<br/>TransferSent · IAccountKeepingApi"]
         ACL --> Dom --> PL
     end
     subgraph CONF["Compliance"]
-        Surv["SurveillanceDesVirements<br/>(translation)"]
-        Dos["DossierDeVigilance · Alerte"]
+        Surv["TransferMonitoring<br/>(translation)"]
+        Dos["VigilanceFile · Alert"]
         Surv --> Dos
     end
     H -->|"upstream"| ACL
-    PL -->|"VirementEmis<br/>(event)"| Surv
-    Surv -->|"BloquerCompte<br/>(open host service)"| PL
+    PL -->|"TransferSent<br/>(event)"| Surv
+    Surv -->|"BlockAccount<br/>(open host service)"| PL
 
     classDef ext fill:#f6f8fa,stroke:#8c959f,stroke-dasharray: 5 5
     class H ext
@@ -72,10 +71,10 @@ flowchart TB
 
 | Relationship | In the demo | Why |
 |---|---|---|
-| **Anti-corruption layer** | `AdaptateurTauxDeChange` in front of the legacy exchange system | Its format (rate × 10,000, pairs from the euro, unknown currencies) must not pollute our model |
-| **Published language** | `Ddd.TenueDeCompte.Contrats`: `VirementEmis` in simple types | The other contexts don't see `Argent`, `Iban`…: the internal model can evolve |
-| **Open host service** | `ITenueDeCompteApi.BloquerCompte` | Compliance **requests** a block; Account Keeping is the one that executes it |
-| **Customer / supplier** | `MontantEnEuros` added to `VirementEmis` | The downstream context (Compliance) expressed a need to the upstream context |
+| **Anti-corruption layer** | `ExchangeRateAdapter` in front of the legacy exchange system | Its format (rate × 10,000, pairs from the euro, unknown currencies) must not pollute our model |
+| **Published language** | `Ddd.AccountKeeping.Contracts`: `TransferSent` in simple types | The other contexts don't see `Money`, `Iban`…: the internal model can evolve |
+| **Open host service** | `IAccountKeepingApi.BlockAccount` | Compliance **requests** a block; Account Keeping is the one that executes it |
+| **Customer / supplier** | `AmountInEuros` added to `TransferSent` | The downstream context (Compliance) expressed a need to the upstream context |
 
 ---
 
@@ -84,60 +83,60 @@ flowchart TB
 ```mermaid
 classDiagram
     direction LR
-    class Compte {
+    class Account {
         <<Aggregate root>>
-        +CompteId Id
+        +AccountId Id
         +Iban Iban
-        +NomTitulaire Titulaire
-        +Argent Solde
-        +Argent PlafondRetraitJournalier
-        +StatutCompte Statut
-        +Retirer(Argent, DateTime)
-        +Bloquer(string, DateTime)
+        +OwnerName Owner
+        +Money Balance
+        +Money DailyWithdrawalLimit
+        +AccountStatus Status
+        +Withdraw(Money, DateTime)
+        +Block(string, DateTime)
     }
-    class Mouvement {
+    class Movement {
         <<Internal entity>>
         +Guid Id
-        +TypeMouvement Type
-        +Argent Montant
-        +string Libelle
+        +MovementType Type
+        +Money Amount
+        +string Label
     }
-    class Argent {
+    class Money {
         <<Value object>>
-        +decimal Montant
-        +Devise Devise
-        +operator +(Argent, Argent)
+        +decimal Amount
+        +Currency Currency
+        +operator +(Money, Money)
     }
     class Iban {
         <<Value object>>
-        +string Valeur
-        +Depuis(string)$
-        +Generer(pays, bban)$
+        +string Value
+        +From(string)$
+        +Generate(pays, bban)$
     }
-    class FabriqueDeComptes {
+    class AccountFactory {
         <<Factory>>
-        +Ouvrir(...) Compte
+        +Open(...) Account
     }
-    class ServiceDeVirement {
+    class TransferService {
         <<Domain service>>
-        +Virer(source, cible, montant, date)
+        +Transfer(source, cible, montant, date)
     }
-    class IComptes {
+    class IAccounts {
         <<Repository>>
-        +ParId(CompteId)
-        +ParIban(Iban)
+        +ById(AccountId)
+        +ByIban(Iban)
     }
-    class IConvertisseurDevises {
+    class ICurrencyConverter {
         <<Port>>
-        +Convertir(Argent, Devise)
+        +Convert(Money, Currency)
     }
-    Compte "1" *-- "*" Mouvement : contains
-    Compte --> Argent
-    Compte --> Iban
-    FabriqueDeComptes ..> Compte : creates
-    FabriqueDeComptes ..> IComptes : numbers
-    ServiceDeVirement ..> Compte : debits / credits
-    ServiceDeVirement ..> IConvertisseurDevises
+    Account "1" *-- "*" Movement : contains
+    Account --> Money
+    Account --> Iban
+    AccountFactory ..> Account : creates
+    AccountFactory ..> IAccounts : numbers
+    TransferService ..> Account : debits / credits
+    TransferService ..> ICurrencyConverter
 ```
 
 The code is quoted exactly as it is, French comments and messages included.
@@ -145,12 +144,12 @@ The code is quoted exactly as it is, French comments and messages included.
 ### 1. The ubiquitous language
 
 Each glossary term exists as is in the code: if an expert says *plafond de retrait journalier* (daily withdrawal limit),
-you find `PlafondRetraitJournalier`, not `MaxDailyLimit`. (Here the business language is French, so the code is too.)
+you find `DailyWithdrawalLimit`, not `MaxDailyLimit`.
 
 ### 2. Always-valid value objects
 
 An invalid `Iban` **cannot exist**: receiving an `Iban` is enough to know it is valid.
-([Iban.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Iban.cs))
+([Iban.cs](../../11-DDD/Ddd.AccountKeeping.Domain/ValueObjects/Iban.cs))
 
 ```csharp
 public static Iban From(string input)
@@ -163,9 +162,9 @@ public static Iban From(string input)
 }
 ```
 
-`Argent` (money) carries its currency and **refuses to mix** euros and dollars — even in a comparison: it is a domain
+`Money` (money) carries its currency and **refuses to mix** euros and dollars — even in a comparison: it is a domain
 rule, carried by the type itself.
-([Argent.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Argent.cs))
+([Money.cs](../../11-DDD/Ddd.AccountKeeping.Domain/ValueObjects/Money.cs))
 
 ```csharp
 // The operations refuse to mix currencies: it is a domain rule, carried by the type itself.
@@ -183,7 +182,7 @@ Compare with the bare `decimal` and `string` of the other demos (*primitive obse
 
 To check the **daily** withdrawal limit, the account must know its movements of the day: it is this rule that sets the
 aggregate's **boundary**. A movement is never loaded or saved alone.
-([Compte.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Compte.cs))
+([Account.cs](../../11-DDD/Ddd.AccountKeeping.Domain/Accounts/Account.cs))
 
 ```csharp
 public void Withdraw(Money amount, DateTime date)
@@ -203,9 +202,9 @@ public void Withdraw(Money amount, DateTime date)
 
 ### 4. Factory and domain service
 
-The **factory** computes the number and the IBAN ([Fabrique.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Fabrique.cs));
+The **factory** computes the number and the IBAN ([Factory.cs](../../11-DDD/Ddd.AccountKeeping.Domain/Accounts/Factory.cs));
 the **domain service** carries the transfer, which touches two aggregates and an exchange rate
-([ServiceDeVirement.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/ServiceDeVirement.cs)):
+([TransferService.cs](../../11-DDD/Ddd.AccountKeeping.Domain/Accounts/TransferService.cs)):
 
 ```csharp
 var creditedAmount = target.Currency == amount.Currency ? amount : await converter.Convert(amount, target.Currency);
@@ -219,9 +218,9 @@ source.Report(new TransferMade(Guid.NewGuid(), source.Id, source.Iban, source.Ow
 
 ### 5. The anti-corruption layer
 
-It translates the legacy system's model into our language (`Argent`, `Devise`); since the legacy system only quotes
+It translates the legacy system's model into our language (`Money`, `Currency`); since the legacy system only quotes
 from the euro, every cross rate (USD → CHF…) goes through the euro.
-([CoucheAntiCorruption.cs](../../11-DDD/Ddd.TenueDeCompte.Infrastructure/CoucheAntiCorruption.cs))
+([AntiCorruptionLayer.cs](../../11-DDD/Ddd.AccountKeeping.Infrastructure/AntiCorruptionLayer.cs))
 
 ```csharp
 public class LegacyQuoteSystem
@@ -246,7 +245,7 @@ public class ExchangeRateAdapter(LegacyQuoteSystem legacySystem) : ICurrencyConv
 
 ### 6. Translating domain events into the published language
 
-([Integration.cs](../../11-DDD/Ddd.TenueDeCompte.Application/Integration.cs))
+([Integration.cs](../../11-DDD/Ddd.AccountKeeping.Application/Integration.cs))
 
 ```csharp
 var integration = new TransferSent(
@@ -262,34 +261,34 @@ foreach (var subscriber in subscribers())
 ```mermaid
 sequenceDiagram
     actor Bob
-    participant SC as ServiceComptes (Account Keeping)
+    participant SC as AccountsService (Account Keeping)
     participant C as Bob's account (aggregate)
-    participant Pub as PublicateurEvenements
-    participant Surv as SurveillanceDesVirements (Compliance)
-    participant Dos as DossierDeVigilance
-    participant Api as ITenueDeCompteApi
+    participant Pub as EventPublisher
+    participant Surv as TransferMonitoring (Compliance)
+    participant Dos as VigilanceFile
+    participant Api as IAccountKeepingApi
     loop 3 transfers of €10 within a few seconds
-        Bob->>SC: Virer(ibanAlice, 10)
-        SC->>C: Debiter (via ServiceDeVirement)
-        SC->>SC: Valider (save)
-        SC->>Pub: VirementEffectue (domain event)
-        Pub->>Surv: VirementEmis (published language, in euros)
-        Surv->>Dos: Observer(VirementObserve)
+        Bob->>SC: Transfer(ibanAlice, 10)
+        SC->>C: Debit (via TransferService)
+        SC->>SC: Validate (save)
+        SC->>Pub: TransferMade (domain event)
+        Pub->>Surv: TransferSent (published language, in euros)
+        Surv->>Dos: Observe(ObservedTransfer)
     end
-    Dos-->>Surv: Critical alert "suspected structuring"
-    Surv->>Api: BloquerCompte(bob, motif)
-    Api->>C: Bloquer(motif)
+    Dos-->>Surv: Critical alert "structuring suspected"
+    Surv->>Api: BlockAccount(bob, reason)
+    Api->>C: Block(reason)
     Bob->>SC: 4th transfer
-    SC-->>Bob: 400 "Ce compte est bloqué (…)"
+    SC-->>Bob: 400 "This account is blocked (…)"
 ```
 
 ---
 
 ## The tests
 
-- **Value objects** ([ObjetsValeursTests.cs](../../11-DDD/Ddd.Tests/ObjetsValeursTests.cs)): equality by value,
+- **Value objects** ([ValueObjectsTests.cs](../../11-DDD/Ddd.Tests/ValueObjectsTests.cs)): equality by value,
   currencies that can't be mixed, invalid amounts and IBANs impossible to create.
-- **Domain** ([DomaineTests.cs](../../11-DDD/Ddd.Tests/DomaineTests.cs)): daily limit, blocked account, conversion
+- **Domain** ([DomainTests.cs](../../11-DDD/Ddd.Tests/DomainTests.cs)): daily limit, blocked account, conversion
   through the anti-corruption layer (€100 → $108.32; $108.32 → CHF 94.15 through a cross rate), Compliance rules.
 - **Context boundaries** ([ApiTests.cs](../../11-DDD/Ddd.Tests/ApiTests.cs)):
 

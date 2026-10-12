@@ -3,7 +3,7 @@
 > **In one sentence**: the business rules are **pure functions** that return a decision; a thin **shell** around them
 > does all the input/output.
 
-📁 Code: [`04-CoeurFonctionnel`](../../04-CoeurFonctionnel) · ⬅️ [Clean](03-clean.md) · ➡️ [Vertical Slice](05-vertical-slice.md) ·
+📁 Code: [`04-FunctionalCore`](../../04-FunctionalCore) · ⬅️ [Clean](03-clean.md) · ➡️ [Vertical Slice](05-vertical-slice.md) ·
 🌐 [Français](../04-coeur-fonctionnel.md)
 
 ---
@@ -12,7 +12,7 @@
 
 Formulated by **Gary Bernhardt** ("Boundaries", 2012). It is hexagonal taken to the extreme: the center doesn't even
 need ports anymore, because **it never does any input/output**. No `async`, no interfaces, no database, no clock:
-values in, a decision out. (In the code: *Coeur* = core, *Coquille* = shell, *Regles* = rules.)
+values in, a decision out.
 
 ```mermaid
 flowchart LR
@@ -22,10 +22,10 @@ flowchart LR
         A["③ APPLY<br/>write, log, respond"]
     end
     subgraph Coeur["Core (pure)"]
-        D["② DECIDE<br/>Regles.Virer(source, cible,<br/>montant, dejaVireAujourdhui)<br/>→ DecisionVirement"]
+        D["② DECIDE<br/>Rules.Transfer(source, cible,<br/>montant, alreadyTransferredToday)<br/>→ TransferDecision"]
     end
     L -->|"immutable values"| D
-    D -->|"Accepte or Refuse"| A
+    D -->|"Accepted or Refused"| A
 
     classDef pur fill:#dafbe1,stroke:#1a7f37
     classDef impur fill:#ffebe9,stroke:#cf222e
@@ -51,7 +51,7 @@ The code is quoted exactly as it is, French comments included.
 
 An account is never modified, a new version is produced; the rules don't *do* anything, they return a decision the
 shell will apply.
-([Compte.cs](../../04-CoeurFonctionnel/Fonctionnel.Coeur/Compte.cs), [Decisions.cs](../../04-CoeurFonctionnel/Fonctionnel.Coeur/Decisions.cs))
+([Account.cs](../../04-FunctionalCore/Functional.Core/Account.cs), [Decisions.cs](../../04-FunctionalCore/Functional.Core/Decisions.cs))
 
 ```csharp
 /// Immutable value: an account is never modified, a new version of it is produced.
@@ -69,7 +69,7 @@ public abstract record TransferDecision
 
 **Time** is an input: the amount already transferred today is computed by the shell and passed as a parameter. And
 the withdrawal rule is reused: pure functions compose naturally.
-([Regles.cs](../../04-CoeurFonctionnel/Fonctionnel.Coeur/Regles.cs))
+([Rules.cs](../../04-FunctionalCore/Functional.Core/Rules.cs))
 
 ```csharp
 public static WithdrawalDecision Withdraw(Account account, decimal amount) => amount switch
@@ -100,9 +100,9 @@ public static TransferDecision Transfer(Account source, Account target, decimal 
 
 ### 3. The shell: read → decide → apply
 
-The three steps are marked in the code: 1. *LIRE* (read: the accounts AND everything the rule needs, here the day's
-total), 2. *DÉCIDER* (decide, pure), 3. *APPLIQUER* (apply).
-([Endpoints.cs](../../04-CoeurFonctionnel/Fonctionnel.Coquille/Endpoints.cs))
+The three steps are marked in the code: 1. *READ* (the accounts AND everything the rule needs, here the day's
+total), 2. *DECIDE* (pure), 3. *APPLY*.
+([Endpoints.cs](../../04-FunctionalCore/Functional.Shell/Endpoints.cs))
 
 ```csharp
 private static async Task<IResult> Transfer(TransferRequest request, BankDbContext db, TimeProvider clock, ILoggerFactory loggers)
@@ -141,21 +141,21 @@ private static async Task<IResult> Transfer(TransferRequest request, BankDbConte
 }
 ```
 
-The shell has its **own mutable persistence model** (`CompteLigne`), converted into a core value by `VersCoeur()`.
+The shell has its **own mutable persistence model** (`AccountRow`), converted into a core value by `ToCore()`.
 
 ```mermaid
 sequenceDiagram
     actor Client
-    participant S as Shell (Endpoints.Virer)
-    participant DB as BanqueDbContext
+    participant S as Shell (Endpoints.Transfer)
+    participant DB as BankDbContext
     participant H as TimeProvider
-    participant R as Regles (pure core)
-    Client->>S: POST /virements (€1,000)
+    participant R as Rules (pure core)
+    Client->>S: POST /transfers (€1,000)
     S->>DB: FindAsync source, cible
     S->>H: GetUtcNow()
     S->>DB: SUM of transfers sent today → €1,500
-    S->>R: Virer(source, cible, 1000, dejaVire: 1500)
-    R-->>S: Refuse("Plafond journalier de 2000 € dépassé…")
+    S->>R: Transfer(source, cible, 1000, alreadyTransferred: 1500)
+    R-->>S: Refused("Daily limit of 2000 € exceeded…")
     S-->>Client: 400 Bad Request
     Note over R: No I/O, no state changed:<br/>same input → always the same decision
 ```
@@ -166,7 +166,7 @@ sequenceDiagram
 
 Testing a pure function: values in, an expected value out. **Nothing else.** (The comment in the first test: "time" is
 plain data, no need to fake a clock.)
-([ReglesTests.cs](../../04-CoeurFonctionnel/Fonctionnel.Tests/ReglesTests.cs))
+([RulesTests.cs](../../04-FunctionalCore/Functional.Tests/RulesTests.cs))
 
 ```csharp
 [Fact]

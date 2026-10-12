@@ -20,7 +20,7 @@ flowchart LR
 - "Serverless" = **no servers to manage**. You write short functions and a **manifest** (which function, which trigger).
 - **Event-driven** loop: a function writes to a queue or to storage, which triggers another one.
 - State lives only in **managed services** (concurrency via ETag); queues with a *poison* queue.
-- In the demo, `Sls.Plateforme` plays the provider; only `Sls.Fonctions` would be written for real.
+- In the demo, `Sls.Platform` plays the provider; only `Sls.Functions` would be written for real.
 
 | ✅ When to use it | ❌ Avoid if |
 |---|---|

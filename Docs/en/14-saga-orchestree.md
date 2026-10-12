@@ -5,7 +5,7 @@
 > **In one sentence**: an explicit **orchestrator** drives a process spread over several services, step by step; it
 > remembers where it stands, retries, waits for external events, and **compensates** in reverse order when needed.
 
-📁 Code: [`14-SagaOrchestree`](../../14-SagaOrchestree) · ⬅️ [Microkernel](13-microkernel.md) · ➡️ [Multi-tenant](15-multi-tenant.md) ·
+📁 Code: [`14-OrchestratedSaga`](../../14-OrchestratedSaga) · ⬅️ [Microkernel](13-microkernel.md) · ➡️ [Multi-tenant](15-multi-tenant.md) ·
 🌐 [Français](../14-saga-orchestree.md)
 
 ---
@@ -20,7 +20,7 @@ There are two ways to coordinate it:
 flowchart LR
     subgraph Choregraphie["CHOREOGRAPHY (demos 7 and 8)"]
         direction LR
-        A1["Transfers"] -. "VirementEffectue" .-> B1(["Bus"])
+        A1["Transfers"] -. "TransferMade" .-> B1(["Bus"])
         B1 -.-> C1["Notifications"]
         B1 -.-> D1["Accounting?"]
     end
@@ -54,11 +54,11 @@ side-by-side comparison.
 
 ```mermaid
 flowchart LR
-    R["① ReserverFonds<br/><i>comp.: Liberer</i>"] --> K["② ControlerConformite<br/><i>may wait for an analyst</i>"]
-    K --> X["③ ConvertirDevises<br/><i>comp.: AnnulerCotation</i>"]
-    X --> C["④ CrediterBeneficiaire<br/><i>comp.: AnnulerCredit</i>"]
-    C --> D["⑤ DebiterDefinitivement<br/><b>point of no return</b>"]
-    D --> N["⑥ Notifier<br/><i>retries only</i>"]
+    R["① ReserveFunds<br/><i>comp.: Release</i>"] --> K["② CheckCompliance<br/><i>may wait for an analyst</i>"]
+    K --> X["③ ConvertCurrencies<br/><i>comp.: CancelQuote</i>"]
+    X --> C["④ CreditBeneficiary<br/><i>comp.: CancelCredit</i>"]
+    C --> D["⑤ CaptureFunds<br/><b>point of no return</b>"]
+    D --> N["⑥ Notify<br/><i>retries only</i>"]
 
     classDef pivot fill:#ffebe9,stroke:#cf222e
     class D pivot
@@ -71,7 +71,7 @@ flowchart LR
 
 The definition fits in a single file, readable at a glance: it is orchestration's main asset. (The code is quoted
 exactly as it is.)
-([DefinitionVirement.cs](../../14-SagaOrchestree/Saga.Orchestrateur/DefinitionVirement.cs))
+([TransferDefinition.cs](../../14-OrchestratedSaga/Saga.Orchestrator/TransferDefinition.cs))
 
 ```csharp
 new("ReserveFunds",
@@ -101,9 +101,9 @@ means a **transient failure**.
 
 ### 1. The state is saved after every step
 
-The orchestrator **keeps nothing in memory**: everything needed to resume is in `EtatSaga`, saved (serialized) after
+The orchestrator **keeps nothing in memory**: everything needed to resume is in `SagaState`, saved (serialized) after
 each transition.
-([MoteurSaga.cs](../../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs))
+([SagaEngine.cs](../../14-OrchestratedSaga/Saga.Orchestrator/SagaEngine.cs))
 
 ```csharp
 /// Moves all the ready sagas forward by one step. Returns the number of sagas handled.
@@ -124,19 +124,19 @@ public async Task<int> Process()
 
 ```mermaid
 stateDiagram-v2
-    [*] --> EnCours : Demarrer
-    EnCours --> EnCours : next step or retry
-    EnCours --> EnAttente : waiting for an event
-    EnAttente --> EnCours : approved
-    EnAttente --> Compensation : refused or deadline
-    EnCours --> Compensation : refusal, failures (before the pivot)
-    EnCours --> ATraiterManuellement : failures (after the pivot)
-    EnCours --> Terminee : end
+    [*] --> Running : Start
+    Running --> Running : next step or retry
+    Running --> Waiting : waiting for an event
+    Waiting --> Running : approved
+    Waiting --> Compensation : refused or deadline
+    Running --> Compensation : refusal, failures (before the pivot)
+    Running --> ManualInterventionRequired : failures (after the pivot)
+    Running --> Completed : end
     Compensation --> Compensation : undo one step
-    Compensation --> Annulee : everything undone
-    Terminee --> [*]
-    Annulee --> [*]
-    ATraiterManuellement --> [*]
+    Compensation --> Cancelled : everything undone
+    Completed --> [*]
+    Cancelled --> [*]
+    ManualInterventionRequired --> [*]
 ```
 
 ### 3. Retry, then give up cleanly
@@ -193,7 +193,7 @@ private async Task CompensateOneStep(SagaState saga)
 ### 5. Waiting for an external event, with a deadline
 
 Above €10,000, a **human analyst** must decide. The saga goes "waiting", the funds stay reserved, and the API receives
-the decision (`POST /sagas/{id}/conformite`):
+the decision (`POST /sagas/{id}/compliance`):
 
 ```csharp
 /// External event: the compliance analyst's decision.
@@ -224,29 +224,29 @@ Logs taken from the running API (`GET /sagas/{id}`), quoted as the application w
 **Transient failure of the exchange service** (2 failures, then success):
 
 ```
-▶ Virement de 100,00 demandé
-✔ ReserverFonds
-✔ ControlerConformite
-✖ ConvertirDevises : Service de change momentanément indisponible. — tentative 1/4, nouvel essai dans 200 ms
-✖ ConvertirDevises : Service de change momentanément indisponible. — tentative 2/4, nouvel essai dans 400 ms
-✔ ConvertirDevises
-✔ CrediterBeneficiaire
-✔ DebiterDefinitivement (point de non-retour franchi)
-✔ Notifier
-■ Virement terminé
+▶ Transfer of 100.00 requested
+✔ ReserveFunds
+✔ CheckCompliance
+✖ ConvertCurrencies: Exchange service temporarily unavailable. — attempt 1/4, retrying in 200 ms
+✖ ConvertCurrencies: Exchange service temporarily unavailable. — attempt 2/4, retrying in 400 ms
+✔ ConvertCurrencies
+✔ CreditBeneficiary
+✔ CaptureFunds (point of no return crossed)
+✔ Notify
+■ Transfer completed
 ```
 
 **Exchange service out of order** (compensation):
 
 ```
-✔ ReserverFonds
-✔ ControlerConformite
-✖ ConvertirDevises : Service de change hors service. — tentative 1/4, nouvel essai dans 200 ms
-✖ ConvertirDevises : Service de change hors service. — tentative 2/4, nouvel essai dans 400 ms
-✖ ConvertirDevises : Service de change hors service. — tentative 3/4, nouvel essai dans 800 ms
-↩ Compensation : ConvertirDevises impossible après 4 tentatives : Service de change hors service.
-↩ ReserverFonds défaite
-■ Virement annulé : toutes les étapes ont été défaites
+✔ ReserveFunds
+✔ CheckCompliance
+✖ ConvertCurrencies: Exchange service down. — attempt 1/4, retrying in 200 ms
+✖ ConvertCurrencies: Exchange service down. — attempt 2/4, retrying in 400 ms
+✖ ConvertCurrencies: Exchange service down. — attempt 3/4, retrying in 800 ms
+↩ Compensation: ConvertCurrencies impossible after 4 attempts: Exchange service down.
+↩ ReserveFunds undone
+■ Transfer cancelled: all the steps were undone
 ```
 
 **Large transfer, an analyst's decision**:
@@ -258,19 +258,19 @@ sequenceDiagram
     participant C as Accounts
     participant K as Compliance
     actor An as Analyst
-    Client->>O: POST /virements (€12,000)
+    Client->>O: POST /transfers (€12,000)
     O-->>Client: 202 Accepted (Location /sagas/{id})
-    O->>C: Reserver(12 000)
-    O->>K: Examiner(€12,000)
-    K-->>O: EnAttenteAnalyste
-    O->>O: status EnAttente, deadline in 60 s
+    O->>C: Reserve(12 000)
+    O->>K: Examine(€12,000)
+    K-->>O: AwaitingAnalyst
+    O->>O: status Waiting, deadline in 60 s
     Note over C: €12,000 reserved: no longer available,<br/>but not debited yet
-    An->>O: POST /sagas/{id}/conformite (approved)
-    O->>O: ✔ ControlerConformite
-    O->>C: Crediter, Capturer (point of no return)
-    O->>O: Notifier, ■ Terminee
+    An->>O: POST /sagas/{id}/compliance (approved)
+    O->>O: ✔ CheckCompliance
+    O->>C: Credit, Capture (point of no return)
+    O->>O: Notify, ■ Completed
     Client->>O: GET /sagas/{id}
-    O-->>Client: Terminee + full log
+    O-->>Client: Completed + full log
 ```
 
 ---
@@ -280,7 +280,7 @@ sequenceDiagram
 A **manual clock** lets time move forward at will: retries and deadlines are tested instantly, without real waiting.
 In this test, a first engine does two steps and then "crashes"; a second engine, sharing nothing with the first except
 the store, finishes the saga.
-([MoteurSagaTests.cs](../../14-SagaOrchestree/Saga.Tests/MoteurSagaTests.cs))
+([SagaEngineTests.cs](../../14-OrchestratedSaga/Saga.Tests/SagaEngineTests.cs))
 
 ```csharp
 [Fact]
@@ -302,15 +302,15 @@ public async Task A_new_engine_resumes_the_sagas_where_the_old_one_left_them()
 
 | Test | What is checked |
 |---|---|
-| `Un_virement_passe_par_les_six_etapes_dans_l_ordre` | nominal run, balances |
-| `Une_panne_passagere_est_absorbee_par_de_nouveaux_essais` | 2 failures, then success |
-| `Une_panne_durable_declenche_la_compensation_dans_l_ordre_inverse` | gives up at the 4th failure, reservation released |
-| `Un_gros_virement_attend_la_decision_d_un_analyste` | waiting, then approval or refusal |
-| `Sans_decision_avant_l_echeance_la_saga_est_compensee` | deadline exceeded |
-| `Apres_le_point_de_non_retour_on_ne_compense_plus` | notifications down: `ATraiterManuellement`, the money stays transferred |
+| `A_transfer_goes_through_the_six_steps_in_order` | nominal run, balances |
+| `A_transient_failure_is_absorbed_by_retries` | 2 failures, then success |
+| `A_lasting_failure_triggers_the_compensation_in_reverse_order` | gives up at the 4th failure, reservation released |
+| `A_large_transfer_waits_for_an_analyst_decision` | waiting, then approval or refusal |
+| `Without_a_decision_before_the_deadline_the_saga_is_compensated` | deadline exceeded |
+| `After_the_point_of_no_return_there_is_no_more_compensation` | notifications down: `ManualInterventionRequired`, the money stays transferred |
 | `Un_nouveau_moteur_reprend_les_sagas…` | recovery after a "crash" |
-| `Rejouer_une_etape_deja_faite_chez_un_participant_est_sans_effet` | participants' idempotency |
-| [ApiTests.cs](../../14-SagaOrchestree/Saga.Tests/ApiTests.cs) | the real loop: end to end, decision over HTTP, orchestrator stopped then restarted |
+| `Replaying_a_step_already_done_at_a_participant_has_no_effect` | participants' idempotency |
+| [ApiTests.cs](../../14-OrchestratedSaga/Saga.Tests/ApiTests.cs) | the real loop: end to end, decision over HTTP, orchestrator stopped then restarted |
 
 ---
 

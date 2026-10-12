@@ -16,8 +16,7 @@
 All the previous demos end up the same way: each request reads from or writes to a database. You can multiply the
 application servers, the database stays **single** and ends up limiting throughput (locks, connections, disk). The name
 comes from the idea of a *tuple space*: a shared data space in memory. The space-based architecture (described notably
-by Mark Richards) removes the database from the request path. (In the code: *Espace* = space, *Grille* = grid,
-*Unité* = unit, *Pompe* = pump.)
+by Mark Richards) removes the database from the request path.
 
 ```mermaid
 flowchart LR
@@ -62,18 +61,18 @@ flowchart LR
 ```
 
 On a cold start (no unit left), the **data reader** reloads the grid from the database. What is called the
-**virtualized middleware** ([Espace.Grille](../../19-SpaceBased/Espace.Grille), simulated in-process for the demo, no package):
+**virtualized middleware** ([Space.Grid](../../19-SpaceBased/Space.Grid), simulated in-process for the demo, no package):
 
-- the **data grid** ([GrilleDeDonnees.cs](../../19-SpaceBased/Espace.Grille/GrilleDeDonnees.cs),
-  [Replique.cs](../../19-SpaceBased/Espace.Grille/Replique.cs)): a full replica per unit, and asynchronous replication of
+- the **data grid** ([DataGrid.cs](../../19-SpaceBased/Space.Grid/DataGrid.cs),
+  [Replica.cs](../../19-SpaceBased/Space.Grid/Replica.cs)): a full replica per unit, and asynchronous replication of
   each write to the others (100 ms of latency, adjustable);
-- the **messaging grid** ([GrilleDeMessages.cs](../../19-SpaceBased/Espace.Grille/GrilleDeMessages.cs)): the entry
+- the **messaging grid** ([MessagingGrid.cs](../../19-SpaceBased/Space.Grid/MessagingGrid.cs)): the entry
   point, which picks the unit for each request;
-- the **data pump** and its **writer**, the **data reader** ([Base.cs](../../19-SpaceBased/Espace.Grille/Base.cs));
-- the **deployment manager** ([GestionnaireDeDeploiement.cs](../../19-SpaceBased/Espace.Grille/GestionnaireDeDeploiement.cs)).
+- the **data pump** and its **writer**, the **data reader** ([Database.cs](../../19-SpaceBased/Space.Grid/Database.cs));
+- the **deployment manager** ([DeploymentManager.cs](../../19-SpaceBased/Space.Grid/DeploymentManager.cs)).
 
-The **processing units** ([UniteDeTraitement.cs](../../19-SpaceBased/Espace.Grille/UniteDeTraitement.cs)) contain the
-business ([Banque.cs](../../19-SpaceBased/Espace.Banque/Banque.cs)), which only sees its own unit's replica (the code
+The **processing units** ([ProcessingUnit.cs](../../19-SpaceBased/Space.Grid/ProcessingUnit.cs)) contain the
+business ([Bank.cs](../../19-SpaceBased/Space.Bank/Bank.cs)), which only sees its own unit's replica (the code
 is quoted exactly as it is, French messages included):
 
 ```csharp
@@ -106,17 +105,17 @@ private void Publish(string origin, Modification modification)
 ```
 
 The consequence is spectacular: **the database can go down, requests carry on**. Writes pile up in the pump and are
-written when the database comes back (test `Les_requetes_n_attendent_jamais_la_base`). Meanwhile, the database lags
+written when the database comes back (test `Requests_never_wait_for_the_database`). Meanwhile, the database lags
 behind: a report reading it would see stale data.
 
-`GET /grille/comparaison/{id}`, right after a withdrawal, shows the **replication window** (real run; u9 hasn't received
+`GET /grid/comparison/{id}`, right after a withdrawal, shows the **replication window** (real run; u9 hasn't received
 the write yet, 300 ms later it is everywhere):
 
 ```text
-{ "repliques": [ { "ou": "u8", "version": "v2@u8", "solde": 495 },
-                 { "ou": "u9", "version": "v1@base", "solde": 500 } ],     ← u9 n'a pas encore reçu l'écriture
-  "base": { "version": "v2@u8", "solde": 495 } }
-300 ms plus tard : v2@u8 et 495 partout.
+{ "replicas": [ { "where": "u8", "version": "v2@u8", "balance": 495 },
+                { "where": "u9", "version": "v1@database", "balance": 500 } ],     ← u9 hasn't received the write yet
+  "database": { "version": "v2@u8", "balance": 495 } }
+300 ms later: v2@u8 and 495 everywhere.
 ```
 
 Each entry carries a **version** (a counter and the unit that wrote it). Replicas and database apply the same rule: the
@@ -178,7 +177,7 @@ are nevertheless consistent with each other: nothing flags the error, except the
 ⚠ **Affinity isn't always enough.** When a unit arrives or leaves, some keys change owner; during the replication
 window, the old and the new unit can write the same key. The real run showed it: right after a load peak, while the
 manager was removing units, one of Bob's withdrawals was lost (test
-`En_affinite_un_changement_d_unites_ouvre_une_fenetre_de_collision`). Real products reduce this risk by migrating
+`With_affinity_a_change_of_units_opens_a_collision_window`). Real products reduce this risk by migrating
 partitions one by one, or by keeping a single master copy per item (a **distributed** rather than **replicated** cache,
 at the cost of a network call when the data is elsewhere).
 
@@ -210,10 +209,10 @@ POST /demo/load  { "count": 600 }
 ```
 
 ```text
-08:23:43.612 u10 démarrée : grille copiée depuis u8 (46 entrées)
-08:23:43.858 u11 démarrée : grille copiée depuis u8 (106 entrées)
+08:23:43.612 u10 started: grid copied from u8 (46 entries)
+08:23:43.858 u11 started: grid copied from u8 (106 entries)
 ...
-08:23:46.099 u9 arrêtée (292 requêtes traitées)
+08:23:46.099 u9 stopped (292 requests processed)
 ```
 
 Starting a unit only costs a memory copy: that is what makes elasticity fast. Queued requests stay on their unit; only
@@ -225,7 +224,7 @@ new ones benefit from the added units.
 
 - **One unit goes down**: its data is also in the other replicas. The messaging grid takes its requests away from it,
   including those waiting in its queue, and hands them to another (test
-  `Les_requetes_d_une_unite_tombee_sont_confiees_a_une_autre`). Hence the minimum of **2 units**: a single failure must
+  `The_requests_of_a_failed_unit_are_handed_to_another_one`). Hence the minimum of **2 units**: a single failure must
   never empty the grid.
 - **All the units go down**: the in-memory grid is gone. The next request triggers a **cold start**: the data reader
   reloads the grid from the database. But only **after the pump has written everything** — otherwise stale values would
@@ -244,9 +243,9 @@ new ones benefit from the added units.
 
 ## The tests
 
-Platform tests with the real business ([PlateformeTests.cs](../../19-SpaceBased/Espace.Tests/PlateformeTests.cs)),
+Platform tests with the real business ([PlatformTests.cs](../../19-SpaceBased/Space.Tests/PlatformTests.cs)),
 where replication can be **held back by hand** to make a collision certain (each unit writes before seeing the
-other's write), and API tests ([ApiTests.cs](../../19-SpaceBased/Espace.Tests/ApiTests.cs)).
+other's write), and API tests ([ApiTests.cs](../../19-SpaceBased/Space.Tests/ApiTests.cs)).
 
 ```csharp
 _p.Messages.Mode = RoutingMode.RoundRobin;
@@ -258,19 +257,19 @@ var second = await Send(new Withdraw(Alice, 50m));    // u1
 
 | Test | What is checked |
 |---|---|
-| `Une_ecriture_est_repliquee_dans_toutes_les_unites_puis_dans_la_base` | replication, pump |
-| `Les_requetes_n_attendent_jamais_la_base` | database down: requests go through, the pump catches up |
-| `En_affinite_une_meme_cle_va_toujours_a_la_meme_unite`, `En_affinite_des_retraits_simultanes_ne_perdent_rien` | affinity |
-| `Au_tourniquet_deux_unites_qui_ecrivent_la_meme_donnee_entrent_en_collision` | collision, lost write, database identical to the grid |
-| `En_affinite_un_changement_d_unites_ouvre_une_fenetre_de_collision` | the limit of affinity |
-| `La_charge_ajoute_des_unites_et_le_calme_les_retire` | elasticity, ceiling, floor |
-| `Une_nouvelle_unite_recoit_une_copie_de_la_grille_sans_lire_la_base` | copy between units |
-| `La_panne_d_une_unite_ne_perd_aucune_donnee`, `Les_requetes_d_une_unite_tombee_sont_confiees_a_une_autre` | failure of one unit |
-| `Apres_une_panne_totale_le_demarrage_a_froid_recharge_la_grille_depuis_la_base`, `Le_demarrage_a_froid_attend_que_la_pompe_ait_tout_ecrit` | cold start |
-| `Un_virement_debite_dans_l_unite_de_la_source_et_credite_dans_celle_de_la_cible`, `Un_credit_refuse_par_l_unite_de_la_cible_est_compense` | transfer between units, compensation |
-| `Des_virements_croises_entre_deux_unites_pleines_ne_se_bloquent_pas` | internal requests take no queue slot |
-| `Base_en_panne_les_requetes_passent_mais_un_demarrage_a_froid_est_impossible` | `200`, then `503`, then recovery, over HTTP |
-| `Chaque_reponse_dit_quelle_unite_l_a_traitee`, `On_peut_ajouter_arreter_et_faire_tomber_des_unites`, `La_comparaison_montre_la_meme_version_partout_au_repos` | the API: `X-Unite` header, unit management, convergence |
+| `A_write_is_replicated_in_all_the_units_then_in_the_database` | replication, pump |
+| `Requests_never_wait_for_the_database` | database down: requests go through, the pump catches up |
+| `With_affinity_a_given_key_always_goes_to_the_same_unit`, `With_affinity_simultaneous_withdrawals_lose_nothing` | affinity |
+| `With_round_robin_two_units_writing_the_same_data_collide` | collision, lost write, database identical to the grid |
+| `With_affinity_a_change_of_units_opens_a_collision_window` | the limit of affinity |
+| `Load_adds_units_and_calm_removes_them` | elasticity, ceiling, floor |
+| `A_new_unit_receives_a_copy_of_the_grid_without_reading_the_database` | copy between units |
+| `The_failure_of_a_unit_loses_no_data`, `The_requests_of_a_failed_unit_are_handed_to_another_one` | failure of one unit |
+| `After_a_total_failure_the_cold_start_reloads_the_grid_from_the_database`, `The_cold_start_waits_for_the_pump_to_have_written_everything` | cold start |
+| `A_transfer_debits_in_the_source_unit_and_credits_in_the_target_unit`, `A_credit_refused_by_the_target_unit_is_compensated` | transfer between units, compensation |
+| `Crossed_transfers_between_two_full_units_do_not_block` | internal requests take no queue slot |
+| `Database_down_requests_go_through_but_a_cold_start_is_impossible` | `200`, then `503`, then recovery, over HTTP |
+| `Each_response_tells_which_unit_handled_it`, `Units_can_be_added_stopped_and_brought_down`, `The_comparison_shows_the_same_version_everywhere_at_rest` | the API: `X-Unit` header, unit management, convergence |
 
 Checked by mutation: always round-robin routing, no collision detection, a database or replicas ignoring versions, a
 cold start that doesn't wait for the pump, a new unit loaded from the database, a pump without retries, queued internal

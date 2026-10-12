@@ -25,7 +25,7 @@ crosses two pieces: **idempotency** (operation identifier) and **compensation** 
 | Different pieces? | **yes**: each service has its own code | **no**: all cells run the same code |
 | An Alice → Bob transfer | **always** crosses several services (Transfers → Accounts) | stays **local** if Alice and Bob are in the same cell |
 | Exchanges between pieces | constant, at the heart of how it works | **rare**: avoided through the choice of partition key |
-| The entry point | gateway: routes **by path** (`/comptes`, `/virements`) | router: routes **by customer** (alice → c1) |
+| The entry point | gateway: routes **by path** (`/accounts`, `/transfers`) | router: routes **by customer** (alice → c1) |
 | A failure hits… | **one function, for all** customers | **all functions, for one group** of customers |
 | Deploying | **service by service**, each at its own pace | the same version, **cell by cell** (canary, waves) |
 | Growing | add instances of the busiest service | add cells of known size |
@@ -53,20 +53,20 @@ flowchart LR
 ## In the demos' code
 
 **Microservices**: Transfers **always** calls Accounts over the network, with retry and idempotency, for any transfer
-([Micro.Virements/Program.cs](../../../08-Microservices/Micro.Virements/Program.cs),
-[Micro.Comptes/Endpoints.cs](../../../08-Microservices/Micro.Comptes/Endpoints.cs)).
+([Micro.Transfers/Program.cs](../../../08-Microservices/Micro.Transfers/Program.cs),
+[Micro.Accounts/Endpoints.cs](../../../08-Microservices/Micro.Accounts/Endpoints.cs)).
 
 **Cells**: a transfer between two customers of the same cell is a **local transaction**. Only a transfer between cells
 goes through the router, with an operation identifier and a compensation, exactly as in microservices (test
-`Un_virement_dans_une_meme_cellule_reste_local`, and `Si_la_cellule_du_beneficiaire_est_en_panne_le_virement_est_compense`).
+`A_transfer_within_the_same_cell_stays_local`, and `If_the_beneficiary_s_cell_is_down_the_transfer_is_compensated`).
 
 **The actual result after stopping a cell**: alice, carla and david answer 200; bob and emma receive "Cellule c2
 injoignable : seuls ses clients sont touchés" (cell c2 unreachable: only its customers are affected)
-([Relais.cs](../../../17-CellBased/Cell.Routeur/Relais.cs)). Stopping the Accounts service, on the other hand, prevents
+([Relay.cs](../../../17-CellBased/Cell.Router/Relay.cs)). Stopping the Accounts service, on the other hand, prevents
 **all** customers from looking up their account and making transfers.
 
 **Deploying**: in cells, a faulty version stops at the canary cell; its health probe replays a control withdrawal
-([Version.cs](../../../17-CellBased/Cell.Cellule/Version.cs)) (the code is quoted exactly as it is):
+([Version.cs](../../../17-CellBased/Cell.App/Version.cs)) (the code is quoted exactly as it is):
 
 ```csharp
 public (bool Healthy, string Detail) Probe()

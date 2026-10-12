@@ -41,7 +41,7 @@ flowchart LR
         direction TB
         O1["Id : Guid"]
         O2["Owner : string"]
-        O3["Solde : decimal"]
+        O3["Balance : decimal"]
         O4["Withdraw(decimal)"]
         O1 ~~~ O2 ~~~ O3 ~~~ O4
     end
@@ -49,7 +49,7 @@ flowchart LR
         direction TB
         D1["Id : AccountId · Iban : Iban"]
         D2["Owner : OwnerName"]
-        D3["Solde, Plafond : Money"]
+        D3["Balance, DailyWithdrawalLimit : Money"]
         D4["Mouvements du jour"]
         D5["Withdraw(Money, date)<br/>→ WithdrawalMade"]
         D1 ~~~ D2 ~~~ D3 ~~~ D4 ~~~ D5

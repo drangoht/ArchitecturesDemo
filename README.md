@@ -346,7 +346,7 @@ Dans toutes les autres démos, on stocke l'**état** (le solde) et on oublie com
 - **Instantanés** (`AccountRepository`) : tous les 5 événements, une photo de l'état est mise en cache. Charger un compte ne rejoue
   alors que la suite (test `Un_instantane_evite_de_rejouer…`). Ce n'est qu'un cache : on peut l'effacer sans rien perdre.
 - **Évolution des événements (upcasting)** : `MoneyWithdrawn` a gagné un champ `Reason` en v2. Les anciens événements v1 ne sont
-  jamais réécrits ; `EventSerializer` les convertit à la lecture (motif « Non précisé »).
+  jamais réécrits ; `EventSerializer` les convertit à la lecture (motif « Not specified »).
 - **Les contreparties** : on ne peut ni modifier ni supprimer un événement. Les erreurs se corrigent par un nouvel événement
   compensatoire, et le RGPD oblige à prévoir l'effacement (chiffrement des données personnelles, puis destruction de la clé).
   Il faut aussi versionner les événements et garder des projections à jour. C'est puissant pour les domaines où l'historique
@@ -566,7 +566,7 @@ a **son propre backend**, écrit et déployé par son équipe, qui fait l'interf
 - **Aucun passe-droit** : le BFF appelle les services avec le jeton **de l'utilisateur** ; Alice ne peut pas débiter le compte
   de Bob, même en passant par le BFF (403 des services).
 - **Une réponse par écran** : le mobile reçoit une réponse plus de 5 fois plus légère que le site, sans IBAN ni champ inutile,
-  avec des libellés raccourcis (« CB CARREFOUR 0910 PARIS 15 » → « Carrefour »).
+  avec des libellés raccourcis (« CARD CARREFOUR 0910 PARIS 15 » → « Carrefour »).
 - **Dégradation** : si les offres sont en panne ou trop lentes (budget de 800 ms), le tableau de bord s'affiche sans elles
   (`"degraded": ["offers"]`) au lieu d'échouer.
 - **Versions** : `/mobile/v2/home` ajoute un bandeau d'offre pour la nouvelle version de l'application ; `/v1` reste servie

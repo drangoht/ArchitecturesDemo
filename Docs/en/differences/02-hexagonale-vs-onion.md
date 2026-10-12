@@ -4,7 +4,7 @@
 > structures **the perimeter** (ports and adapters) while Onion structures **the center** (model, domain services,
 > application services).
 
-📁 Demos: [`01-Hexagonale`](../../../01-Hexagonale) · [`02-Onion`](../../../02-Onion) ·
+📁 Demos: [`01-Hexagonal`](../../../01-Hexagonal) · [`02-Onion`](../../../02-Onion) ·
 📖 Pages: [Hexagonal](../01-hexagonale.md) · [Onion](../02-onion.md) · 🗂️ Cheat sheets: [1](../fiches/01-hexagonale.md) · [2](../fiches/02-onion.md)
 
 ⬅️ [Layered or Hexagonal?](01-couches-vs-hexagonale.md) · ➡️ [Onion or Clean?](03-onion-vs-clean.md) · 🌐 [Français](../../differences/02-hexagonale-vs-onion.md)
@@ -23,10 +23,10 @@ vocabulary. That is why they get confused, and why many ".NET Clean" templates a
 |---|---|---|
 | What it draws | the **outside**: who calls, who is called | the **inside**: concentric layers |
 | The center | one block: domain + use cases + ports | Domain Model → Domain Services → Application Services |
-| Demo projects | `Hexa.Hexagone` (just one) + one project per adapter | `Onion.Domain`, `Onion.Application`, `Onion.Infrastructure`, `Onion.Api` |
+| Demo projects | `Hexa.Hexagon` (just one) + one project per adapter | `Onion.Domain`, `Onion.Application`, `Onion.Infrastructure`, `Onion.Api` |
 | Vocabulary | inbound / outbound port, adapter, *driving* / *driven* | repository, unit of work, domain service, application service |
-| A rule touching **two** accounts | in the use case | in a **domain service** (`ServiceVirement`) |
-| Saving a transfer | two `Sauvegarder` calls, one per account | **one** unit of work: all or nothing |
+| A rule touching **two** accounts | in the use case | in a **domain service** (`TransferService`) |
+| Saving a transfer | two `Save` calls, one per account | **one** unit of work: all or nothing |
 | Inputs | highlighted: Web **and** CLI on the same use case | a single API; the point is elsewhere |
 | What the tests check | **contract tests**: each adapter of a port passes the same suite | each layer only depends on the inner layers |
 
@@ -55,7 +55,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments and messages included.
 
 **Hexagonal**: the use case carries the "same account" rule and saves each account separately
-([CasUtilisation.cs](../../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs)):
+([UseCases.cs](../../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs)):
 
 ```csharp
 public class MakeTransfer(IAccounts accounts, INotifications notifications) : IMakeTransfer
@@ -79,9 +79,9 @@ public class MakeTransfer(IAccounts accounts, INotifications notifications) : IM
 ```
 
 **Onion**: the rule concerning two accounts is a **domain service**
-([ServiceVirement.cs](../../../02-Onion/Onion.Domain/Services/ServiceVirement.cs)); the application service only
+([TransferService.cs](../../../02-Onion/Onion.Domain/Services/TransferService.cs)); the application service only
 orchestrates, and saves **once** — all or nothing
-([VirementsAppService.cs](../../../02-Onion/Onion.Application/VirementsAppService.cs)):
+([TransfersAppService.cs](../../../02-Onion/Onion.Application/TransfersAppService.cs)):
 
 ```csharp
 public async Task<TransferResult> Transfer(Guid sourceId, Guid targetId, decimal amount)
@@ -100,7 +100,7 @@ public async Task<TransferResult> Transfer(Guid sourceId, Guid targetId, decimal
 
 What this changes:
 
-- **Atomicity**: in the hexagonal demo, if the second save failed, the first would already be done. The `IComptes` port
+- **Atomicity**: in the hexagonal demo, if the second save failed, the first would already be done. The `IAccounts` port
   offers no transaction. Onion makes it explicit with `IUnitOfWork`, which the `DbContext` implements.
 - **Where rules go**: hexagonal doesn't say where to put a rule involving two entities; Onion gives it a layer.
 - **Entry points**: hexagonal shows two inbound adapters on the same use case; that is its subject.
@@ -120,7 +120,7 @@ It isn't really an exclusive choice:
 ## Combining them
 
 The most common combination in .NET: **an onion center** (`Domain`, `Application`) **surrounded by adapters**
-(`Infrastructure.Persistance`, `Infrastructure.Messagerie`, `Api`, `Cli`), with contract tests on the adapters. Then
+(`Infrastructure.Persistence`, `Infrastructure.Messagerie`, `Api`, `Cli`), with contract tests on the adapters. Then
 [DDD](06-ddd-vs-hexagonale-onion.md)'s value objects and aggregates are added at the center.
 
 ## Misconceptions

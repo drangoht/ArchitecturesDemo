@@ -12,7 +12,7 @@
 
 ## What they share
 
-**Events** (`CompteOuvert`, `ArgentRetire`…), **projections** that build read views, and **eventual consistency**
+**Events** (`AccountOpened`, `MoneyWithdrawn`…), **projections** that build read views, and **eventual consistency**
 between what is written and what is read. Hence the confusion.
 
 ## The differences point by point
@@ -55,7 +55,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments and messages included.
 
 **CQRS**: the write side saves the **state** (the entities tracked by EF Core) **and** appends the events to the log,
-in the same transaction ([EcritureDb.cs](../../../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs)):
+in the same transaction ([WriteDb.cs](../../../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs)):
 
 ```csharp
 public async Task Save(params IDomainEvent[] extraEvents)
@@ -70,7 +70,7 @@ public async Task Save(params IDomainEvent[] extraEvents)
 ```
 
 **Event Sourcing**: there is no "balance" column. The aggregate **decides** (and produces an event), then **applies**
-the event to evolve its in-memory state ([Compte.cs](../../../10-EventSourcing/Es.Domaine/Compte.cs)):
+the event to evolve its in-memory state ([Account.cs](../../../10-EventSourcing/Es.Domain/Account.cs)):
 
 ```csharp
 // ─── Decisions ───
@@ -91,7 +91,7 @@ public static Account Rehydrate(IEnumerable<IEvent> history) =>
 ```
 
 And the store refuses to write if the stream has moved since it was loaded
-([MagasinEvenements.cs](../../../10-EventSourcing/Es.Stockage/MagasinEvenements.cs)):
+([EventStore.cs](../../../10-EventSourcing/Es.Storage/EventStore.cs)):
 
 ```csharp
 var current = _events.Count(e => e.Stream == write.Stream);
@@ -100,7 +100,7 @@ if (current != write.ExpectedVersion)
 ```
 
 **What only one side can do**: both demos can throw away their views and rebuild them by replaying their events. But only
-Event Sourcing can **recover the write state at a past version** (`GET /comptes/{id}/etat?version=2`): in CQRS, the state
+Event Sourcing can **recover the write state at a past version** (`GET /accounts/{id}/state?version=2`): in CQRS, the state
 is overwritten with each change, and the log is just a complement, which doesn't guarantee an aggregate can be rebuilt.
 In Event Sourcing, the log **is** the aggregate, and a projection added afterwards ("largest withdrawals") immediately
 knows the whole past.

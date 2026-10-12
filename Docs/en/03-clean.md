@@ -19,14 +19,14 @@ flowchart TB
         subgraph IA["③ Interface Adapters"]
             subgraph UC["② Use Cases"]
                 subgraph E["① Entities"]
-                    Compte["Compte"]
+                    Account["Account"]
                 end
-                Inter["RetraitInteracteur<br/>VirementInteracteur<br/>ConsultationInteracteur"]
-                Bound["IRetraitEntree / IRetraitSortie<br/>IComptesPasserelle"]
+                Inter["WithdrawalInteractor<br/>TransferInteractor<br/>LookupInteractor"]
+                Bound["IWithdrawalInput / IWithdrawalOutput<br/>IAccountsGateway"]
             end
-            Ctrl["ComptesControleur"]
+            Ctrl["AccountsController"]
             Pres["HTTP and text presenters"]
-            Gw["ComptesPasserelleEnMemoire"]
+            Gw["InMemoryAccountsGateway"]
         end
         Web["Program.cs<br/>routes"]
     end
@@ -43,39 +43,39 @@ flowchart TB
 
 | Circle | Project |
 |---|---|
-| ① Entities | `Clean.Entites` |
-| ② Use Cases | `Clean.CasUtilisation` |
-| ③ Interface Adapters | `Clean.AdaptateursInterface` |
+| ① Entities | `Clean.Entities` |
+| ② Use Cases | `Clean.UseCases` |
+| ③ Interface Adapters | `Clean.InterfaceAdapters` |
 | ④ Frameworks & Drivers | `Clean.Web` (ASP.NET Core) |
 
 ### The vocabulary
 
 | Term | In the demo | Role |
 |---|---|---|
-| **Request model** | `DemandeRetrait` | The use case's input data, with nothing from the web |
-| **Input boundary** | `IRetraitEntree` | What the controller calls |
-| **Interactor** | `RetraitInteracteur` | The use case |
-| **Output boundary** | `IRetraitSortie` | What the interactor calls to deliver its result |
-| **Response model** | `ReponseRetrait` | Output data |
-| **Presenter** | `RetraitPresenterHttp` | Implements the output boundary, builds a view |
-| **Gateway** | `IComptesPasserelle` | Data access (= outbound port) |
+| **Request model** | `WithdrawalRequest` | The use case's input data, with nothing from the web |
+| **Input boundary** | `IWithdrawalInput` | What the controller calls |
+| **Interactor** | `WithdrawalInteractor` | The use case |
+| **Output boundary** | `IWithdrawalOutput` | What the interactor calls to deliver its result |
+| **Response model** | `WithdrawalResponse` | Output data |
+| **Presenter** | `WithdrawalHttpPresenter` | Implements the output boundary, builds a view |
+| **Gateway** | `IAccountsGateway` | Data access (= outbound port) |
 
 ### The flow of control crosses the circles… but the dependencies don't
 
 ```mermaid
 flowchart LR
-    Web["Program.cs"] -->|"① creates"| P["RetraitPresenterHttp"]
-    Web -->|"② calls"| C["ComptesControleur"]
-    C -->|"③ DemandeRetrait"| IE["IRetraitEntree"]
-    IE -.->|"implemented by"| I["RetraitInteracteur"]
-    I -->|"④ load / save"| G["IComptesPasserelle"]
-    I -->|"⑤ Succes / Refus / CompteIntrouvable"| OS["IRetraitSortie"]
+    Web["Program.cs"] -->|"① creates"| P["WithdrawalHttpPresenter"]
+    Web -->|"② calls"| C["AccountsController"]
+    C -->|"③ WithdrawalRequest"| IE["IWithdrawalInput"]
+    IE -.->|"implemented by"| I["WithdrawalInteractor"]
+    I -->|"④ load / save"| G["IAccountsGateway"]
+    I -->|"⑤ Success / Refused / AccountNotFound"| OS["IWithdrawalOutput"]
     OS -.->|"implemented by"| P
-    P -->|"⑥ produces"| V["VueHttp"]
+    P -->|"⑥ produces"| V["HttpView"]
     Web -->|"⑦ reads it and writes the response"| V
 ```
 
-The interactor calls the presenter **through an interface it defines itself** (`IRetraitSortie`): this is dependency
+The interactor calls the presenter **through an interface it defines itself** (`IWithdrawalOutput`): this is dependency
 inversion applied to the **output**.
 
 ---
@@ -88,7 +88,7 @@ The code is quoted exactly as it is, French comments included.
 
 The interactor returns nothing: it pushes its result to the output boundary, so it has no idea whether the response
 will end up as JSON, HTML or text.
-([Retrait.cs](../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs))
+([Withdrawal.cs](../../03-Clean/Clean.UseCases/Withdrawal/Withdrawal.cs))
 
 ```csharp
 public record WithdrawalRequest(Guid AccountId, decimal Amount);
@@ -138,8 +138,8 @@ public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
 
 ### 2. Presenters that decide the shape
 
-([PresentersHttp.cs](../../03-Clean/Clean.AdaptateursInterface/Presenters/PresentersHttp.cs)) — the presenter produces
-a *view model* (`VueHttp`), not an `IResult`: the adapters don't depend on ASP.NET Core.
+([HttpPresenters.cs](../../03-Clean/Clean.InterfaceAdapters/Presenters/HttpPresenters.cs)) — the presenter produces
+a *view model* (`HttpView`), not an `IResult`: the adapters don't depend on ASP.NET Core.
 
 ```csharp
 public class WithdrawalHttpPresenter : IWithdrawalOutput
@@ -159,7 +159,7 @@ public class WithdrawalHttpPresenter : IWithdrawalOutput
 ```
 
 **Two presenters for the same interactor**: JSON, or a text statement
-([ConsultationPresenterTexte.cs](../../03-Clean/Clean.AdaptateursInterface/Presenters/ConsultationPresenterTexte.cs)).
+([LookupTextPresenter.cs](../../03-Clean/Clean.InterfaceAdapters/Presenters/LookupTextPresenter.cs)).
 Adding a format doesn't touch the use case.
 
 ```csharp
@@ -192,20 +192,20 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalBody bod
 sequenceDiagram
     actor Client
     participant W as Clean.Web
-    participant P as RetraitPresenterHttp
-    participant C as ComptesControleur
-    participant I as RetraitInteracteur
-    participant G as IComptesPasserelle
-    participant E as Compte
-    Client->>W: POST /comptes/{bob}/retrait (99 999)
+    participant P as WithdrawalHttpPresenter
+    participant C as AccountsController
+    participant I as WithdrawalInteractor
+    participant G as IAccountsGateway
+    participant E as Account
+    Client->>W: POST /accounts/{bob}/withdrawal (99 999)
     W->>P: new()
-    W->>C: Retirer(id, 99999, presenter)
-    C->>I: Executer(DemandeRetrait, presenter)
-    I->>G: Charger(id)
-    I->>E: Retirer(99999)
-    E-->>I: RegleMetierException "Solde insuffisant."
-    I->>P: Refus("Solde insuffisant.")
-    P->>P: Vue = VueHttp(400, erreur)
+    W->>C: Withdraw(id, 99999, presenter)
+    C->>I: Execute(WithdrawalRequest, presenter)
+    I->>G: Load(id)
+    I->>E: Withdraw(99999)
+    E-->>I: BusinessRuleException "Insufficient balance."
+    I->>P: Refused("Insufficient balance.")
+    P->>P: Vue = HttpView(400, erreur)
     W->>P: read Vue
     W-->>Client: 400 Bad Request
 ```
@@ -215,7 +215,7 @@ sequenceDiagram
 ## The tests
 
 You test **what the interactor says**, with a spy on the output boundary, without any format.
-([RetraitInteracteurTests.cs](../../03-Clean/Clean.Tests/CasUtilisation/RetraitInteracteurTests.cs))
+([WithdrawalInteractorTests.cs](../../03-Clean/Clean.Tests/UseCases/WithdrawalInteractorTests.cs))
 
 ```csharp
 [Fact]

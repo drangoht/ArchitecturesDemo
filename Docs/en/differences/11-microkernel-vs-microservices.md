@@ -23,7 +23,7 @@ update a piece **without recompiling the others**.
 |---|---|---|
 | Question | adding **variants** (per customer, country, offer) without touching the core | **deploying and sizing** parts independently |
 | Processes | **one**: the plug-ins run in the core's | one per service |
-| The contract | an **SDK**: .NET interfaces (`IControleOperation`, `IRegleFrais`…) | **JSON** over the network |
+| The contract | an **SDK**: .NET interfaces (`IOperationCheck`, `IFeeRule`…) | **JSON** over the network |
 | Who calls whom | the **core** calls the plug-ins, at the extension points it planned | each service calls whoever it wants, over HTTP or messages |
 | Cost of a call | a method call | a network round trip, which can fail |
 | Updating a piece | drop in a DLL: reloaded **at runtime** | redeploy a service |
@@ -39,8 +39,8 @@ flowchart LR
     subgraph K["MICROKERNEL: 1 process"]
         direction TB
         N["Core"] -->|"extension points"| SDK["SDK"]
-        P1["PlafondNocturne"] --> SDK
-        P2["FraisDeVirement"] --> SDK
+        P1["NightLimit"] --> SDK
+        P2["TransferFees"] --> SDK
     end
     subgraph M["MICROSERVICES: N processes"]
         direction TB
@@ -55,7 +55,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments and messages included.
 
 **Microkernel**: it is the core that decides where the extensions come in, and in which order (1. "check" extension
-point: a single refusal is enough) ([NoyauBancaire.cs](../../../13-Microkernel/Mk.Noyau/NoyauBancaire.cs)):
+point: a single refusal is enough) ([BankingKernel.cs](../../../13-Microkernel/Mk.Kernel/BankingKernel.cs)):
 
 ```csharp
 // 1. "Check" extension point: a single refusal is enough.
@@ -70,7 +70,7 @@ foreach (var check in plugins.Active<IOperationCheck>())
 ```
 
 A plug-in is a class loaded from a DLL, in its own context, but **in the same process**
-([ChargeurPlugins.cs](../../../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs)):
+([PluginLoader.cs](../../../13-Microkernel/Mk.Kernel/PluginLoader.cs)):
 
 ```csharp
 internal sealed class PluginLoadContext(string dllPath)
@@ -78,7 +78,7 @@ internal sealed class PluginLoadContext(string dllPath)
 ```
 
 **Microservices**: Transfers calls Accounts **across the network**, with everything needed to survive its failures
-([Micro.Virements/Program.cs](../../../08-Microservices/Micro.Virements/Program.cs)):
+([Micro.Transfers/Program.cs](../../../08-Microservices/Micro.Transfers/Program.cs)):
 
 ```csharp
 builder.Services.AddHttpClient("accounts", (sp, client) =>
@@ -92,7 +92,7 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
 
 What follows from this:
 
-- a `FraisDeVirement` plug-in runs **inside** the core's operation; no network, no idempotency to plan for;
+- a `TransferFees` plug-in runs **inside** the core's operation; no network, no idempotency to plan for;
 - a plug-in that loops or reads the disk can harm the whole process; a faulty service only harms itself;
 - adding a fee rule to a microservice requires **redeploying** it; with the microkernel, **dropping in** a DLL.
 

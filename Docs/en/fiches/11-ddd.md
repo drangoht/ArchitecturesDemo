@@ -11,21 +11,21 @@
 flowchart TB
     H["Legacy exchange system"] -->|upstream| ACL["Anti-corruption layer"]
     subgraph TDC["Account Keeping context"]
-        ACL --> Dom["Compte, Argent, Iban"] --> PL["Published language<br/>VirementEmis"]
+        ACL --> Dom["Account, Money, Iban"] --> PL["Published language<br/>TransferSent"]
     end
     subgraph CONF["Compliance context"]
         S["Due diligence case, Alert"]
     end
     PL -->|event| S
-    S -->|"BloquerCompte<br/>(open host service)"| PL
+    S -->|"BlockAccount<br/>(open host service)"| PL
 ```
 
 ## Key points
 
 - **Strategic**: bounded contexts (an "account" is not the same thing in Account Keeping and in Compliance),
   context map, published language, anti-corruption layer.
-- **Tactical**: ubiquitous language (glossary `LANGAGE.md` = names in the code), **always-valid value objects**
-  (`Iban`, `Argent`), aggregates, factories, domain services, repositories, domain events.
+- **Tactical**: ubiquitous language (glossary `LANGUAGE.md` = names in the code), **always-valid value objects**
+  (`Iban`, `Money`), aggregates, factories, domain services, repositories, domain events.
 - It is **not a folder layout** but an approach, usable with Hexagonal, Onion or Clean.
 
 | ✅ When to use it | ❌ Overkill if |

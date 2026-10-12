@@ -6,18 +6,18 @@
 > (interfaces) and interchangeable **adapters** (implementations).
 
 **Family**: code organization · **Origin**: Alistair Cockburn, 2005 ·
-**Demo**: [`01-Hexagonale`](../../../01-Hexagonale) (port 5101, + a CLI) · 📖 [Full page](../01-hexagonale.md) ·
+**Demo**: [`01-Hexagonal`](../../../01-Hexagonal) (port 5101, + a CLI) · 📖 [Full page](../01-hexagonale.md) ·
 🌐 [Français](../../fiches/01-hexagonale.md)
 
 ```mermaid
 flowchart LR
-    W["Web adapter"] --> PE["Inbound ports<br/>IRetirerArgent…"]
+    W["Web adapter"] --> PE["Inbound ports<br/>IWithdrawMoney…"]
     C["CLI adapter"] --> PE
     subgraph H["Hexagon"]
-        PE --> A["Use cases"] --> PS["Outbound ports<br/>IComptes, INotifications"]
+        PE --> A["Use cases"] --> PS["Outbound ports<br/>IAccounts, INotifications"]
     end
-    J["ComptesFichierJson"] -.->|implements| PS
-    M["ComptesEnMemoire"] -.->|implements| PS
+    J["JsonFileAccounts"] -.->|implements| PS
+    M["InMemoryAccounts"] -.->|implements| PS
 ```
 
 ## Key points

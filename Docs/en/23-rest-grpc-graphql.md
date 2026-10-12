@@ -12,20 +12,20 @@
 ## The idea: three presentations of the same business
 
 The other demos change the system's **inside**. This one keeps a simple, single inside, the
-[ServiceBancaire](../../23-RestGrpcGraphQL/Styles.Banque/ServiceBancaire.cs), and changes its **surface**: three APIs
+[BankService](../../23-RestGrpcGraphQL/Styles.Bank/BankService.cs), and changes its **surface**: three APIs
 in the same process, each a thin translation layer. An architecture test checks that the business knows nothing about
-any of the three (`Le_metier_ignore_tout_des_styles_d_API`).
+any of the three (`The_business_code_knows_nothing_about_API_styles`).
 
 ```mermaid
 flowchart LR
     APP(["Mobile app<br/>(Styles.Client)"])
-    subgraph SRV["Styles.Serveur"]
+    subgraph SRV["Styles.Server"]
         direction TB
-        R["REST<br/>:5123 · HTTP/1.1<br/>/clients, /comptes, /virements"]
+        R["REST<br/>:5123 · HTTP/1.1<br/>/customers, /accounts, /transfers"]
         Q["GraphQL<br/>:5123 · HTTP/1.1<br/>POST /graphql"]
-        G["gRPC<br/>:5250 · HTTP/2<br/>banque.Banque/…"]
+        G["gRPC<br/>:5250 · HTTP/2<br/>bank.Bank/…"]
     end
-    M["ServiceBancaire<br/>(Styles.Banque)"]
+    M["BankService<br/>(Styles.Bank)"]
     APP -->|"JSON"| R
     APP -->|"JSON"| Q
     APP -->|"Protobuf"| G
@@ -51,29 +51,29 @@ flowchart LR
 
 ## The components
 
-- **The business** ([Styles.Banque](../../23-RestGrpcGraphQL/Styles.Banque)): customers, accounts, operations,
+- **The business** ([Styles.Bank](../../23-RestGrpcGraphQL/Styles.Bank)): customers, accounts, operations,
   transfers, and what the three APIs need without being specific to any of them: **single and batched** reads, a
   subscription to new operations, a counter of "database" reads.
-- **The tooling** ([Styles.Outillage](../../23-RestGrpcGraphQL/Styles.Outillage)): since the packages aren't in the local
+- **The tooling** ([Styles.Tooling](../../23-RestGrpcGraphQL/Styles.Tooling)): since the packages aren't in the local
   NuGet cache, what Google.Protobuf, Grpc.AspNetCore and HotChocolate would provide, written by hand and reduced to the
-  essentials, but faithful to the wire formats: [Protobuf.cs](../../23-RestGrpcGraphQL/Styles.Outillage/Protobuf/Protobuf.cs)
-  (encoding), [Grpc.cs](../../23-RestGrpcGraphQL/Styles.Outillage/Grpc/Grpc.cs) (frames, statuses, deadlines),
-  [HoteGrpc.cs](../../23-RestGrpcGraphQL/Styles.Outillage/Grpc/HoteGrpc.cs) and
-  [ClientGrpc.cs](../../23-RestGrpcGraphQL/Styles.Outillage/Grpc/ClientGrpc.cs), and a mini GraphQL engine
-  ([Analyseur.cs](../../23-RestGrpcGraphQL/Styles.Outillage/GraphQL/Analyseur.cs),
-  [Schema.cs](../../23-RestGrpcGraphQL/Styles.Outillage/GraphQL/Schema.cs),
-  [Moteur.cs](../../23-RestGrpcGraphQL/Styles.Outillage/GraphQL/Moteur.cs)). Writing these pieces shows what these
+  essentials, but faithful to the wire formats: [Protobuf.cs](../../23-RestGrpcGraphQL/Styles.Tooling/Protobuf/Protobuf.cs)
+  (encoding), [Grpc.cs](../../23-RestGrpcGraphQL/Styles.Tooling/Grpc/Grpc.cs) (frames, statuses, deadlines),
+  [GrpcHost.cs](../../23-RestGrpcGraphQL/Styles.Tooling/Grpc/GrpcHost.cs) and
+  [GrpcClient.cs](../../23-RestGrpcGraphQL/Styles.Tooling/Grpc/GrpcClient.cs), and a mini GraphQL engine
+  ([Parser.cs](../../23-RestGrpcGraphQL/Styles.Tooling/GraphQL/Parser.cs),
+  [Schema.cs](../../23-RestGrpcGraphQL/Styles.Tooling/GraphQL/Schema.cs),
+  [Engine.cs](../../23-RestGrpcGraphQL/Styles.Tooling/GraphQL/Engine.cs)). Writing these pieces shows what these
   protocols really are: a few hundred lines each.
-- **The gRPC contracts** ([banque.proto](../../23-RestGrpcGraphQL/Styles.Contrats/banque.proto) and
-  [Messages.cs](../../23-RestGrpcGraphQL/Styles.Contrats/Messages.cs)): without `protoc`, the classes are hand-written
+- **The gRPC contracts** ([banque.proto](../../23-RestGrpcGraphQL/Styles.Contracts/bank.proto) and
+  [Messages.cs](../../23-RestGrpcGraphQL/Styles.Contracts/Messages.cs)): without `protoc`, the classes are hand-written
   and a test checks that they match the `.proto` field by field.
-- **The server** ([ApiRest.cs](../../23-RestGrpcGraphQL/Styles.Serveur/ApiRest.cs),
-  [ApiGrpc.cs](../../23-RestGrpcGraphQL/Styles.Serveur/ApiGrpc.cs),
-  [ApiGraphQL.cs](../../23-RestGrpcGraphQL/Styles.Serveur/ApiGraphQL.cs)) and the error table in
-  [Traductions.cs](../../23-RestGrpcGraphQL/Styles.Serveur/Traductions.cs).
-- **The comparison client** ([ClientsBanque.cs](../../23-RestGrpcGraphQL/Styles.Client/ClientsBanque.cs)): the same
-  application written three times, behind an `IClientBanque` interface, with a request and byte counter
-  ([Mesure.cs](../../23-RestGrpcGraphQL/Styles.Client/Mesure.cs)). The tests use it too.
+- **The server** ([RestApi.cs](../../23-RestGrpcGraphQL/Styles.Server/RestApi.cs),
+  [GrpcApi.cs](../../23-RestGrpcGraphQL/Styles.Server/GrpcApi.cs),
+  [GraphQLApi.cs](../../23-RestGrpcGraphQL/Styles.Server/GraphQLApi.cs)) and the error table in
+  [Translations.cs](../../23-RestGrpcGraphQL/Styles.Server/Translations.cs).
+- **The comparison client** ([BankClients.cs](../../23-RestGrpcGraphQL/Styles.Client/BankClients.cs)): the same
+  application written three times, behind an `IBankClient` interface, with a request and byte counter
+  ([Measure.cs](../../23-RestGrpcGraphQL/Styles.Client/Measure.cs)). The tests use it too.
 
 Data: **Alice** (`alice`) has three accounts, current account `10001`, Livret A (savings) `10002` and joint account
 `10003`; **Bob** (`bob`) a current account `20001`.
@@ -87,9 +87,9 @@ The mobile app shows, for each account, its label, its balance and its three lat
 French: requests, bytes sent, bytes received):
 
 ```text
-  REST     5 requête(s), 0 o envoyés, 2014 o reçus, 178 ms
-  GraphQL  1 requête(s), 210 o envoyés, 881 o reçus, 60 ms
-  gRPC     1 requête(s), 14 o envoyés, 378 o reçus, 62 ms
+  REST     5 request(s), 0 B sent, 2014 B received, 178 ms
+  GraphQL  1 request(s), 207 B sent, 876 B received, 60 ms
+  gRPC     1 request(s), 14 B sent, 393 B received, 63 ms
 ```
 
 **REST** follows the resources: the customer, their accounts, then the operations of **each** account ("1 + N"). The
@@ -124,19 +124,19 @@ sequenceDiagram
     participant A as App
     participant S as Server
     Note over A,S: REST (3 waves, 5 requests)
-    A->>S: GET /clients/alice
-    A->>S: GET /clients/alice/comptes
+    A->>S: GET /customers/alice
+    A->>S: GET /customers/alice/accounts
     par one per account
-        A->>S: GET /comptes/10001/operations
-        A->>S: GET /comptes/10002/operations
-        A->>S: GET /comptes/10003/operations
+        A->>S: GET /accounts/10001/operations
+        A->>S: GET /accounts/10002/operations
+        A->>S: GET /accounts/10003/operations
     end
     Note over A,S: GraphQL or gRPC (1 request)
-    A->>S: POST /graphql · or · banque.Banque/ObtenirTableauDeBord
+    A->>S: POST /graphql · or · bank.Bank/ObtenirTableauDeBord
 ```
 
-The three resulting screens are **identical** (test `Les_trois_API_donnent_exactement_le_meme_ecran`). REST could have
-done better, with a dedicated resource (`/clients/alice/tableau-de-bord`) or an `?expand=operations` parameter: that is
+The three resulting screens are **identical** (test `The_three_APIs_give_exactly_the_same_screen`). REST could have
+done better, with a dedicated resource (`/customers/alice/dashboard`) or an `?expand=operations` parameter: that is
 exactly what a [BFF](16-bff.md) does. But then you need one resource per screen, which GraphQL avoids.
 
 ---
@@ -144,10 +144,10 @@ exactly what a [BFF](16-bff.md) does. But then you need one resource per screen,
 ## 2. What travels
 
 For the same screen, REST receives **2.3 times** more than GraphQL and **5 times** more than gRPC (bodies only; test
-`gRPC_transfere_le_moins_d_octets_et_REST_le_plus`).
+`gRPC_transfers_the_fewest_bytes_and_REST_the_most`).
 
 **REST** returns the full representation of each account, the same for every client. The screen wanted two fields; it
-receives ten (over-fetching, test `La_representation_d_un_compte_est_complete_et_la_meme_pour_tous_les_clients`):
+receives ten (over-fetching, test `The_representation_of_an_account_is_complete_and_the_same_for_all_clients`):
 
 ```json
 {"number":"10001","label":"Current account","type":"current","iban":"FR76 3000 4000 0110 0010 0010 001","balance":1626.05,
@@ -160,13 +160,13 @@ one that **sends** the most (210 bytes): the query text leaves with every call. 
 replace that text with an identifier.)
 
 **gRPC** transmits neither names nor text: field numbers and binary integers. The example from the Protobuf
-documentation (test `Un_entier_s_encode_en_varint_comme_dans_la_documentation_Protobuf`; field number 1, wire type 0
+documentation (test `An_integer_is_encoded_as_a_varint_as_in_the_Protobuf_documentation`; field number 1, wire type 0
 varint; 150 on 7 bits per byte, least significant first):
 
 ```text
-champ 1 = 150   →   08 96 01
-                    08    = numéro de champ 1, type filaire 0 (varint)
-                    96 01 = 150, sur 7 bits par octet, poids faibles d'abord
+field 1 = 150   →   08 96 01
+                    08    = field number 1, wire type 0 (varint)
+                    96 01 = 150, 7 bits per byte, least significant first
 ```
 
 Two consequences visible in the contract: a default value (0, empty string) **doesn't travel at all**; and there is
@@ -183,7 +183,7 @@ message Account {
 }
 ```
 
-GraphQL has no decimal either: `Float` is a double (`"Float" => JsonValue.Create(Convert.ToDouble(valeur))`). For money,
+GraphQL has no decimal either: `Float` is a double (`"Float" => JsonValue.Create(Convert.ToDouble(value))`). For money,
 you usually define a custom scalar. And each format has its own precision for dates: the real run showed a GraphQL
 screen different from the other two, because the schema dated to the second while REST kept the fractions. The business
 therefore now dates its operations to the second:
@@ -197,8 +197,8 @@ now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
 ## 3. N+1: moved, not removed
 
 A single GraphQL query can hide **N** database reads: if the `operations` field is resolved account by account,
-`client { comptes { operations } }` reads the database once per account, and
-`client { comptes { titulaire { comptes { operations } } } }` nine times. The client sees only one round trip; the
+`client { accounts { operations } }` reads the database once per account, and
+`client { accounts { owner { accounts { operations } } } }` nine times. The client sees only one round trip; the
 database sees everything.
 
 The engine therefore executes the query **level by level**: a field is resolved for all the objects of a level at once.
@@ -219,8 +219,8 @@ A **batched** resolver (the "DataLoader" of GraphQL engines) receives all the ac
 
 REST makes as many reads as requests: the N+1 is **visible** (in the access logs, in the latency). In GraphQL it is
 **invisible** and depends on each resolver. gRPC, with its method built for the screen, settles it once and for all on
-the server side. Tests `Derriere_la_requete_unique_de_GraphQL_la_base_n_est_lue_qu_une_fois` and
-`Les_operations_de_tous_les_comptes_d_un_niveau_sont_lues_en_une_seule_fois` (9 accounts, one read).
+the server side. Tests `Behind_the_single_GraphQL_request_the_database_is_read_only_once` and
+`The_operations_of_all_the_accounts_of_a_level_are_read_at_once` (9 accounts, one read).
 
 ---
 
@@ -230,18 +230,18 @@ A transfer refused for insufficient balance, **real run** (the message, in Frenc
 available (authorized overdraft: €300.00)"):
 
 ```text
-  REST     422 SOLDE_INSUFFISANT  « Solde insuffisant : 1160,01 € disponibles (découvert autorisé : 300,00 €). »
-  GraphQL  SOLDE_INSUFFISANT      « Solde insuffisant : 1160,01 € disponibles (découvert autorisé : 300,00 €). »
-  gRPC     FailedPrecondition     « Solde insuffisant : 1160,01 € disponibles (découvert autorisé : 300,00 €). »
+  REST     422 INSUFFICIENT_BALANCE "Insufficient balance: 1160,01 € available (authorized overdraft: 300,00 €)."
+  GraphQL  INSUFFICIENT_BALANCE   "Insufficient balance: 1160,01 € available (authorized overdraft: 300,00 €)."
+  gRPC     FailedPrecondition     "Insufficient balance: 1160,01 € available (authorized overdraft: 300,00 €)."
 ```
 
-The translation is written once, in [Traductions.cs](../../23-RestGrpcGraphQL/Styles.Serveur/Traductions.cs):
+The translation is written once, in [Translations.cs](../../23-RestGrpcGraphQL/Styles.Server/Translations.cs):
 
 | Business error | REST | gRPC | GraphQL (`extensions.code`) |
 |---|---|---|---|
-| Unknown customer, account or transfer | `404 Not Found` | `NotFound` (5) | `COMPTE_INCONNU`… |
-| Invalid amount, same account, invalid parameter | `400 Bad Request` | `InvalidArgument` (3) | `MONTANT_INVALIDE`… |
-| Insufficient balance | `422 Unprocessable Entity` | `FailedPrecondition` (9) | `SOLDE_INSUFFISANT` |
+| Unknown customer, account or transfer | `404 Not Found` | `NotFound` (5) | `UNKNOWN_ACCOUNT`… |
+| Invalid amount, same account, invalid parameter | `400 Bad Request` | `InvalidArgument` (3) | `INVALID_AMOUNT`… |
+| Insufficient balance | `422 Unprocessable Entity` | `FailedPrecondition` (9) | `INSUFFICIENT_BALANCE` |
 
 - **REST**: the status gives the category, understood by every tool (caches, logs, alerts on 5xx); the
   `application/problem+json` body (RFC 9457) carries the details.
@@ -250,7 +250,7 @@ The translation is written once, in [Traductions.cs](../../23-RestGrpcGraphQL/St
   without trailers (`426`). The 17 statuses are categories, not business codes: to tell two `FailedPrecondition` apart,
   you need rich details (`google.rpc.Status`, not done here).
 - **GraphQL**: `200` too, and the error in `errors`, with the **path** of the faulty field. The other fields are served
-  (test `Une_erreur_sur_un_champ_n_empeche_pas_d_obtenir_les_autres`):
+  (test `An_error_on_a_field_does_not_prevent_getting_the_others`):
 
 ```json
 {"data":{"a":{"label":"Current account"},"b":null},
@@ -258,16 +258,16 @@ The translation is written once, in [Traductions.cs](../../23-RestGrpcGraphQL/St
 ```
 
 When the field in error is **non-null** (`!`), it cannot be `null`: its parent becomes `null`, and so on up to the first
-field that accepts it. With `operations(derniers: 51)` (refused), the account, the list of accounts and finally `client`
-are `null`, with one error per account (test `Un_champ_non_nul_en_erreur_rend_nul_le_premier_parent_nullable`).
+field that accepts it. With `operations(latest: 51)` (refused), the account, the list of accounts and finally `client`
+are `null`, with one error per account (test `A_non_null_field_in_error_nulls_the_first_nullable_parent`).
 Designing a schema also means choosing where these errors stop. Finally, an unexpected exception must disclose nothing:
-`"Erreur interne."` (internal error), with no details (test `Une_erreur_inattendue_ne_divulgue_rien_au_client`).
+`"Error inner."` (internal error), with no details (test `An_unexpected_error_discloses_nothing_to_the_client`).
 
 ---
 
 ## 5. Push rather than poll
 
-**gRPC** can make the server answer several times: `SuivreOperations` keeps the HTTP/2 response open and writes each new
+**gRPC** can make the server answer several times: `FollowOperations` keeps the HTTP/2 response open and writes each new
 operation into it, one frame at a time.
 
 ```csharp
@@ -276,24 +276,24 @@ await foreach (var operation in operations.ReadAllAsync(cancellation))
 ```
 
 The client sets a **deadline** (`grpc-timeout` header); the server enforces it too, and stops the work: the stream ends
-with `DeadlineExceeded` and the subscription is released (test `L_echeance_du_client_arrete_aussi_le_travail_cote_serveur`).
-A client that leaves also frees the server (test `Un_client_qui_abandonne_libere_le_serveur`). **Real run** (server
+with `DeadlineExceeded` and the subscription is released (test `The_client_deadline_also_stops_the_work_on_the_server_side`).
+A client that leaves also frees the server (test `A_client_that_gives_up_frees_the_server`). **Real run** (server
 stream, 1 request open for 2 s; three savings deposits arrive, made through each API; end of stream):
 
 ```text
-  gRPC (flux serveur, 1 requête ouverte 2 s) :
-      Épargne via REST de 10002 (10,00 €)
-      Épargne via GraphQL de 10002 (10,00 €)
-      Épargne via gRPC de 10002 (10,00 €)
-      fin du flux : DeadlineExceeded
+  gRPC (server stream, 1 request open for 2 s):
+      Savings via REST from 10002 (10,00 €)
+      Savings via GraphQL from 10002 (10,00 €)
+      Savings via gRPC from 10002 (10,00 €)
+      end of stream: DeadlineExceeded
 ```
 
 **REST** has no streams: you poll. But HTTP makes polling cheap: each account has an **ETag** that changes with every
 operation; the client sends back the one it has (`If-None-Match`) and receives `304 Not Modified`, without a body, as
-long as nothing has moved (test `L_ETag_evite_de_retransferer_un_compte_qui_n_a_pas_change`):
+long as nothing has moved (test `The_ETag_avoids_transferring_again_an_account_that_has_not_changed`):
 
 ```text
-  REST (interrogation avec ETag, 5 fois) : 1 × 200, 4 × 304 Not Modified — 5 requête(s), 0 o envoyés, 341 o reçus
+  REST (polling with ETag, 5 times): 1 × 200, 4 × 304 Not Modified — 5 request(s), 0 B sent, 337 B received, 310 ms
 ```
 
 That is REST's great asset, missing from the other two: GET is **safe and idempotent**, so everything between the client
@@ -309,12 +309,12 @@ All three styles let you add a field without breaking clients, each in its own w
 
 - **gRPC**: only the field **number** travels. You can rename a field; never change or reuse its number. An old client
   **skips** the fields it doesn't know, a new client reads default values in an old message (tests
-  `Un_ancien_client_ignore_les_champs_ajoutes_depuis`,
-  `Un_nouveau_client_lit_un_ancien_message_avec_les_valeurs_par_defaut`). Hence the value 0 of each enum, reserved for
-  "unknown" (`TYPE_COMPTE_INCONNU = 0`).
+  `An_old_client_ignores_the_fields_added_since`,
+  `A_new_client_reads_an_old_message_with_the_default_values`). Hence the value 0 of each enum, reserved for
+  "unknown" (`UNKNOWN_ACCOUNT_TYPE = 0`).
 - **GraphQL**: the client only receives what it asks for, so adding is always safe. Removing is prepared: the
-  `soldeTexte` field (the pre-formatted balance, from the first version) is **deprecated** in the published schema, and
-  the server **counts who still asks for it** (`GET /graphql/utilisation`); it is removed the day the counter stops
+  `balanceText` field (the pre-formatted balance, from the first version) is **deprecated** in the published schema, and
+  the server **counts who still asks for it** (`GET /graphql/usage`); it is removed the day the counter stops
   moving. No other style knows so precisely what its clients read.
 
 ```graphql
@@ -322,23 +322,23 @@ balanceText: String! @deprecated(reason: "Use 'balance' (a number) and format it
 ```
 
 - **REST**: adding a JSON field is safe if clients ignore those they don't know (System.Text.Json's default behavior);
-  for an incompatible change, you publish a new version (`/v2/comptes`, or a header), and keep both alive.
+  for an incompatible change, you publish a new version (`/v2/accounts`, or a header), and keep both alive.
 
 Without `protoc`, a trap lies in wait: classes that drift from the `.proto`. The test
-`Chaque_message_du_proto_correspond_a_sa_classe_champ_par_champ` compares the name, number and type of each field, and
-`Le_serveur_sert_chaque_methode_du_service_et_rien_d_autre` the methods.
+`Each_message_of_the_proto_matches_its_class_field_by_field` compares the name, number and type of each field, and
+`The_server_serves_each_method_of_the_service_and_nothing_else` the methods.
 
 ---
 
 ## 7. Protecting yourself from an overly curious client
 
 In REST and gRPC, the server knows what each call costs: it wrote them. In GraphQL, **the client writes the query**:
-`client { comptes { titulaire { comptes { titulaire { … } } } } }` can make the server work endlessly. The engine
+`client { accounts { owner { accounts { owner { … } } } } }` can make the server work endlessly. The engine
 therefore **validates** the whole query against the schema **before** executing anything (unknown fields and
 arguments, required arguments, variable types, with their line and column), and refuses beyond 6 levels (tests
-`Une_requete_trop_profonde_est_refusee_avant_d_etre_executee`,
-`Un_champ_ou_un_argument_inconnu_est_refuse_par_la_validation_avec_sa_position`). In production you add a **maximum
-cost** per query, limits on list sizes (here `derniers` ≤ 50), and often an allowlist of known queries.
+`A_query_that_is_too_deep_is_refused_before_being_executed`,
+`An_unknown_field_or_argument_is_refused_by_the_validation_with_its_position`). In production you add a **maximum
+cost** per query, limits on list sizes (here `latest` ≤ 50), and often an allowlist of known queries.
 
 ---
 
@@ -349,20 +349,20 @@ server handles HTTP/2 and trailers: gRPC works too), the GraphQL engine called d
 
 | Test | What is checked |
 |---|---|
-| `Les_trois_API_donnent_exactement_le_meme_ecran`, `Un_virement_reussit_de_la_meme_facon_par_les_trois_API` | same business, same results |
-| `REST_fait_une_requete_par_compte_GraphQL_et_gRPC_une_seule_en_tout`, `gRPC_transfere_le_moins_d_octets_et_REST_le_plus` | network costs |
-| `Derriere_la_requete_unique_de_GraphQL_la_base_n_est_lue_qu_une_fois` | N+1 in the database |
-| `La_meme_erreur_metier_dans_la_langue_de_chaque_API` (3 cases) | error translations |
-| `Un_entier_s_encode_en_varint_comme_dans_la_documentation_Protobuf`, `Une_chaine_est_precedee_de_sa_longueur`, `Les_valeurs_par_defaut_ne_circulent_pas`, `Le_zigzag_garde_les_petits_negatifs_courts`… | Protobuf encoding, byte by byte |
-| `Un_ancien_client_ignore_les_champs_ajoutes_depuis`, `Un_nouveau_client_lit_un_ancien_message_avec_les_valeurs_par_defaut` | gRPC contract evolution |
-| `Chaque_message_du_proto_correspond_a_sa_classe_champ_par_champ`, `L_enumeration_du_proto_correspond_a_celle_du_code`, `Le_serveur_sert_chaque_methode_du_service_et_rien_d_autre` | the `.proto` stays the source of truth |
-| `Un_appel_unaire_est_un_POST_dont_le_corps_est_un_message_encadre_et_le_statut_dans_les_trailers`, `Une_erreur_metier_repond_quand_meme_200_avec_le_statut_gRPC_dans_les_trailers` | the gRPC wire format, seen "by hand" |
-| `Le_flux_pousse_chaque_operation_des_qu_elle_a_lieu`, `L_echeance_du_client_arrete_aussi_le_travail_cote_serveur`, `Un_client_qui_abandonne_libere_le_serveur` | streams, deadlines, cancellation |
-| `Le_client_obtient_exactement_les_champs_demandes_et_rien_d_autre`, `Des_alias_permettent_de_demander_deux_fois_le_meme_champ`, `Les_variables_sont_verifiees_selon_leur_type`, `Une_mutation_s_execute_et_rend_ce_que_le_client_demande` | GraphQL |
-| `Une_erreur_sur_un_champ_n_empeche_pas_d_obtenir_les_autres`, `Un_champ_non_nul_en_erreur_rend_nul_le_premier_parent_nullable`, `Une_erreur_inattendue_ne_divulgue_rien_au_client` | partial responses, `null` propagation |
-| `Le_schema_publie_signale_les_champs_deprecies_et_le_serveur_sait_qui_les_utilise` | deprecation and usage statistics |
-| `Les_erreurs_sont_des_statuts_HTTP_avec_un_corps_problem_json` (4 cases), `Un_virement_cree_une_ressource_201_dont_l_adresse_est_dans_Location`, `L_ETag_evite_de_retransferer_un_compte_qui_n_a_pas_change` | REST |
-| `Le_metier_ignore_tout_des_styles_d_API`, `L_outillage_ignore_la_banque_et_les_contrats_ignorent_le_metier` | **architecture tests** |
+| `The_three_APIs_give_exactly_the_same_screen`, `A_transfer_succeeds_the_same_way_through_the_three_APIs` | same business, same results |
+| `REST_makes_one_request_per_account_GraphQL_and_gRPC_a_single_one_in_all`, `gRPC_transfers_the_fewest_bytes_and_REST_the_most` | network costs |
+| `Behind_the_single_GraphQL_request_the_database_is_read_only_once` | N+1 in the database |
+| `The_same_business_error_in_the_language_of_each_API` (3 cases) | error translations |
+| `An_integer_is_encoded_as_a_varint_as_in_the_Protobuf_documentation`, `A_string_is_preceded_by_its_length`, `Default_values_do_not_travel`, `Zigzag_keeps_small_negatives_short`… | Protobuf encoding, byte by byte |
+| `An_old_client_ignores_the_fields_added_since`, `A_new_client_reads_an_old_message_with_the_default_values` | gRPC contract evolution |
+| `Each_message_of_the_proto_matches_its_class_field_by_field`, `The_enumeration_of_the_proto_matches_the_one_of_the_code`, `The_server_serves_each_method_of_the_service_and_nothing_else` | the `.proto` stays the source of truth |
+| `A_unary_call_is_a_POST_whose_body_is_a_framed_message_and_the_status_in_the_trailers`, `A_business_error_still_answers_200_with_the_gRPC_status_in_the_trailers` | the gRPC wire format, seen "by hand" |
+| `The_stream_pushes_each_operation_as_soon_as_it_happens`, `The_client_deadline_also_stops_the_work_on_the_server_side`, `A_client_that_gives_up_frees_the_server` | streams, deadlines, cancellation |
+| `The_client_gets_exactly_the_requested_fields_and_nothing_else`, `Aliases_allow_asking_for_the_same_field_twice`, `The_variables_are_checked_according_to_their_type`, `A_mutation_is_executed_and_returns_what_the_client_asks_for` | GraphQL |
+| `An_error_on_a_field_does_not_prevent_getting_the_others`, `A_non_null_field_in_error_nulls_the_first_nullable_parent`, `An_unexpected_error_discloses_nothing_to_the_client` | partial responses, `null` propagation |
+| `The_published_schema_flags_the_deprecated_fields_and_the_server_knows_who_uses_them` | deprecation and usage statistics |
+| `Errors_are_HTTP_statuses_with_a_problem_json_body` (4 cases), `A_transfer_creates_a_201_resource_whose_address_is_in_Location`, `The_ETag_avoids_transferring_again_an_account_that_has_not_changed` | REST |
+| `The_business_code_knows_nothing_about_API_styles`, `The_tooling_ignores_the_bank_and_the_contracts_ignore_the_business_code` | **architecture tests** |
 
 Checked by mutation (25 attempts, all detected): default values transmitted, unknown field refused, missing zigzag, a
 field skip that reads the old position; a gRPC error returned as a success, deadline ignored, content type not checked,
@@ -373,8 +373,8 @@ statistics; ETag ignored, 200 instead of 201; falsified error translations; a fi
 touching the `.proto`.
 
 Two of these guarantees come from real failures while writing the demo: skipping unknown fields
-(`position += LireVarint(octets, ref position)` reads the old value of `position` **before** the call, and skips to the
-wrong place: found by `Un_ancien_client_ignore_les_champs_ajoutes_depuis`) and rounding dates (found in the real run,
+(`position += ReadVarint(bytes, ref position)` reads the old value of `position` **before** the call, and skips to the
+wrong place: found by `An_old_client_ignores_the_fields_added_since`) and rounding dates (found in the real run,
 section 2).
 
 ---

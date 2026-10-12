@@ -3,7 +3,7 @@
 > **The difference in one sentence**: a component is **business logic and its database behind an interface**; a module
 > is **a mini-application**: it also owns its HTTP routes and its event subscriptions, and is plugged in with one line.
 
-📁 Demos: [`06-Composants`](../../../06-Composants) · [`07-MonolitheModulaire`](../../../07-MonolitheModulaire) ·
+📁 Demos: [`06-Components`](../../../06-Components) · [`07-ModularMonolith`](../../../07-ModularMonolith) ·
 📖 Pages: [Package by Component](../06-composants.md) · [Modular Monolith](../07-monolithe-modulaire.md) ·
 🗂️ Cheat sheets: [6](../fiches/06-composants.md) · [7](../fiches/07-monolithe-modulaire.md)
 
@@ -21,8 +21,8 @@ transaction**, with compensation if the credit fails.
 
 | | Package by Component | Modular Monolith |
 |---|---|---|
-| Public surface | an interface (`IComptesComposant`) + DTOs + `AddComposantComptes()` | an `IModule` class; the contract lives in a **separate project** (`Modulaire.Comptes.Contrats`) |
-| HTTP routes | in the **shared web layer** (`Composants.Api`), which calls the components | in **each module** (`MapEndpoints`) |
+| Public surface | an interface (`IAccountsComponent`) + DTOs + `AddAccountsComponent()` | an `IModule` class; the contract lives in a **separate project** (`Modular.Accounts.Contracts`) |
+| HTTP routes | in the **shared web layer** (`Components.Api`), which calls the components | in **each module** (`MapEndpoints`) |
 | Communication | interface calls, synchronous | contract calls **and events** published on a bus |
 | Adding a reaction (notify…) | modify the caller | add a subscribing module, without touching the others |
 | Adding / removing a feature | modify the API and the injection | one line in `IModule[] modules = [...]` |
@@ -36,8 +36,8 @@ transaction**, with compensation if the credit fails.
 flowchart LR
     subgraph C["PACKAGE BY COMPONENT"]
         direction TB
-        API["Composants.Api<br/>all the routes"] --> IC["IComptesComposant"]
-        API --> IV["IVirementsComposant"]
+        API["Components.Api<br/>all the routes"] --> IC["IAccountsComponent"]
+        API --> IV["ITransfersComponent"]
         IV -->|"interface"| IC
     end
     subgraph M["MODULAR MONOLITH"]
@@ -45,7 +45,7 @@ flowchart LR
         H["Host: IModule[]"] --> MC["Accounts module<br/>routes + database"]
         H --> MV["Transfers module<br/>routes + database"]
         H --> MN["Notifications module"]
-        MV -->|"IComptesApi"| MC
+        MV -->|"IAccountsApi"| MC
         MV -.->|"event"| MN
     end
     C ~~~ M
@@ -56,7 +56,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments included.
 
 **Package by Component**: the web layer declares the routes and calls the component through its interface
-([Program.cs](../../../06-Composants/Composants.Api/Program.cs)):
+([Program.cs](../../../06-Components/Components.Api/Program.cs)):
 
 ```csharp
 // Try writing "new AccountsDbContext(...)" or "new Account(...)" here: it does not compile.
@@ -65,7 +65,7 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest 
 ```
 
 **Modular Monolith**: the host only knows modules, each one brings its routes, its database, its subscriptions
-([Program.cs](../../../07-MonolitheModulaire/Modulaire.Hote/Program.cs)):
+([Program.cs](../../../07-ModularMonolith/Modular.Host/Program.cs)):
 
 ```csharp
 // The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
@@ -73,7 +73,7 @@ IModule[] modules = [new AccountsModule(), new TransfersModule(), new Notificati
 ```
 
 A module's contract also contains **its events**
-([Contrats.cs](../../../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs)):
+([Contracts.cs](../../../07-ModularMonolith/Modular.Accounts.Contracts/Contracts.cs)):
 
 ```csharp
 // ─── Asynchronous communication: the events the module publishes ───
@@ -81,7 +81,7 @@ public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance)
 ```
 
 And a module can be **added without touching the others**: Notifications only subscribes
-([NotificationsModule.cs](../../../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs)):
+([NotificationsModule.cs](../../../07-ModularMonolith/Modular.Notifications/NotificationsModule.cs)):
 
 ```csharp
 // Subscriptions to the other modules' events.
@@ -89,13 +89,13 @@ services.AddScoped<IEventHandler<WithdrawalMade>, OnWithdrawalMade>();
 services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 ```
 
-In the Package by Component demo, notifying Bob of a transfer would require modifying `VirementsComposant` (or the web
+In the Package by Component demo, notifying Bob of a transfer would require modifying `TransfersComponent` (or the web
 layer) to call a notifications component.
 
 **The transfer itself is almost identical**: debit, credit, compensate if the credit fails
-([VirementsComposant.cs](../../../06-Composants/Composants.Virements/Interne/VirementsComposant.cs),
-[VirementsEndpoints.cs](../../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs)). The
-difference comes **after**: the module publishes `VirementEffectue` on the bus.
+([TransfersComponent.cs](../../../06-Components/Components.Transfers/Internal/TransfersComponent.cs),
+[TransfersEndpoints.cs](../../../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs)). The
+difference comes **after**: the module publishes `TransferMade` on the bus.
 
 ## How to choose
 
@@ -106,7 +106,7 @@ difference comes **after**: the module publishes `VirementEffectue` on the bus.
 
 ## Moving from components to modules
 
-1. Move the interface and the DTOs out into a `*.Contrats` project.
+1. Move the interface and the DTOs out into a `*.Contracts` project.
 2. Move the routes from the web layer into the component (`MapEndpoints`), which becomes an `IModule`.
 3. Replace "notify" calls with published events.
 4. Add the architecture tests: no module references another's implementation.

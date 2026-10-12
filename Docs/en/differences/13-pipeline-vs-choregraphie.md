@@ -4,7 +4,7 @@
 > within one process; in a choreography, **facts** travel between services, and the path **emerges** from the
 > subscriptions.
 
-📁 Demos: [`20-Pipeline`](../../../20-Pipeline) · [`21-Choregraphie`](../../../21-Choregraphie) ·
+📁 Demos: [`20-Pipeline`](../../../20-Pipeline) · [`21-Choreography`](../../../21-Choreography) ·
 📖 Pages: [Pipeline](../20-pipeline.md) · [Choreography](../21-choregraphie.md) ·
 🗂️ Cheat sheets: [20](../fiches/20-pipeline.md) · [21](../fiches/21-choregraphie.md)
 
@@ -27,7 +27,7 @@ aside without stopping the rest; **idempotent recovery**; a logical order betwee
 | The intermediary | a **bounded** pipe (64 items): when full, it makes the previous stage wait | a broker that **stores**: no back-pressure |
 | Throughput | that of the slowest stage; you **parallelize the bottleneck** (8 copies of the fraud check) | each service at its own pace |
 | Order | **preserved** (the parallel stage reorders): line 2 can depend on line 1 | no guarantee between different transfers |
-| A refused item | **rejected with a reason**, counted in the report | a refusal event (`ConformiteRefusee`), to which others react |
+| A refused item | **rejected with a reason**, counted in the report | a refusal event (`ComplianceRefused`), to which others react |
 | A failure | an exception **stops** the whole pipeline; you replay the file | **silence**: dead letters, then expiry |
 | Adding a step | reassemble the pipeline | subscribe |
 | Overview | the assembly code | the subscriptions, at runtime |
@@ -42,11 +42,11 @@ flowchart LR
     end
     subgraph C["CHOREOGRAPHY: services, reactions"]
         direction TB
-        CO["Accounts"] -.->|"FondsReserves"| CF["Compliance"]
-        CF -.->|"ConformiteApprouvee"| CH["Exchange"]
-        CH -.->|"DevisesConverties"| CO
-        CO -.->|"VirementRegle"| NO["Notifications"]
-        CO -.->|"VirementRegle"| FI["Loyalty"]
+        CO["Accounts"] -.->|"FundsReserved"| CF["Compliance"]
+        CF -.->|"ComplianceApproved"| CH["Exchange"]
+        CH -.->|"CurrenciesConverted"| CO
+        CO -.->|"TransferSettled"| NO["Notifications"]
+        CO -.->|"TransferSettled"| FI["Loyalty"]
     end
     P ~~~ C
 ```
@@ -56,7 +56,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments included.
 
 **Pipeline**: a full pipe **blocks** the stage that writes; that is what bounds memory, whatever the file size
-([Etage.cs](../../../20-Pipeline/Pipeline.Noyau/Etage.cs)):
+([Stage.cs](../../../20-Pipeline/Pipeline.Core/Stage.cs)):
 
 ```csharp
 /// <summary>Writing into a full pipe BLOCKS: the stage waits for the next one to have room. That is the back-pressure.</summary>
@@ -64,7 +64,7 @@ private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput
 ```
 
 And the first failing stage stops all the others
-([Pipeline.cs](../../../20-Pipeline/Pipeline.Noyau/Pipeline.cs)):
+([Pipeline.cs](../../../20-Pipeline/Pipeline.Core/Pipeline.cs)):
 
 ```csharp
 // The first stage that fails stops all the others.
@@ -74,7 +74,7 @@ foreach (var task in tasks)
 
 **Choreography**: each service keeps the identifiers already handled, and reacts by publishing the follow-up; nothing
 slows it down if the next one is slow, nothing stops it if the next one goes down
-([Autres.cs](../../../21-Choregraphie/Choreo.Services/Autres.cs)):
+([Others.cs](../../../21-Choreography/Choreo.Services/Others.cs)):
 
 ```csharp
 lock (Lock)

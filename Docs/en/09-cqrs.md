@@ -11,8 +11,7 @@
 ## The idea
 
 Formalized by **Greg Young** around 2010, from Bertrand Meyer's CQS principle ("a method changes state *or* answers a
-question, never both"). The observation: **writing and reading don't have the same needs**. (In the code: *Ecriture* =
-write, *Lecture* = read, *Commandes* = commands, *Requetes* = queries.)
+question, never both"). The observation: **writing and reading don't have the same needs**.
 
 | | Write (Command) | Read (Query) |
 |---|---|---|
@@ -26,23 +25,23 @@ flowchart TB
     Client(["Client"])
 
     subgraph Ecriture["WRITE"]
-        BC["BusCommandes"] -->|"① validate"| Val["IValidateur&lt;T&gt;"]
-        BC -->|"② handle"| G["IGestionnaireCommande&lt;T&gt;"]
-        G --> A["Compte aggregate"]
-        G --> DBE[("EcritureDb<br/>accounts + log")]
+        BC["CommandBus"] -->|"① validate"| Val["IValidator&lt;T&gt;"]
+        BC -->|"② handle"| G["ICommandHandler&lt;T&gt;"]
+        G --> A["Account aggregate"]
+        G --> DBE[("WriteDb<br/>accounts + log")]
     end
 
-    S["SynchroniseurProjections<br/>(background task)"]
+    S["ProjectionSynchronizer<br/>(background task)"]
 
     subgraph Lecture["READ"]
-        Pr["Projecteur"] --> DBL[("LectureDb<br/>ReleveCompte · LigneOperation<br/>Statistiques")]
-        BR["BusRequetes"] --> Q["IGestionnaireRequete&lt;,&gt;"] --> DBL
+        Pr["Projector"] --> DBL[("ReadDb<br/>AccountStatement · OperationLine<br/>Statistics")]
+        BR["QueryBus"] --> Q["IQueryHandler&lt;,&gt;"] --> DBL
     end
 
     Client -->|"POST · command"| BC
     Client -->|"GET · query"| BR
     DBE -.->|"events"| S
-    S -.->|"Appliquer"| Pr
+    S -.->|"Apply"| Pr
 
     classDef ecriture fill:#ffebe9,stroke:#cf222e
     classDef lecture fill:#ddf4ff,stroke:#0969da
@@ -50,7 +49,7 @@ flowchart TB
     class Lecture lecture
 ```
 
-The two sides **don't reference each other**: their only link is `Cqrs.Evenements`.
+The two sides **don't reference each other**: their only link is `Cqrs.Events`.
 
 ---
 
@@ -61,7 +60,7 @@ The code is quoted exactly as it is, French comments and messages included.
 ### 1. A command: intent + validation + handler, in one file
 
 The identifier is supplied by the caller: the command has nothing to return.
-([OuvrirCompte.cs](../../09-CQRS/Cqrs.Ecriture/Commandes/OuvrirCompte.cs))
+([OpenAccount.cs](../../09-CQRS/Cqrs.Write/Commands/OpenAccount.cs))
 
 ```csharp
 public record OpenAccount(Guid AccountId, string Owner, decimal InitialDeposit) : ICommand;
@@ -94,7 +93,7 @@ public class OpenAccountHandler(WriteDb db, TimeProvider clock) : ICommandHandle
 ### 2. A common pipeline for every command
 
 This is the role often given to MediatR, written here in a few lines.
-([BusCommandes.cs](../../09-CQRS/Cqrs.Ecriture/Commandes/BusCommandes.cs))
+([CommandBus.cs](../../09-CQRS/Cqrs.Write/Commands/CommandBus.cs))
 
 ```csharp
 public async Task Send<TCommand>(TCommand command) where TCommand : ICommand
@@ -113,7 +112,7 @@ public async Task Send<TCommand>(TCommand command) where TCommand : ICommand
 ### 3. The write side saves the state AND the events, together
 
 It saves the changes and appends the events produced by the aggregates to the log.
-([EcritureDb.cs](../../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs))
+([WriteDb.cs](../../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs))
 
 ```csharp
 /// Saves the changes and adds to the log the events produced by the aggregates.
@@ -140,7 +139,7 @@ public async Task Save(params IDomainEvent[] extraEvents)
 
 The only code that writes on the read side. The **checkpoint** makes it idempotent (an already projected event is
 ignored), and the label is written once and for all, with the other holder's name.
-([Projecteur.cs](../../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs))
+([Projector.cs](../../09-CQRS/Cqrs.Read/Projections/Projector.cs))
 
 ```csharp
 public async Task Apply(RecordedEvent recorded)
@@ -170,7 +169,7 @@ public async Task Apply(RecordedEvent recorded)
 
 ### 5. Queries only read
 
-([Requetes.cs](../../09-CQRS/Cqrs.Lecture/Requetes/Requetes.cs))
+([Queries.cs](../../09-CQRS/Cqrs.Read/Queries/Queries.cs))
 
 ```csharp
 public class GetDashboardHandler(ReadDb db) : IQueryHandler<GetDashboard, DashboardView>
@@ -199,7 +198,7 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest 
 
 ### Eventual consistency, made visible
 
-`appsettings.json` deliberately slows the projection down by 2 s (`Projections:DelaiMs`).
+`appsettings.json` deliberately slows the projection down by 2 s (`Projections:DelayMs`).
 
 ```mermaid
 sequenceDiagram
@@ -208,19 +207,19 @@ sequenceDiagram
     participant E as Write side
     participant S as Synchronizer
     participant L as Read side
-    Client->>API: POST /comptes/alice/retrait (100)
-    API->>E: BusCommandes.Envoyer(RetirerArgent)
+    Client->>API: POST /accounts/alice/withdrawal (100)
+    API->>E: CommandBus.Send(WithdrawMoney)
     E->>E: aggregate + log (event #3)
     API-->>Client: 202 Accepted
-    Client->>API: GET /comptes/alice
-    API->>L: ConsulterReleve
+    Client->>API: GET /accounts/alice
+    API->>L: GetStatement
     L-->>Client: balance 1,000 (not up to date yet)
     Client->>API: GET /admin/projections
     API-->>Client: lag: 1
-    S->>E: LireApres(2)
+    S->>E: ReadAfter(2)
     S->>S: 2 s wait (demo)
-    S->>L: Projecteur.Appliquer(#3)
-    Client->>API: GET /comptes/alice
+    S->>L: Projector.Apply(#3)
+    Client->>API: GET /accounts/alice
     L-->>Client: balance 900
 ```
 
@@ -229,9 +228,9 @@ sequenceDiagram
 ## The tests
 
 - **Write side**: the events produced by the aggregate, the validation pipeline
-  ([EcritureTests.cs](../../09-CQRS/Cqrs.Tests/EcritureTests.cs)).
+  ([WriteTests.cs](../../09-CQRS/Cqrs.Tests/WriteTests.cs)).
 - **Read side, without a single command**: you feed it events and query its views
-  ([LectureTests.cs](../../09-CQRS/Cqrs.Tests/LectureTests.cs)):
+  ([ReadTests.cs](../../09-CQRS/Cqrs.Tests/ReadTests.cs)):
 
 ```csharp
 private static readonly RecordedEvent[] History =

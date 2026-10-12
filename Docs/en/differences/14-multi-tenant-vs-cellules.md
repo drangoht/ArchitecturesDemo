@@ -56,7 +56,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments included.
 
 **Multi-tenant**: isolation is a matter of **code**, concentrated in the `DbContext`
-([BanqueDbContext.cs](../../../15-MultiTenant/Mt.Banque/BanqueDbContext.cs)):
+([BankDbContext.cs](../../../15-MultiTenant/Mt.Bank/BankDbContext.cs)):
 
 ```csharp
 private void Isolate<T>(ModelBuilder model) where T : class, IBelongsToTenant
@@ -72,7 +72,7 @@ Forgetting this filter means exposing one bank to another. Cells don't have this
 customers, and has no way to read another's.
 
 **Cells**: isolation is a matter of **topology**. When a cell goes down, the router only returns the error to its
-customers — blast radius ([Relais.cs](../../../17-CellBased/Cell.Routeur/Relais.cs)):
+customers — blast radius ([Relay.cs](../../../17-CellBased/Cell.Router/Relay.cs)):
 
 ```csharp
 catch (HttpRequestException)
@@ -81,12 +81,12 @@ catch (HttpRequestException)
 ```
 
 **The greedy customer**: multi-tenant **throttles** it with a quota specific to its plan
-([Installation.cs](../../../15-MultiTenant/Mt.Locataires/Installation.cs)); cells **move** it to another cell (copy,
+([Setup.cs](../../../15-MultiTenant/Mt.Tenants/Setup.cs)); cells **move** it to another cell (copy,
 routing switch, cleanup) without the other customers noticing.
 
 **Growing**: multi-tenant adds a customer in a few seconds (one line in the catalog). Cells too, as long as there is room
 left; when all are full, you don't enlarge a cell, you add one
-([PlanDeControle.cs](../../../17-CellBased/Cell.Routeur/PlanDeControle.cs)):
+([ControlPlane.cs](../../../17-CellBased/Cell.Router/ControlPlane.cs)):
 
 ```csharp
 /// <summary>The least loaded open cell that still has room.</summary>

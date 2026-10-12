@@ -108,7 +108,7 @@ aurait fallu ajouter une étape à la définition.
 | | Saga orchestrée | Chorégraphie |
 |---|---|---|
 | Qui s'en aperçoit | le moteur (exception à l'étape ③) | le courtier (livraison en échec) |
-| Ce qui se passe | nouveaux essais, puis compensation : fonds libérés, saga « Annulée » | 4 essais, lettres mortes ; le virement reste « EnCours », 200 € réservés |
+| Ce qui se passe | nouveaux essais, puis compensation : fonds libérés, saga « Cancelled » | 4 essais, lettres mortes ; le virement reste « InProgress », 200 € réservés |
 | Comment ça finit | immédiatement, par le moteur | 30 s plus tard, par l'expiration de la réservation : « Abandonné » |
 | Où le voir | `GET /sagas/{id}` : l'historique complet | `GET /bus/dead-letters`, `GET /transfers/stuck` |
 

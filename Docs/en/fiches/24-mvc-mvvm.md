@@ -11,7 +11,7 @@ and a console on the same ViewModels) · 📖 [Full page](../24-mvc-mvvm.md) ·
 flowchart LR
     N(["Browser"]) -->|request| C["Controller"] -->|"picks, fills"| V["Razor view"] -->|HTML| N
     U(["User"]) --> W["XAML / console view"] <-->|"bindings, commands,<br/>PropertyChanged"| VM["ViewModel"]
-    C --> M["IBanque model"]
+    C --> M["IBank model"]
     VM --> M
 ```
 

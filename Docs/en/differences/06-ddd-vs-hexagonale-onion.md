@@ -15,7 +15,7 @@
 ## What they share
 
 The business at the center, isolated from the infrastructure; repositories declared inside and implemented outside;
-entities that protect their rules. The DDD demo actually reuses the Onion organization (`Domaine`, `Application`,
+entities that protect their rules. The DDD demo actually reuses the Onion organization (`Domain`, `Application`,
 `Infrastructure`, `Api`).
 
 ## The differences point by point
@@ -25,8 +25,8 @@ entities that protect their rules. The DDD demo actually reuses the Onion organi
 | Nature | a **structure**: projects, interfaces, direction of references | a **design approach**: language, model, split |
 | Question | where to put this code, who depends on whom? | what is an "account" here, and where does this model stop? |
 | The center | empty: "put the domain there" | filled: value objects, aggregates, factories, domain services, events |
-| Domain types | `decimal`, `string`, `Guid` | `Argent` (amount + currency), `Iban`, `NomTitulaire`, `CompteId` |
-| The names | the developers' | the experts', recorded in a glossary (`LANGAGE.md`) |
+| Domain types | `decimal`, `string`, `Guid` | `Money` (amount + currency), `Iban`, `OwnerName`, `AccountId` |
+| The names | the developers' | the experts', recorded in a glossary (`LANGUAGE.md`) |
 | Scale | one application | also **the whole system**: bounded contexts and context map |
 | Relationships with the outside | adapters | **anti-corruption layer**, published language, open host service |
 | What it requires | technical discipline | **available domain experts** |
@@ -35,21 +35,21 @@ entities that protect their rules. The DDD demo actually reuses the Onion organi
 
 ```mermaid
 flowchart LR
-    subgraph O["ONION: Compte"]
+    subgraph O["ONION: Account"]
         direction TB
         O1["Id: Guid"]
-        O2["Titulaire: string"]
-        O3["Solde: decimal"]
-        O4["Retirer(decimal)"]
+        O2["Owner: string"]
+        O3["Balance: decimal"]
+        O4["Withdraw(decimal)"]
         O1 ~~~ O2 ~~~ O3 ~~~ O4
     end
-    subgraph D["DDD: Compte aggregate"]
+    subgraph D["DDD: Account aggregate"]
         direction TB
-        D1["Id: CompteId · Iban: Iban"]
-        D2["Titulaire: NomTitulaire"]
-        D3["Solde, Plafond: Argent"]
+        D1["Id: AccountId · Iban: Iban"]
+        D2["Owner: OwnerName"]
+        D3["Balance, DailyWithdrawalLimit: Money"]
         D4["Movements of the day"]
-        D5["Retirer(Argent, date)<br/>→ RetraitEffectue"]
+        D5["Withdraw(Money, date)<br/>→ WithdrawalMade"]
         D1 ~~~ D2 ~~~ D3 ~~~ D4 ~~~ D5
     end
     O ~~~ D
@@ -60,7 +60,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments and messages included.
 
 **Onion**: a correct entity, but made of primitive types
-([Compte.cs](../../../02-Onion/Onion.Domain/Model/Compte.cs)):
+([Account.cs](../../../02-Onion/Onion.Domain/Model/Account.cs)):
 
 ```csharp
 public class Account
@@ -72,8 +72,8 @@ public class Account
 
 Nothing prevents adding euros and dollars, or passing a malformed IBAN in a `string`.
 
-**DDD**: errors become impossible by construction. An `Argent` (money) refuses to mix currencies — a domain rule,
-carried by the type itself ([Argent.cs](../../../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Argent.cs)):
+**DDD**: errors become impossible by construction. An `Money` (money) refuses to mix currencies — a domain rule,
+carried by the type itself ([Money.cs](../../../11-DDD/Ddd.AccountKeeping.Domain/ValueObjects/Money.cs)):
 
 ```csharp
 // The operations refuse to mix currencies: it is a domain rule, carried by the type itself.
@@ -81,7 +81,7 @@ public static Money operator +(Money a, Money b) => new(a.Amount + b.Amount, Sam
 ```
 
 And the **aggregate's boundary** is dictated by an invariant: to check the **daily** limit, the account contains its
-movements of the day ([Compte.cs](../../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Compte.cs)):
+movements of the day ([Account.cs](../../../11-DDD/Ddd.AccountKeeping.Domain/Accounts/Account.cs)):
 
 ```csharp
 public void Withdraw(Money amount, DateTime date)
@@ -101,9 +101,9 @@ public void Withdraw(Money amount, DateTime date)
 
 **What neither hexagonal nor Onion says**: that an "account" isn't the same thing for Account Keeping (a balance, a
 limit) and for Compliance (a due diligence case, always in euros). DDD makes them **two contexts**, each with its model,
-connected by a published event (`VirementEmis`) and an explicit request (`BloquerCompte`). In front of the legacy exchange
+connected by a published event (`TransferSent`) and an explicit request (`BlockAccount`). In front of the legacy exchange
 system, an **anti-corruption layer**
-([CoucheAntiCorruption.cs](../../../11-DDD/Ddd.TenueDeCompte.Infrastructure/CoucheAntiCorruption.cs)) translates its
+([AntiCorruptionLayer.cs](../../../11-DDD/Ddd.AccountKeeping.Infrastructure/AntiCorruptionLayer.cs)) translates its
 format into our language. In terms of code, it is a hexagonal adapter; what DDD adds is the reason: not letting someone
 else's model pollute ours.
 

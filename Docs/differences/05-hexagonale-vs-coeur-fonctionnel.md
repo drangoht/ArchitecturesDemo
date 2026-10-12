@@ -36,7 +36,7 @@ souvent décrit comme **l'hexagonale poussée à l'extrême**.
 flowchart LR
     subgraph H["HEXAGONALE"]
         direction TB
-        CU["Cas d'utilisation<br/>(centre)"] -->|"Charger"| P["port IAccounts"]
+        CU["Cas d'utilisation<br/>(centre)"] -->|"Load"| P["port IAccounts"]
         CU -->|"Withdraw, Deposit"| E["Account"]
         CU -->|"Save"| P
     end

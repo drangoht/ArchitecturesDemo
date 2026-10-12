@@ -12,7 +12,7 @@
 
 ## What they share
 
-Both make the **use case** the basic unit of the code: `RetraitInteracteur` on one side, `RetirerArgent` on the other.
+Both make the **use case** the basic unit of the code: `WithdrawalInteractor` on one side, `WithdrawMoney` on the other.
 You easily find "what happens when you withdraw money". They diverge on everything else.
 
 ## The differences point by point
@@ -34,11 +34,11 @@ You easily find "what happens when you withdraw money". They diverge on everythi
 flowchart LR
     subgraph C["CLEAN: a withdrawal crosses 4 projects"]
         direction TB
-        W["Clean.Web<br/>route"] --> A["AdaptateursInterface<br/>controller, presenter"] --> U["CasUtilisation<br/>interactor"] --> E["Entites<br/>Compte"]
+        W["Clean.Web<br/>route"] --> A["InterfaceAdapters<br/>controller, presenter"] --> U["UseCases<br/>interactor"] --> E["Entities<br/>Account"]
     end
     subgraph V["VERTICAL SLICE: a withdrawal = 1 file"]
         direction TB
-        R["RetirerArgent.cs<br/>route, validation,<br/>rule, DB access"] --> D["Domain/Compte<br/>shared rule"]
+        R["WithdrawMoney.cs<br/>route, validation,<br/>rule, DB access"] --> D["Domain/Account<br/>shared rule"]
     end
     C ~~~ V
 ```
@@ -48,7 +48,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments included.
 
 **Vertical Slice**: the complete slice, from the route to the database
-([RetirerArgent.cs](../../../05-VerticalSlice/Vertical.Api/Features/Comptes/RetirerArgent.cs)):
+([WithdrawMoney.cs](../../../05-VerticalSlice/Vertical.Api/Features/Accounts/WithdrawMoney.cs)):
 
 ```csharp
 public static void Map(IEndpointRouteBuilder app) => app.MapPost("/accounts/{id:guid}/withdrawal", Execute);
@@ -71,8 +71,8 @@ private static async Task<IResult> Execute(Guid id, Request request, BankDbConte
 ```
 
 **Clean**: the same withdrawal spread over the route ([Program.cs](../../../03-Clean/Clean.Web/Program.cs)), the
-controller, the interactor ([Retrait.cs](../../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs)), the presenter
-([PresentersHttp.cs](../../../03-Clean/Clean.AdaptateursInterface/Presenters/PresentersHttp.cs)) and the gateway:
+controller, the interactor ([Withdrawal.cs](../../../03-Clean/Clean.UseCases/Withdrawal/Withdrawal.cs)), the presenter
+([HttpPresenters.cs](../../../03-Clean/Clean.InterfaceAdapters/Presenters/HttpPresenters.cs)) and the gateway:
 
 ```csharp
 public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
@@ -86,7 +86,7 @@ public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
 ```
 
 **Reading** shows the gap best. Vertical Slice projects straight into the response, read-only, without going through the
-domain ([ConsulterCompte.cs](../../../05-VerticalSlice/Vertical.Api/Features/Comptes/ConsulterCompte.cs)):
+domain ([GetAccount.cs](../../../05-VerticalSlice/Vertical.Api/Features/Accounts/GetAccount.cs)):
 
 ```csharp
 var account = await db.Accounts

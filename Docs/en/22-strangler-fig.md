@@ -17,8 +17,7 @@ up standing on its own once the tree is gone. Martin Fowler named this migration
 All the other demos build a **new** system. This one answers the question met far more often: **how do you move from an
 existing system to one of these architectures?** The temptation is the complete rewrite, delivered in one go ("big
 bang"): months without delivering anything, an old system that keeps evolving meanwhile, and a final switchover where
-everything is decided in one night, with no way back. (In the code: *Ancien* = legacy, *Nouveau* = new,
-*Façade* = façade, *Ombre* = shadow.)
+everything is decided in one night, with no way back.
 
 ```mermaid
 flowchart LR
@@ -51,8 +50,8 @@ talk to the façade, whose address doesn't change.
 ```mermaid
 flowchart LR
     CL["Clients"] -->|"the historical contract"| FA["<b>Fig.Facade</b> :5122<br/>routing table<br/>shadow mode · control"]
-    FA -->|"routes in<br/>Legacy or Shadow mode"| AN["<b>Fig.Ancien</b> :5240<br/>the system to replace"]
-    FA -->|"routes in<br/>New mode (or Shadow)"| NO["<b>Fig.Nouveau</b> :5241<br/>its own domain<br/>+ anti-corruption layer"]
+    FA -->|"routes in<br/>Legacy or Shadow mode"| AN["<b>Fig.Legacy</b> :5240<br/>the system to replace"]
+    FA -->|"routes in<br/>New mode (or Shadow)"| NO["<b>Fig.Modern</b> :5241<br/>its own domain<br/>+ anti-corruption layer"]
     NO -->|"① reads its log"| AN
     NO -->|"② carries over its writes"| AN
     NU["Nightly batch<br/>(fees)"] -->|"writes directly"| AN
@@ -60,8 +59,8 @@ flowchart LR
 
 | Project | Role |
 |---|---|
-| [Fig.Ancien](../../22-StranglerFig/Fig.Ancien) | The system to replace, written "the old way": one class that does everything, amounts in cents, dates without a time zone, uppercase labels truncated to 30 characters. It only received two internal routes for the migration (its change log, the import of the new system's operations) |
-| [Fig.Nouveau](../../22-StranglerFig/Fig.Nouveau) | The replacement: its own model (euros as `decimal`, dates with a time zone), its own database, and the historical contract reproduced exactly |
+| [Fig.Legacy](../../22-StranglerFig/Fig.Legacy) | The system to replace, written "the old way": one class that does everything, amounts in cents, dates without a time zone, uppercase labels truncated to 30 characters. It only received two internal routes for the migration (its change log, the import of the new system's operations) |
+| [Fig.Modern](../../22-StranglerFig/Fig.Modern) | The replacement: its own model (euros as `decimal`, dates with a time zone), its own database, and the historical contract reproduced exactly |
 | [Fig.Facade](../../22-StranglerFig/Fig.Facade) | The clients' only entry point: HTTP relay, routing table changeable live, shadow-mode comparisons, migration tracking. No business logic |
 
 None of the three references the others: the façade and the new service only know the legacy over HTTP (architecture
@@ -76,13 +75,13 @@ Each route has a **mode**: who answers. It is changed live (`PUT /facade/routes/
 
 | Mode | Who answers | The new service… |
 |---|---|---|
-| `Ancien` (legacy) | the legacy | is not called |
-| `Ombre` (shadow) | the legacy | is called **at the same time**, its response is compared then discarded |
-| `Nouveau` (new) | the new one | answers; the legacy is no longer called for this route |
+| `Legacy` (legacy) | the legacy | is not called |
+| `Shadow` (shadow) | the legacy | is called **at the same time**, its response is compared then discarded |
+| `Modern` (new) | the new one | answers; the legacy is no longer called for this route |
 
 And above all: **anything undeclared goes to the legacy**. That is the pattern's starting point (an empty façade that
 forwards everything), and the protection against what was never inventoried — as the comment says, what nobody took
-over stays with the legacy. ([Relais.cs](../../22-StranglerFig/Fig.Facade/Relais.cs)) (The code is quoted exactly as
+over stays with the legacy. ([Relay.cs](../../22-StranglerFig/Fig.Facade/Relay.cs)) (The code is quoted exactly as
 it is.)
 
 ```csharp
@@ -90,19 +89,19 @@ var route = table.Find(http.Request.Method, path);
 var mode = route?.Mode ?? Mode.Legacy;   // what nobody took over stays with the legacy system: that is the starting point
 ```
 
-Each response carries the header `X-Servi-Par: ancien` or `nouveau` (served by), and the façade counts, route by route,
-how many calls each system served (`GET /facade/routes`). The `/interne/*` routes of both systems are never forwarded:
+Each response carries the header `X-Served-By: legacy` or `modern` (served by), and the façade counts, route by route,
+how many calls each system served (`GET /facade/routes`). The `/internal/*` routes of both systems are never forwarded:
 a client cannot read the legacy's log or trigger its fees through the façade.
 
 The initial table, in `appsettings.json`, shows a migration in progress:
 
 | Route | Method and path | Mode |
 |---|---|---|
-| `consultation` (lookup) | `GET /comptes/{numero}` | Nouveau |
-| `operations` | `GET /comptes/{numero}/operations` | Ombre |
-| `releve` (statement) | `GET /comptes/{numero}/releve` | Ancien |
-| `virements` (transfers) | `POST /virements` | Ancien |
-| *(undeclared)* | `GET /agences`, and everything else | Ancien |
+| `lookup` | `GET /accounts/{number}` | Modern |
+| `operations` | `GET /accounts/{number}/operations` | Shadow |
+| `statement` | `GET /accounts/{number}/statement` | Legacy |
+| `transfers` | `POST /transfers` | Legacy |
+| *(undeclared)* | `GET /branches`, and everything else | Legacy |
 
 ---
 
@@ -117,11 +116,11 @@ sequenceDiagram
     participant F as Façade
     participant A as Legacy
     participant N as New
-    C->>F: GET /comptes/10001/operations
+    C->>F: GET /accounts/10001/operations
     par at the same time
-        F->>A: GET /comptes/10001/operations
+        F->>A: GET /accounts/10001/operations
     and
-        F->>N: GET /comptes/10001/operations
+        F->>N: GET /accounts/10001/operations
     end
     A-->>F: response
     F-->>C: the legacy's response, without waiting for the new one
@@ -144,12 +143,12 @@ Compared AFTERWARDS, without being awaited: a slow or failing new service slows 
 _ = comparer.Compare(route!.Name, $"{http.Request.Method} {path}{http.Request.QueryString}", response, shadow, budget);
 ```
 
-`GET /facade/comparaisons` gives the summary: identical responses, **divergences** (with both bodies, to investigate)
+`GET /facade/comparisons` gives the summary: identical responses, **divergences** (with both bodies, to investigate)
 and **abandoned** calls (the new service exceeded its budget or didn't answer; not a divergence, but worth watching
 before handing it the load). The JSON is compared structurally: property order and whitespace don't matter, values do.
 
 **Only a read has a shadow mode.** Executing a transfer on both sides would debit twice: the façade refuses (`400`) to
-put a write in shadow mode. ([TableDeRoutage.cs](../../22-StranglerFig/Fig.Facade/TableDeRoutage.cs))
+put a write in shadow mode. ([RoutingTable.cs](../../22-StranglerFig/Fig.Facade/RoutingTable.cs))
 
 ```csharp
 // A write has no "shadow" mode: executing it on both sides would make two transfers.
@@ -170,25 +169,25 @@ for its migrated routes. So synchronization must go **both ways**.
 
 ```mermaid
 sequenceDiagram
-    participant N as New (Synchronisation)
+    participant N as New (Synchronization)
     participant A as Legacy
     Note over A: the nightly batch charges fees
-    N->>A: ① GET /interne/journal?depuis=7
+    N->>A: ① GET /internal/log?since=7
     A-->>N: lines 8 and 9 (cents, dates without time zone)
     N->>N: translate (anti-corruption layer), apply,<br/>move the position to 9
     Note over N: a client makes a transfer,<br/>served by the new system
     N->>N: debit + credit + outbox (together)
-    N->>A: ② POST /interne/operations-importees
+    N->>A: ② POST /internal/imported-operations
     A-->>N: imported (idempotent)
     N->>N: empty the outbox
     N->>A: ① on the next cycle: the log contains the echo
-    A-->>N: lines 10 and 11 (ORIG = NOUVEAU, our identifiers)
+    A-->>N: lines 10 and 11 (ORIG = MODERN, our identifiers)
     N->>N: operations already known: ignored
 ```
 
 ② Carrying over our writes: if the legacy doesn't answer, they stay in the outbox for the next cycle; since the import
 is idempotent, a resent batch isn't counted twice.
-([Synchronisation.cs](../../22-StranglerFig/Fig.Nouveau/Synchronisation.cs))
+([Synchronization.cs](../../22-StranglerFig/Fig.Modern/Synchronization.cs))
 
 ```csharp
 // ② Forward our writes. If the legacy system does not answer, they stay in the outbox for the next
@@ -205,20 +204,20 @@ The pitfalls of this two-way flow are those of any distributed system, and each 
 
 | Pitfall | Countermeasure | Test |
 |---|---|---|
-| A write from the new system comes back through the legacy's log (**loop**) | the echo carries the new system's identifier, already known: ignored | `L_echo_d_un_virement_du_nouveau_ne_revient_pas_en_double` |
-| The legacy is unreachable when carrying over | **outbox**: filled with the transfer, emptied only after confirmation | `Si_l_ancien_est_injoignable_les_operations_attendent_le_cycle_suivant` |
-| The legacy imported, but the response was lost | **idempotent import**: the resent batch is counted only once | `Un_lot_renvoye_apres_une_reponse_perdue_n_est_importe_qu_une_fois` |
-| An unknown log line | synchronization **stops** rather than ignoring the line: a visible lag is better than a silent gap | `Un_type_inconnu_arrete_la_traduction_au_lieu_d_etre_ignore` |
+| A write from the new system comes back through the legacy's log (**loop**) | the echo carries the new system's identifier, already known: ignored | `The_echo_of_a_modern_transfer_does_not_come_back_twice` |
+| The legacy is unreachable when carrying over | **outbox**: filled with the transfer, emptied only after confirmation | `If_the_legacy_system_is_unreachable_the_operations_wait_for_the_next_cycle` |
+| The legacy imported, but the response was lost | **idempotent import**: the resent batch is counted only once | `A_batch_sent_again_after_a_lost_response_is_imported_only_once` |
+| An unknown log line | synchronization **stops** rather than ignoring the line: a visible lag is better than a silent gap | `An_unknown_type_stops_the_translation_instead_of_being_ignored` |
 
 This change log is a simplified version of **Change Data Capture** (Debezium on the database's transaction log, for
 example). The first cycle rereads everything from the start: that is the initial data load.
 
 ### The anti-corruption layer
 
-The legacy's log speaks its own language: six-letter columns (`NUMCPT`, `MNTCTS`, `DATOPE`), cents, Paris time without
+The legacy's log speaks its own language: six-letter columns (`ACCNUM`, `AMTCTS`, `OPEDAT`), cents, Paris time without
 a time zone. A single class translates it, both ways, and the new system's model sees nothing of it (the same idea as
 in the [DDD demo](11-ddd.md)). The legacy records Paris time without a time zone: this is where you decide which
-instant it means. ([CoucheAntiCorruption.cs](../../22-StranglerFig/Fig.Nouveau/CoucheAntiCorruption.cs))
+instant it means. ([AntiCorruptionLayer.cs](../../22-StranglerFig/Fig.Modern/AntiCorruptionLayer.cs))
 
 ```csharp
 /// <summary>The legacy system notes Paris time without time zone: this is where we decide which instant it is.</summary>
@@ -235,7 +234,7 @@ public static DateTimeOffset DateFromLegacy(string text)
 
 Clients depend on the legacy's API **as it is**, quirks included. The new service has its own model, but it exposes the
 historical contract exactly: that is what allows switching a route without telling anyone.
-([Contrat.cs](../../22-StranglerFig/Fig.Nouveau/Contrat.cs))
+([Contract.cs](../../22-StranglerFig/Fig.Modern/Contract.cs))
 
 | The legacy's habit | What the new system must do |
 |---|---|
@@ -243,7 +242,7 @@ historical contract exactly: that is what allows switching a route without telli
 | Dates in Paris time, without a time zone: `2026-10-12T10:05:00` | convert from its `DateTimeOffset`; an operation on October 31 at 11:30 pm UTC is on the **November** statement |
 | Uppercase labels, truncated to 30 characters | keep the labels as they come from the legacy, write its own in the same format |
 | Operations sorted by date, most recent first | sort by date, not by arrival order (a legacy operation can arrive after a more recent transfer) |
-| Uppercase errors: `{"erreur":"SOLDE INSUFFISANT"}` | same statuses, same messages |
+| Uppercase errors: `{"error":"INSUFFICIENT BALANCE"}` | same statuses, same messages |
 | Text statement, aligned columns, `\r\n` line endings, comma decimals ("1000,00") | the same text, character for character |
 
 The comment: the legacy computes in cents then divides by 100 — 950 and not 950.00 in the JSON — and its representation
@@ -277,7 +276,7 @@ X-Admin-Key: demo
 ```
 
 It is the **return** synchronization that makes this safe: the legacy knows the transfers made by the new system. The
-test `Revenir_en_arriere_sur_une_route_ne_perd_aucun_virement` proves it: after a €100 transfer served by the new
+test `Rolling_back_a_route_loses_no_transfer` proves it: after a €100 transfer served by the new
 system, then a return to the legacy, the latter refuses a €950 transfer (it knows only €900 is left). Without the
 carry-over, it would have accepted it.
 
@@ -285,18 +284,18 @@ carry-over, it would have accepted it.
 
 ## 6. Switching the legacy off
 
-All declared routes in `Nouveau` mode are not enough: there may still be calls nobody inventoried.
-`GET /facade/progression` measures both:
+All declared routes in `Modern` mode are not enough: there may still be calls nobody inventoried.
+`GET /facade/progress` measures both:
 
 ```json
 { "declaredRoutes": 4, "migratedRoutes": 4, "percentage": 100,
   "undeclaredCalls": 0, "legacyCallsSinceLastSwitch": 0, "legacyRemovable": true }
 ```
 
-`ancienRetirable` (legacy removable) requires every route migrated **and** no call to the legacy since the last
-switchover. In the demo, `GET /agences` is the forgotten feature: a single call is enough to set the flag back to
-`false`. If you switch the legacy off anyway, the four migrated routes keep working, and `/agences` answers `502`: it
-had to be migrated too (test `Une_fois_tout_migre_l_ancien_peut_etre_eteint`).
+`legacyRemovable` (legacy removable) requires every route migrated **and** no call to the legacy since the last
+switchover. In the demo, `GET /branches` is the forgotten feature: a single call is enough to set the flag back to
+`false`. If you switch the legacy off anyway, the four migrated routes keep working, and `/branches` answers `502`: it
+had to be migrated too (test `Once_everything_is_migrated_the_legacy_system_can_be_switched_off`).
 
 ---
 
@@ -305,7 +304,7 @@ had to be migrated too (test `Une_fois_tout_migre_l_ancien_peut_etre_eteint`).
 - **Reading on one side what was written on the other.** With the initial table, the lookup is served by the new system
   and transfers by the legacy. Right after a transfer, the lookup shows the **old balance**, until the next
   synchronization cycle (500 ms). Observed on the running demo, and pinned down in the test
-  `Ecrire_chez_l_un_et_lire_chez_l_autre_montre_un_solde_en_retard_jusqu_a_la_synchronisation`. Countermeasure: switch
+  `Writing_on_one_side_and_reading_on_the_other_shows_a_late_balance_until_the_synchronization`. Countermeasure: switch
   the reads and writes of the same data **together**, or only open to the new system data it alone writes.
 - **Two writers, one rule.** During the synchronization window, the legacy (its nightly fees) and the new system (its
   transfers) can debit the same account without seeing each other: an overdraft is possible. Every rule about a balance
@@ -321,7 +320,7 @@ had to be migrated too (test `Une_fois_tout_migre_l_ancien_peut_etre_eteint`).
 
 | | The façade's role | Lifetime |
 |---|---|---|
-| **Strangler Fig** | route each request to the legacy or the new system, for the duration of the migration | temporary: the table ends with everything in `Nouveau`, and the façade becomes a simple gateway |
+| **Strangler Fig** | route each request to the legacy or the new system, for the duration of the migration | temporary: the table ends with everything in `Modern`, and the façade becomes a simple gateway |
 | [API gateway](08-microservices.md) | single entry point, routing, security, quotas | permanent |
 | [BFF](16-bff.md) | adapt the services to **one** client application | permanent |
 | [Anti-corruption layer](11-ddd.md) | protect one model from another system's model | as long as the other system exists |
@@ -337,22 +336,22 @@ in front of part of the code, two implementations, a switch; the same principle 
 
 The three processes run in memory, each with its real program; each link between them can be cut, slowed down, or lose
 its responses, and an adjustable clock dates the operations on both sides.
-([Systeme.cs](../../22-StranglerFig/Fig.Tests/Systeme.cs))
+([FigSystem.cs](../../22-StranglerFig/Fig.Tests/FigSystem.cs))
 
 | Test | What is checked |
 |---|---|
-| `Une_lecture_donne_la_meme_reponse_des_deux_cotes` (13 cases), `Un_virement_refuse_l_est_avec_la_meme_erreur_des_deux_cotes` (7 cases) | **contract tests**: responses identical character for character |
-| `Le_contrat_herite_garde_les_habitudes_de_l_ancien` | truncated label, Paris time without a time zone, `-2.5` and not `-2.50` |
-| `Une_route_que_personne_n_a_reprise_va_a_l_ancien`, `Les_routes_internes_ne_sont_pas_exposees_aux_clients` | default routing, internal routes |
-| `Basculer_une_route_change_qui_repond_sans_redemarrer_ni_rien_changer_pour_le_client` | live switch, `X-Servi-Par`, counters |
-| `En_mode_ombre_le_client_recoit_la_reponse_de_l_ancien_et_les_deux_sont_comparees`, `Une_divergence_est_signalee_sans_que_le_client_la_voie` | shadow mode |
-| `En_mode_ombre_un_nouveau_service_lent_ou_en_panne_ne_gene_pas_le_client` | response in under 1.5 s when the new system takes 5; abandoned calls |
-| `Le_mode_ombre_est_refuse_pour_une_ecriture`, `Le_pilotage_de_la_migration_exige_la_cle_d_administration` | control safeguards |
-| `Revenir_en_arriere_sur_une_route_ne_perd_aucun_virement` | safe rollback |
-| `L_ancien_n_est_retirable_que_lorsque_plus_rien_ne_l_appelle`, `Une_fois_tout_migre_l_ancien_peut_etre_eteint` | the end of the migration |
-| `Le_premier_cycle_recharge_tout_l_ancien`, `Ce_qu_ecrit_un_traitement_interne_de_l_ancien_arrive_dans_le_nouveau`, `Un_virement_fait_dans_le_nouveau_est_reporte_dans_l_ancien` + the three pitfalls in the table of section 3 | two-way synchronization |
-| `Une_ligne_du_journal_devient_une_operation_en_euros_avec_son_fuseau`, `L_heure_de_Paris_n_a_pas_le_meme_decalage_en_hiver`… | anti-corruption layer (no server) |
-| `La_facade_et_le_nouveau_service_ne_connaissent_l_ancien_que_par_HTTP` | **architecture test** |
+| `A_read_gives_the_same_response_on_both_sides` (13 cases), `A_refused_transfer_is_refused_with_the_same_error_on_both_sides` (7 cases) | **contract tests**: responses identical character for character |
+| `The_inherited_contract_keeps_the_habits_of_the_legacy_system` | truncated label, Paris time without a time zone, `-2.5` and not `-2.50` |
+| `A_route_nobody_took_over_goes_to_the_legacy_system`, `The_internal_routes_are_not_exposed_to_the_clients` | default routing, internal routes |
+| `Switching_a_route_changes_who_answers_without_restarting_or_changing_anything_for_the_client` | live switch, `X-Served-By`, counters |
+| `In_shadow_mode_the_client_receives_the_legacy_response_and_both_are_compared`, `A_divergence_is_reported_without_the_client_seeing_it` | shadow mode |
+| `In_shadow_mode_a_slow_or_failed_modern_service_does_not_bother_the_client` | response in under 1.5 s when the new system takes 5; abandoned calls |
+| `Shadow_mode_is_refused_for_a_write`, `Steering_the_migration_requires_the_admin_key` | control safeguards |
+| `Rolling_back_a_route_loses_no_transfer` | safe rollback |
+| `The_legacy_system_is_only_removable_when_nothing_calls_it_any_more`, `Once_everything_is_migrated_the_legacy_system_can_be_switched_off` | the end of the migration |
+| `The_first_cycle_reloads_the_whole_legacy_system`, `What_an_internal_batch_of_the_legacy_system_writes_reaches_the_modern_one`, `A_transfer_made_in_the_modern_service_is_forwarded_to_the_legacy_system` + the three pitfalls in the table of section 3 | two-way synchronization |
+| `A_log_row_becomes_an_operation_in_euros_with_its_time_zone`, `Paris_time_does_not_have_the_same_offset_in_winter`… | anti-corruption layer (no server) |
+| `The_facade_and_the_modern_service_only_know_the_legacy_system_through_HTTP` | **architecture test** |
 
 Checked by mutation (17 attempts, all detected): echo counted twice, non-idempotent import, forgotten carry-over, outbox
 emptied before confirmation, undeclared route sent to the new system, internal routes forwarded, shadow awaited by the

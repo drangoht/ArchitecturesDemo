@@ -5,7 +5,7 @@
 > **In one sentence**: the business is at the center and depends on nothing; the outside world plugs into it through
 > **ports** (interfaces) and interchangeable **adapters** (implementations).
 
-📁 Code: [`01-Hexagonale`](../../01-Hexagonale) · ⬅️ [Layered](00-couches.md) · ➡️ [Onion](02-onion.md) ·
+📁 Code: [`01-Hexagonal`](../../01-Hexagonal) · ⬅️ [Layered](00-couches.md) · ➡️ [Onion](02-onion.md) ·
 🌐 [Français](../01-hexagonale.md)
 
 ---
@@ -26,18 +26,18 @@ flowchart LR
 
     subgraph Hexagone["Hexagon"]
         direction TB
-        PE["Inbound ports<br/>IConsulterCompte<br/>IRetirerArgent<br/>IEffectuerVirement"]
-        App["Application<br/>ConsulterCompte, RetirerArgent,<br/>EffectuerVirement"]
-        Dom["Domain<br/>Compte"]
-        PS["Outbound ports<br/>IComptes<br/>INotifications"]
+        PE["Inbound ports<br/>IGetAccount<br/>IWithdrawMoney<br/>IMakeTransfer"]
+        App["Application<br/>GetAccount, WithdrawMoney,<br/>MakeTransfer"]
+        Dom["Domain<br/>Account"]
+        PS["Outbound ports<br/>IAccounts<br/>INotifications"]
         PE --> App --> Dom
         App --> PS
     end
 
     subgraph Sortants["Outbound adapters"]
-        Mem["ComptesEnMemoire"]
-        Json["ComptesFichierJson"]
-        Notif["NotificationsJournal"]
+        Mem["InMemoryAccounts"]
+        Json["JsonFileAccounts"]
+        Notif["LogNotifications"]
     end
 
     Web --> PE
@@ -57,8 +57,8 @@ Two kinds of ports:
 |---|---|---|
 | Role | What the application **offers** | What the application **needs** |
 | Who calls it? | An inbound adapter (API, CLI, test) | The application itself |
-| Who implements it? | The application (`RetirerArgent`) | An outbound adapter (`ComptesFichierJson`) |
-| Example | `IRetirerArgent` (withdraw money) | `IComptes` (accounts), `INotifications` |
+| Who implements it? | The application (`WithdrawMoney`) | An outbound adapter (`JsonFileAccounts`) |
+| Example | `IWithdrawMoney` (withdraw money) | `IAccounts` (accounts), `INotifications` |
 
 **Every dependency arrow points toward the hexagon**, which references no other project.
 
@@ -68,8 +68,8 @@ Two kinds of ports:
 
 | Project | Role |
 |---|---|
-| `Hexa.Hexagone` | Domain + ports + use cases. **No references**, neither project nor package. |
-| `Hexa.Adapters.Persistance` | Two adapters of the **same** port `IComptes`: in memory and JSON file |
+| `Hexa.Hexagon` | Domain + ports + use cases. **No references**, neither project nor package. |
+| `Hexa.Adapters.Persistence` | Two adapters of the **same** port `IAccounts`: in memory and JSON file |
 | `Hexa.Adapters.Notifications` | Adapter of the `INotifications` port (text log) |
 | `Hexa.Adapters.Web` | Inbound HTTP adapter + *composition root* (wires everything) |
 | `Hexa.Adapters.Cli` | Second inbound adapter: the command line |
@@ -83,8 +83,8 @@ The code is quoted exactly as it is, French comments included.
 
 ### 1. The ports: interfaces inside the hexagon
 
-([PortsEntrants.cs](../../01-Hexagonale/Hexa.Hexagone/Ports/Entrants/PortsEntrants.cs),
-[PortsSortants.cs](../../01-Hexagonale/Hexa.Hexagone/Ports/Sortants/PortsSortants.cs))
+([InboundPorts.cs](../../01-Hexagonal/Hexa.Hexagon/Ports/Inbound/InboundPorts.cs),
+[OutboundPorts.cs](../../01-Hexagonal/Hexa.Hexagon/Ports/Outbound/OutboundPorts.cs))
 
 ```csharp
 // Inbound ports ("driving", primary): what the application OFFERS to the outside world.
@@ -109,7 +109,7 @@ public interface INotifications
 
 ### 2. A use case: an inbound port implemented with outbound ports
 
-([CasUtilisation.cs](../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs))
+([UseCases.cs](../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs))
 
 ```csharp
 public class WithdrawMoney(IAccounts accounts, INotifications notifications) : IWithdrawMoney
@@ -130,7 +130,7 @@ memory or in a file.
 ### 3. Two adapters for the same port
 
 The storage format belongs to the adapter: the domain doesn't know it is serialized.
-([ComptesFichierJson.cs](../../01-Hexagonale/Hexa.Adapters.Persistance/ComptesFichierJson.cs))
+([JsonFileAccounts.cs](../../01-Hexagonal/Hexa.Adapters.Persistence/JsonFileAccounts.cs))
 
 ```csharp
 public class JsonFileAccounts : IAccounts
@@ -148,8 +148,8 @@ public class JsonFileAccounts : IAccounts
 ### 4. The *composition root* picks the adapters
 
 It is **the only place** that knows both the hexagon and the adapters. Outbound adapters can be swapped by
-configuration: `--Persistance=Json` or `Memoire` (default).
-([Program.cs](../../01-Hexagonale/Hexa.Adapters.Web/Program.cs))
+configuration: `--Persistence=Json` or `Memory` (default).
+([Program.cs](../../01-Hexagonal/Hexa.Adapters.Web/Program.cs))
 
 ```csharp
 // Outbound adapters, swappable by configuration: --Persistence=Json or Memory (default).
@@ -165,7 +165,7 @@ builder.Services.AddScoped<IWithdrawMoney, WithdrawMoney>();
 ```
 
 The CLI does the same **without a dependency injection container**: the hexagon doesn't need one.
-([Hexa.Adapters.Cli/Program.cs](../../01-Hexagonale/Hexa.Adapters.Cli/Program.cs))
+([Hexa.Adapters.Cli/Program.cs](../../01-Hexagonal/Hexa.Adapters.Cli/Program.cs))
 
 ```csharp
 IAccounts accounts = new JsonFileAccounts("accounts.json", DemoData.Accounts());
@@ -176,7 +176,7 @@ IWithdrawMoney withdraw = new WithdrawMoney(accounts, notifications);
 ### 5. The HTTP adapter translates, without any rules
 
 Translating business errors into HTTP status codes is the adapter's job, not the hexagon's.
-([ComptesEndpoints.cs](../../01-Hexagonale/Hexa.Adapters.Web/ComptesEndpoints.cs))
+([AccountsEndpoints.cs](../../01-Hexagonal/Hexa.Adapters.Web/AccountsEndpoints.cs))
 
 ```csharp
 // Translating business errors into HTTP codes is the adapter's job, not the hexagon's.
@@ -196,20 +196,20 @@ sequenceDiagram
     actor U2 as Terminal
     participant W as Web adapter
     participant C as CLI adapter
-    participant H as RetirerArgent (hexagon)
-    participant P as IComptes → ComptesFichierJson
-    participant N as INotifications → NotificationsJournal
-    U1->>W: POST /comptes/{id}/retrait
-    W->>H: Executer(id, 100)
-    H->>P: Charger / Sauvegarder
-    H->>N: RetraitEffectue
+    participant H as WithdrawMoney (hexagon)
+    participant P as IAccounts → JsonFileAccounts
+    participant N as INotifications → LogNotifications
+    U1->>W: POST /accounts/{id}/withdrawal
+    W->>H: Execute(id, 100)
+    H->>P: Load / Save
+    H->>N: WithdrawalMade
     W-->>U1: 204
     U2->>C: retirer {id} 100
-    C->>H: Executer(id, 100)
-    H->>P: Charger / Sauvegarder
-    H->>N: RetraitEffectue
-    C-->>U2: "Retrait effectué."
-    Note over P: Started from 01-Hexagonale, the API (--Persistance=Json)<br/>and the CLI share the same comptes.json
+    C->>H: Execute(id, 100)
+    H->>P: Load / Save
+    H->>N: WithdrawalMade
+    C-->>U2: "Withdrawal done."
+    Note over P: Started from 01-Hexagonal, the API (--Persistence=Json)<br/>and the CLI share the same accounts.json
 ```
 
 ---
@@ -217,7 +217,7 @@ sequenceDiagram
 ## The tests
 
 **Tests of the hexagon**: test adapters are plugged into the ports; no web server, no database.
-([CasUtilisationTests.cs](../../01-Hexagonale/Hexa.Tests/Hexagone/CasUtilisationTests.cs))
+([UseCasesTests.cs](../../01-Hexagonal/Hexa.Tests/Hexagon/UseCasesTests.cs))
 
 ```csharp
 [Fact]
@@ -230,9 +230,9 @@ public async Task A_valid_withdrawal_debits_the_account_and_notifies()
 }
 ```
 
-**Contract tests**: the same tests run against **every** adapter of the `IComptes` port. This is what guarantees that
+**Contract tests**: the same tests run against **every** adapter of the `IAccounts` port. This is what guarantees that
 one can replace the other without surprises.
-([ContratIComptesTests.cs](../../01-Hexagonale/Hexa.Tests/Adapters/ContratIComptesTests.cs))
+([IAccountsContractTests.cs](../../01-Hexagonal/Hexa.Tests/Adapters/IAccountsContractTests.cs))
 
 ```csharp
 public abstract class IAccountsContract
@@ -253,11 +253,11 @@ public class JsonFileAccountsTests : IAccountsContract, IDisposable { /* same te
 
 ```mermaid
 flowchart LR
-    T["ContratIComptes<br/>(3 abstract tests)"]
-    T --> A["ComptesEnMemoireTests"]
-    T --> B["ComptesFichierJsonTests"]
-    A --> X["ComptesEnMemoire"]
-    B --> Y["ComptesFichierJson"]
+    T["IAccountsContract<br/>(3 abstract tests)"]
+    T --> A["InMemoryAccountsTests"]
+    T --> B["JsonFileAccountsTests"]
+    A --> X["InMemoryAccounts"]
+    B --> Y["JsonFileAccounts"]
 ```
 
 ---

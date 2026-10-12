@@ -28,8 +28,8 @@ both languages. Then run the tools below.
 - **Not yet translated**: an English page links to the French page and marks it *(French)* or *FR*. When a batch is
   done, replace those links by their English twin (e.g. in the cheat sheets, `../../00-couches.md` → `../00-couches.md`
   and the label "Full page (French)" → "Full page").
-- **Code references stay in French**: folder, project, class, method, route and JSON field names (`ComptesService`,
-  `/virements`, `Micro.Lanceur`) are quoted exactly as in the code. In Mermaid diagrams, identifiers stay as they are;
+- **Code references stay in French**: folder, project, class, method, route and JSON field names (`AccountsService`,
+  `/transfers`, `Micro.Launcher`) are quoted exactly as in the code. In Mermaid diagrams, identifiers stay as they are;
   descriptive labels are translated.
 - **Code blocks are never translated** (the code itself is in French): every `csharp`, `xml`, `json`, `powershell`,
   `http`… block is a byte-for-byte copy of the French page's block, comments and messages included. When a French
@@ -48,7 +48,7 @@ Run after each batch:
   syntax errors (expected: 0 errors).
 - `python Docs/fiches/pdf/generer-pdf.py --en`, then check the PDF still has 27 pages.
 - **Architecture names**: English names follow [the names table](../noms-architectures.md). The 8 architectures with a
-  French name show it under the title (`**French name**: *…*`), the mirror of the French pages' `**Nom anglais**` line.
+  French name show it under the title (`**French name**: *…*`), the mirror of the French pages' `**Name anglais**` line.
 - **Amounts**: `€250`, `€1,000` (English number format).
 - **PDF**: `python Docs/fiches/pdf/generer-pdf.py --en` → `Docs/en/fiches/pdf/architecture-cheat-sheets.pdf`;
   one cheat sheet per page (27 pages): check the page count after any change.

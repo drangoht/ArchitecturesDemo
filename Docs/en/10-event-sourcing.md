@@ -16,9 +16,9 @@ how accounting works: you never erase an entry, you add another one.
 
 ```mermaid
 flowchart LR
-    E1["v1 · CompteOuvert<br/>Alice, €1,000"] --> E2["v2 · ArgentRetire<br/>€100, 'Courses'"]
-    E2 --> E3["v3 · ArgentRetire<br/>€300, 'Loyer'"]
-    E3 --> E4["v4 · VirementEmis<br/>€250 to Bob"]
+    E1["v1 · AccountOpened<br/>Alice, €1,000"] --> E2["v2 · MoneyWithdrawn<br/>€100, 'Groceries'"]
+    E2 --> E3["v3 · MoneyWithdrawn<br/>€300, 'Rent'"]
+    E3 --> E4["v4 · TransferSent<br/>€250 to Bob"]
     E4 -. "replay v1→v4" .-> S["Current state<br/>balance: €350<br/>version: 4"]
     E2 -. "replay v1→v2" .-> T["State at version 2<br/>balance: €900"]
 
@@ -30,12 +30,12 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    C["Command<br/>POST /comptes/alice/retrait"] --> L["① LOAD<br/>read Alice's stream<br/>(from the last snapshot)"]
-    L --> R["② REBUILD<br/>Appliquer each event<br/>→ balance, version"]
-    R --> D["③ DECIDE<br/>Retirer() checks the rules<br/>→ new ArgentRetire event"]
+    C["Command<br/>POST /accounts/alice/withdrawal"] --> L["① LOAD<br/>read Alice's stream<br/>(from the last snapshot)"]
+    L --> R["② REBUILD<br/>Apply each event<br/>→ balance, version"]
+    R --> D["③ DECIDE<br/>Withdraw() checks the rules<br/>→ new MoneyWithdrawn event"]
     D --> A["④ APPEND to the store<br/>if the version is still<br/>the one that was loaded"]
     A -->|"version has changed"| X["409 Conflict<br/>nothing is written"]
-    A -->|"ok"| M[("Store<br/>evenements.jsonl<br/>(append only)")]
+    A -->|"ok"| M[("Store<br/>events.jsonl<br/>(append only)")]
     M --> P["Projections<br/>(statements, largest withdrawals…)"]
 ```
 
@@ -45,12 +45,12 @@ flowchart TB
 
 | Project | Contents |
 |---|---|
-| `Es.Domaine` | Events, `Compte` aggregate (decide / apply), `InstantaneCompte` (snapshot) |
-| `Es.Stockage` | `MagasinEvenements` (append only, optimistic concurrency, `.jsonl` file), `SerialiseurEvenements` (+ upcasting), `DepotComptes` (snapshots, time travel) |
-| `Es.Projections` | `ProjectionReleves`, `ProjectionPlusGrosRetraits`, `MoteurProjections` (tracking, rebuild) |
+| `Es.Domain` | Events, `Account` aggregate (decide / apply), `AccountSnapshot` (snapshot) |
+| `Es.Storage` | `EventStore` (append only, optimistic concurrency, `.jsonl` file), `EventSerializer` (+ upcasting), `AccountRepository` (snapshots, time travel) |
+| `Es.Projections` | `StatementsProjection`, `LargestWithdrawalsProjection`, `ProjectionEngine` (tracking, rebuild) |
 | `Es.Api` | Commands, audit, time travel, administration |
 
-**The database is a readable file**: `Es.Api\evenements.jsonl`, one line per event.
+**The database is a readable file**: `Es.Api\events.jsonl`, one line per event.
 
 ```json
 {"position":3,"stream":"1111…","version":2,"type":"MoneyWithdrawn.v2","data":{"accountId":"1111…","amount":100,"reason":"Groceries","date":"…"},"date":"…"}
@@ -64,10 +64,10 @@ The code is quoted exactly as it is, French comments and messages included.
 
 ### 1. Decide / apply: two kinds of methods, never to be mixed
 
-The class comment says it: the DECISIONS (`Retirer`, `Cloturer`…) check the rules then record an event; `Appliquer`
+The class comment says it: the DECISIONS (`Withdraw`, `Close`…) check the rules then record an event; `Apply`
 evolves the state from an event, without any rule (a past fact cannot be refused). Loading an account = replaying
-`Appliquer` over its whole history.
-([Compte.cs](../../10-EventSourcing/Es.Domaine/Compte.cs))
+`Apply` over its whole history.
+([Account.cs](../../10-EventSourcing/Es.Domain/Account.cs))
 
 ```csharp
 /// <summary>
@@ -124,7 +124,7 @@ public class Account
     }
 ```
 
-Loading an account means replaying `Appliquer` over its whole history:
+Loading an account means replaying `Apply` over its whole history:
 
 ```csharp
 public static Account Rehydrate(IEnumerable<IEvent> history) =>
@@ -133,18 +133,18 @@ public static Account Rehydrate(IEnumerable<IEvent> history) =>
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Ouvert : CompteOuvert
-    Ouvert --> Ouvert : ArgentDepose / ArgentRetire / VirementEmis / VirementRecu
-    Ouvert --> Cloture : CompteCloture (only if balance = 0)
-    Cloture --> [*]
-    note right of Cloture : any new operation is refused
+    [*] --> Ouvert : AccountOpened
+    Ouvert --> Ouvert : MoneyDeposited / MoneyWithdrawn / TransferSent / TransferReceived
+    Ouvert --> Closed : AccountClosed (only if balance = 0)
+    Closed --> [*]
+    note right of Closed : any new operation is refused
 ```
 
 ### 2. The store: append only and optimistic concurrency
 
 It appends the events of one or more streams, all or nothing; if a stream has moved since it was loaded, nothing is
 written.
-([MagasinEvenements.cs](../../10-EventSourcing/Es.Stockage/MagasinEvenements.cs))
+([EventStore.cs](../../10-EventSourcing/Es.Storage/EventStore.cs))
 
 ```csharp
 /// Appends the events of one or more streams, all or nothing.
@@ -171,10 +171,10 @@ sequenceDiagram
     actor B as Teller B
     participant API as Es.Api
     participant M as Store
-    A->>API: GET /comptes/alice → version 1
-    B->>API: GET /comptes/alice → version 1
+    A->>API: GET /accounts/alice → version 1
+    B->>API: GET /accounts/alice → version 1
     A->>API: withdraw €80 (If-Match: 1)
-    API->>M: Ajouter(alice, versionAttendue: 1)
+    API->>M: Append(alice, expectedVersion: 1)
     M-->>API: ok → version 2
     B->>API: withdraw €80 (If-Match: 1)
     API-->>B: 409 Conflict "expected version 1, current version 2"
@@ -184,7 +184,7 @@ sequenceDiagram
 ### 3. Snapshots: not replaying everything
 
 Every 5 events, a picture of the state is **cached**. It can be erased without losing anything.
-([DepotComptes.cs](../../10-EventSourcing/Es.Stockage/DepotComptes.cs))
+([AccountRepository.cs](../../10-EventSourcing/Es.Storage/AccountRepository.cs))
 
 ```csharp
 public async Task<Account> Load(Guid id)
@@ -212,13 +212,13 @@ public async Task<Account> LoadAtVersion(Guid id, int version)
 }
 ```
 
-`GET /comptes/{id}/etat?version=2` or `?date=…`; `GET /comptes/{id}/evenements` gives the full audit.
+`GET /accounts/{id}/state?version=2` or `?date=…`; `GET /accounts/{id}/events` gives the full audit.
 
 ### 5. Evolving an event without rewriting history (*upcasting*)
 
-`ArgentRetire` gained a `Motif` (reason) field in v2. The old v1 events stay untouched; they are converted **on read**
-(reason "Non précisé", i.e. unspecified).
-([SerialiseurEvenements.cs](../../10-EventSourcing/Es.Stockage/SerialiseurEvenements.cs))
+`MoneyWithdrawn` gained a `Reason` (reason) field in v2. The old v1 events stay untouched; they are converted **on read**
+(reason "Not specified").
+([EventSerializer.cs](../../10-EventSourcing/Es.Storage/EventSerializer.cs))
 
 ```csharp
 private static readonly Dictionary<string, Func<string, (string Type, string Json)>> Upcasters = new()
@@ -246,15 +246,14 @@ before it existed — impossible with a classic database, which only kept the fi
 public class LargestWithdrawalsProjection : IProjection { /* … */ }
 ```
 
-`POST /admin/projections/reconstruire` erases all the views and replays the whole store.
+`POST /admin/projections/rebuild` erases all the views and replays the whole store.
 
 ---
 
 ## The tests: Given / When / Then
 
 Event Sourcing's natural style: *given* some facts, *when* a command arrives, *then* these new facts are expected.
-(In the code: *EtantDonne* = given, *Quand* = when, *Alors* = then.)
-([CompteTests.cs](../../10-EventSourcing/Es.Tests/CompteTests.cs))
+([AccountTests.cs](../../10-EventSourcing/Es.Tests/AccountTests.cs))
 
 ```csharp
 private static IReadOnlyList<IEvent> When(IEvent[] given, Action<Account> command)
@@ -273,7 +272,7 @@ public void A_possible_withdrawal_produces_MoneyWithdrawn()
 }
 ```
 
-Other tests ([StockageTests.cs](../../10-EventSourcing/Es.Tests/StockageTests.cs), [ApiTests.cs](../../10-EventSourcing/Es.Tests/ApiTests.cs)):
+Other tests ([StorageTests.cs](../../10-EventSourcing/Es.Tests/StorageTests.cs), [ApiTests.cs](../../10-EventSourcing/Es.Tests/ApiTests.cs)):
 concurrency conflict, all-or-nothing transfer across two streams, restart from the file, upcasting, snapshots
 (same result, fewer events read), time travel, projection rebuild.
 

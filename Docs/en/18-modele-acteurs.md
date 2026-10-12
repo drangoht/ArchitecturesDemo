@@ -6,7 +6,7 @@
 > **sharing nothing** and communicating only **through messages**, handled **one at a time**; concurrency no longer
 > needs any lock, and a failure is repaired by **replacing** the faulty actor.
 
-📁 Code: [`18-ModeleActeurs`](../../18-ModeleActeurs) · ⬅️ [Cell-Based Architecture](17-cell-based.md) · ➡️ [Space-Based Architecture](19-space-based.md) ·
+📁 Code: [`18-ActorModel`](../../18-ActorModel) · ⬅️ [Cell-Based Architecture](17-cell-based.md) · ➡️ [Space-Based Architecture](19-space-based.md) ·
 🌐 [Français](../18-modele-acteurs.md)
 
 ---
@@ -16,8 +16,7 @@
 In all the previous demos, the state is **shared**: several simultaneous requests read and modify the same accounts,
 and it is the database (transactions, locks, concurrency control) that keeps them from stepping on each other. The actor
 model (Carl Hewitt, 1973; popularized by Erlang) takes the problem the other way around: **each piece of data has a
-single owner**, and you only talk to it by dropping a message into its mailbox. (In the code: *Acteur* = actor,
-*Noyau* = core/runtime, *boîte aux lettres* = mailbox.)
+single owner**, and you only talk to it by dropping a message into its mailbox.
 
 ```mermaid
 flowchart LR
@@ -59,29 +58,29 @@ Three rules define an actor. In response to a message, it can:
 
 ```mermaid
 flowchart TB
-    API["Acteurs.Api<br/>one route = one message"] -->|"Demander / Envoyer"| SYS["SystemeActeurs<br/>activation · dispatch · supervision · passivation"]
+    API["Actors.Api<br/>one route = one message"] -->|"Ask / Tell"| SYS["ActorSystem<br/>activation · dispatch · supervision · passivation"]
     SYS --> C1["compte/alice<br/>mailbox + state"]
     SYS --> C2["compte/bob<br/>mailbox + state"]
     SYS --> V1["virement/v-42<br/>mailbox + state"]
-    V1 -->|"Debiter"| C1
-    V1 -->|"Crediter"| C2
-    C1 -.->|"writes its state"| ST[("MagasinEtats<br/>one row per actor")]
+    V1 -->|"Debit"| C1
+    V1 -->|"Credit"| C2
+    C1 -.->|"writes its state"| ST[("StateStore<br/>one row per actor")]
     C2 -.-> ST
     V1 -.-> ST
 ```
 
-- **The runtime** ([Acteurs.Noyau](../../18-ModeleActeurs/Acteurs.Noyau), ≈ 300 lines written for the demo, no package):
-  - [`Acteur`](../../18-ModeleActeurs/Acteurs.Noyau/Acteur.cs): the base class, with `Demarrer` (reload the state),
-    `Recevoir` (handle a message) and `Arreter` (stop);
-  - [`ReferenceActeur`](../../18-ModeleActeurs/Acteurs.Noyau/ReferenceActeur.cs): an actor's **address**
-    (`compte/1111…`), never the object itself; you `Envoyer` (send) it a message (*tell*, no reply) or `Demander` (ask)
+- **The runtime** ([Actors.Runtime](../../18-ActorModel/Actors.Runtime), ≈ 300 lines written for the demo, no package):
+  - [`Actor`](../../18-ActorModel/Actors.Runtime/Actor.cs): the base class, with `Start` (reload the state),
+    `Receive` (handle a message) and `StopActivation` (stop);
+  - [`ActorRef`](../../18-ActorModel/Actors.Runtime/ActorRef.cs): an actor's **address**
+    (`account/1111…`), never the object itself; you `Tell` (send) it a message (*tell*, no reply) or `Ask` (ask)
     it (*ask*, with a reply and a timeout);
-  - [`SystemeActeurs`](../../18-ModeleActeurs/Acteurs.Noyau/SystemeActeurs.cs): one mailbox
+  - [`ActorSystem`](../../18-ActorModel/Actors.Runtime/ActorSystem.cs): one mailbox
     (`System.Threading.Channels`) and one loop per active actor, supervision, passivation.
-- **The business** ([Acteurs.Banque](../../18-ModeleActeurs/Acteurs.Banque)): [`CompteActeur`](../../18-ModeleActeurs/Acteurs.Banque/CompteActeur.cs)
-  (one per account), [`VirementActeur`](../../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) (one per transfer),
-  immutable [messages](../../18-ModeleActeurs/Acteurs.Banque/Messages.cs) (`record`), durable storage and a failure injector.
-- **The API** ([Endpoints.cs](../../18-ModeleActeurs/Acteurs.Api/Endpoints.cs)) neither reads nor writes any state:
+- **The business** ([Actors.Bank](../../18-ActorModel/Actors.Bank)): [`AccountActor`](../../18-ActorModel/Actors.Bank/AccountActor.cs)
+  (one per account), [`TransferActor`](../../18-ActorModel/Actors.Bank/TransferActor.cs) (one per transfer),
+  immutable [messages](../../18-ActorModel/Actors.Bank/Messages.cs) (`record`), durable storage and a failure injector.
+- **The API** ([Endpoints.cs](../../18-ActorModel/Actors.Api/Endpoints.cs)) neither reads nor writes any state:
   each route sends **one** message to **one** actor and translates its reply into an HTTP status code.
 
 ```csharp
@@ -91,7 +90,7 @@ app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, AmountRequest r, A
 
 In production, you don't write this runtime: **Orleans** (Microsoft, *virtual* actors, the model followed here),
 **Akka.NET** (a port of Akka, Erlang-style supervision hierarchies) or **Proto.Actor** do the same thing, **spread over
-several machines**: the address `compte/alice` stays the same, whether the actor lives on server 1 or 7.
+several machines**: the address `account/alice` stays the same, whether the actor lives on server 1 or 7.
 
 ---
 
@@ -101,7 +100,7 @@ The code is quoted exactly as it is, French comments and messages included.
 
 The whole model fits in this loop: a single reader per mailbox, which **waits for the end** of each message before
 taking the next one — "THE key point of the model", as the comment says
-([SystemeActeurs.cs](../../18-ModeleActeurs/Acteurs.Noyau/SystemeActeurs.cs)).
+([ActorSystem.cs](../../18-ActorModel/Actors.Runtime/ActorSystem.cs)).
 
 ```csharp
 await foreach (var envelope in activation.Mailbox.Reader.ReadAllAsync())
@@ -112,7 +111,7 @@ await foreach (var envelope in activation.Mailbox.Reader.ReadAllAsync())
 ```
 
 The account can then write the most naive code there is: read the balance, check, modify. No `lock`, no transaction,
-no optimistic version ([CompteActeur.cs](../../18-ModeleActeurs/Acteurs.Banque/CompteActeur.cs)):
+no optimistic version ([AccountActor.cs](../../18-ActorModel/Actors.Bank/AccountActor.cs)):
 
 ```csharp
 if (debit && amount > state.Balance)
@@ -132,7 +131,7 @@ POST /demo/simultaneous-withdrawals  { "account": "1111…", "count": 1000, "amo
 Exactly 333 withdrawals accepted (333 × 3 = €999), none twice, never a negative balance. The same code without an actor,
 called by 1,000 threads, would lose updates.
 
-A business refusal (insufficient balance) is a **reply** like any other (`Refus`), not an exception: the actor carries
+A business refusal (insufficient balance) is a **reply** like any other (`Refusal`), not an exception: the actor carries
 on. Exceptions are reserved for **failures** (see § 3).
 
 ---
@@ -140,7 +139,7 @@ on. Exceptions are reserved for **failures** (see § 3).
 ## 2. Converse rather than lock: the transfer
 
 A transfer touches two accounts, so two actors with separate states: there is **no shared transaction**. A third actor,
-`virement/{id}`, leads the conversation and records where it stands, like the [saga](14-saga-orchestree.md)'s
+`transfer/{id}`, leads the conversation and records where it stands, like the [saga](14-saga-orchestree.md)'s
 orchestrator, but at the scale of a single transfer.
 
 ```mermaid
@@ -149,21 +148,21 @@ sequenceDiagram
     participant V as virement/v-42
     participant A as compte/alice
     participant B as compte/bob
-    API->>V: ExecuterVirement(alice, bob, 100)
-    V->>V: state EnCours (stored)
-    V->>A: Debiter(key v-42, 100)
-    A-->>V: CompteDto
-    V->>V: state DebitFait (stored)
-    V->>B: Crediter(key v-42, 100)
+    API->>V: ExecuteTransfer(alice, bob, 100)
+    V->>V: state InProgress (stored)
+    V->>A: Debit(key v-42, 100)
+    A-->>V: AccountDto
+    V->>V: state DebitDone (stored)
+    V->>B: Credit(key v-42, 100)
     alt bob accepts
-        B-->>V: CompteDto
-        V->>V: state Termine
+        B-->>V: AccountDto
+        V->>V: state Completed
     else bob refuses (nonexistent account)
-        B-->>V: Refus
-        V->>A: Crediter(key v-42-annulation, 100)
-        V->>V: state Annule
+        B-->>V: Refused
+        V->>A: Credit(key v-42-annulation, 100)
+        V->>V: state Cancelled
     end
-    V-->>API: VirementDto
+    V-->>API: TransferDto
 ```
 
 Three properties follow from the model, with no dedicated code:
@@ -178,7 +177,7 @@ Three properties follow from the model, with no dedicated code:
   ```
 
   (Alice only had €1 left after the previous run, hence the refusals; the total, however, is preserved.)
-- **Identity provides idempotency.** Replaying `virement/facture-42` wakes up the **same** actor, which already knows the
+- **Identity provides idempotency.** Replaying `transfer/invoice-42` wakes up the **same** actor, which already knows the
   answer; a finished transfer (done, refused or cancelled) never starts again — the comment: already finished, same
   reply, no effect:
 
@@ -187,9 +186,9 @@ Three properties follow from the model, with no dedicated code:
       return View();  // already finished: same response, no effect
   ```
 
-- **Recovery without a double debit.** If the transfer crashes after the debit, its stored state says `DebitFait`:
+- **Recovery without a double debit.** If the transfer crashes after the debit, its stored state says `DebitDone`:
   replayed, it skips the debit and resumes at the credit. And even if redone, the debit carries the key
-  `virement-v-42`, which the account recognizes:
+  `transfer-v-42`, which the account recognizes:
 
   ```csharp
   if (key is not null && state.Operations.Any(o => o.Key == key))
@@ -199,7 +198,7 @@ Three properties follow from the model, with no dedicated code:
 ⚠ The model's trap: an actor that **waits** for a reply handles nothing else meanwhile. If account A asked account B
 for something while B asked A for something, they would wait for each other (until the request's timeout). Hence the
 rule followed here: **requests go in one direction only** (transfer → accounts), never in a cycle; when an actor doesn't
-need the reply, it `Envoyer`s without waiting.
+need the reply, it `Tell`s without waiting.
 
 ---
 
@@ -211,8 +210,8 @@ it: the faulty incarnation, with a possibly inconsistent in-memory state, is thr
 
 ```mermaid
 flowchart LR
-    M["Next message<br/>from the mailbox"] --> T{"Recevoir"}
-    T -->|"reply or Refus"| OK(["Next message"])
+    M["Next message<br/>from the mailbox"] --> T{"Receive"}
+    T -->|"reply or Refused"| OK(["Next message"])
     T -->|"exception"| S{"Failures in<br/>the last minute?"}
     S -->|"3 at most"| R["Throw away the incarnation,<br/>create a fresh one<br/>that rereads the storage"]
     R --> OK
@@ -231,12 +230,12 @@ if (!await Incarnate(activation))
 ```
 
 The most telling case: a failure **at the worst moment**, after the balance was changed in memory but before it was
-written (`Etape.AvantSauvegarde`, armed with `POST /systeme/pannes`). Real run (the API's messages, in French):
+written (`Step.BeforeSave`, armed with `POST /system/failures`). Real run (the API's messages, in French):
 
 ```text
-POST /comptes/1111…/retrait { "montant": 1 }  → 500 « compte/1111… a planté en traitant ce message : panne simulée (AvantSauvegarde) »
-GET  /comptes/1111…                           → 200, solde inchangé : le retrait n'a pas eu lieu
-GET  /comptes/2222… (piégé 4 fois)            → 500 500 500 500 503
+POST /accounts/1111…/withdrawal { "amount": 1 }  → 500 "account/1111… crashed while handling this message: simulated failure (BeforeSave)"
+GET  /accounts/1111…                            → 200, balance unchanged: the withdrawal did not happen
+GET  /accounts/2222… (trapped 4 times)          → 500 500 500 500 503
 ```
 
 No half-modified balance, no cleanup code: the new incarnation starts again from the durable state. Beyond 3 restarts
@@ -245,13 +244,13 @@ window. The other actors notice nothing (Alice answers while Bob is in quarantin
 
 A failure **propagates along requests**: if Bob's account crashes during a transfer, the transfer's request fails, and
 the transfer crashes in turn. Both are restarted, and replaying the transfer finishes it (test
-`La_panne_d_un_compte_remonte_au_virement_qui_peut_etre_rejoue`).
+`An_account_failure_propagates_to_the_transfer_which_can_be_replayed`).
 
 The demo's runtime applies **one strategy per actor type** (Orleans' model, where the runtime supervises everyone).
 Akka and Erlang go further: actors form a **tree**, each parent supervises its children and can **escalate** the
 failure to its own parent.
 
-Finally, a slow actor only blocks its own callers: `Demander` has a timeout (5 s), beyond which the API answers `504`.
+Finally, a slow actor only blocks its own callers: `Ask` has a timeout (5 s), beyond which the API answers `504`.
 The message itself stays in the mailbox and will be handled.
 
 ---
@@ -263,18 +262,18 @@ In Orleans, an actor (a *grain*) **always exists** in principle: you neither cre
 stays), the next message reactivates it. You can therefore have millions of accounts and keep in memory only those in use.
 
 ```text
-POST /systeme/passivation         → { "passives": 1004 }      Alice, 9999… (touché par la compensation), 1 002 virements
-GET  /systeme                     → { "actifs": 0, ... }
-GET  /systeme/stockage?type=compte → ["compte/1111…", "compte/2222…"]   9999… n'a jamais été ouvert : rien de stocké
-GET  /comptes/1111…               → 200, solde retrouvé
-GET  /systeme                     → { "actifs": 1, ... }      seule Alice a été réveillée
+POST /system/passivation           → { "passivated": 1004 }      Alice, 9999… (touched by the compensation), 1,002 transfers
+GET  /system                       → { "active": 0, ... }
+GET  /system/storage?type=account  → ["account/1111…", "account/2222…"]   9999… was never opened: nothing stored
+GET  /accounts/1111…               → 200, balance restored
+GET  /system                       → { "active": 1, ... }      only Alice was woken up
 ```
 
 (1,004 actors put to sleep: Alice, the nonexistent account 9999… touched by the compensation, and 1,002 transfers;
 9999… was never opened, so nothing is stored for it; only Alice is woken up again.)
 
 Automatic passivation runs every 5 s and puts to sleep the actors idle for 30 s
-([PassivationAutomatique.cs](../../18-ModeleActeurs/Acteurs.Api/PassivationAutomatique.cs)). An actor with pending
+([AutomaticPassivation.cs](../../18-ActorModel/Actors.Api/AutomaticPassivation.cs)). An actor with pending
 or in-progress messages is never passivated.
 
 The central guarantee of a virtual actor runtime: **at most one incarnation per actor at a time**. The tricky case is a
@@ -296,25 +295,25 @@ server hosts which actor.)
 ## 5. The price: what actors make hard
 
 - **Cross-cutting reads.** "List all accounts", "total deposits": you would have to wake up and query every actor. The
-  API has no `GET /comptes`, for that matter. You build a **read view** alongside, fed by the actors' events: that is
+  API has no `GET /accounts`, for that matter. You build a **read view** alongside, fed by the actors' events: that is
   [CQRS](09-cqrs.md), often paired with actors.
 - **No transactions between actors**: a process involving several actors is written step by step, with stored states,
   idempotency and compensation (§ 2).
 - **Request cycles** deadlock (§ 2); mailboxes can **overflow** if an actor receives more than it handles (a heavily
   solicited account is a bottleneck: one message at a time is also a throughput limit).
-- **Delivery**: an `Envoyer` to a quarantined actor is lost ("dead letter", counted in `/systeme`); between machines, a
+- **Delivery**: an `Tell` to a quarantined actor is lost ("dead letter", counted in `/system`); between machines, a
   message can be lost or duplicated. Hence the idempotency keys.
 - **Debugging**: a request's flow is scattered across asynchronous messages between actors; you need a log (here
-  `/systeme/journal`) and, in production, distributed tracing.
+  `/system/log`) and, in production, distributed tracing.
 
 ---
 
 ## The tests
 
 Two levels: the runtime alone, with an instrumented toy actor
-([NoyauTests.cs](../../18-ModeleActeurs/Acteurs.Tests/NoyauTests.cs)), then the business
-([BanqueTests.cs](../../18-ModeleActeurs/Acteurs.Tests/BanqueTests.cs)) and the API
-([ApiTests.cs](../../18-ModeleActeurs/Acteurs.Tests/ApiTests.cs)). A manual clock moves time forward for passivation
+([RuntimeTests.cs](../../18-ActorModel/Actors.Tests/RuntimeTests.cs)), then the business
+([BankTests.cs](../../18-ActorModel/Actors.Tests/BankTests.cs)) and the API
+([ApiTests.cs](../../18-ActorModel/Actors.Tests/ApiTests.cs)). A manual clock moves time forward for passivation
 and quarantine. The toy actor increments its counter in the most dangerous way possible:
 
 ```csharp
@@ -327,23 +326,23 @@ case Increment:
 
 | Test | What is checked |
 |---|---|
-| `Un_acteur_traite_un_seul_message_a_la_fois` | 1,000 simultaneous increments: none lost, never two messages in progress |
-| `Des_acteurs_differents_travaillent_en_parallele` | two actors, two messages at the same time |
-| `Les_messages_d_un_expediteur_sont_traites_dans_l_ordre_d_envoi` | mailbox order |
-| `Le_premier_message_active_l_acteur_et_l_inactivite_le_passive`, `Un_acteur_occupe_n_est_jamais_passive` | virtual actors |
-| `Jamais_deux_incarnations_du_meme_acteur_en_meme_temps` | messages and passivations colliding, slow stops |
-| `Une_panne_remplace_l_incarnation_sans_perdre_les_messages_suivants`, `Une_panne_ne_touche_pas_les_autres_acteurs` | supervision |
-| `Trop_de_pannes_arretent_l_acteur_jusqu_a_la_fin_de_la_fenetre` | quarantine, dead letters |
-| `Une_demande_trop_longue_expire_sans_que_le_message_soit_perdu` | a request's timeout |
-| `Mille_retraits_simultanes_ne_rendent_jamais_le_solde_negatif` | 333 accepted out of 1,000, balance €1 |
-| `Des_virements_croises_simultanes_ne_s_interbloquent_pas` | 200 + 200 transfers, total preserved |
-| `Une_panne_avant_la_sauvegarde_annule_le_retrait_en_cours` | the state reread from storage |
-| `Un_virement_interrompu_apres_le_debit_se_termine_quand_on_le_rejoue`, `La_panne_d_un_compte_remonte_au_virement…` | recovery without a double debit |
-| `Un_virement_vers_un_compte_inexistant_est_compense`, `Rejouer_un_virement_refuse_ne_credite_jamais_la_cible` | compensation, final refusal |
-| `Rejouer_un_virement_termine_renvoie_le_meme_resultat_sans_effet`, `Un_debit_rejoue_avec_la_meme_cle_n_est_applique_qu_une_fois` | idempotency: actor identity, operation key |
-| `Les_refus_metier_sont_des_reponses_pas_des_pannes` | a refusal restarts nothing |
-| `Un_compte_passive_retrouve_son_solde_dans_le_stockage` | passivation, waking up a single actor |
-| `Des_pannes_repetees_mettent_l_acteur_en_quarantaine`, `Une_lenteur_repond_504_sans_bloquer_les_autres_comptes` | `500`, `503`, `504` over HTTP |
+| `An_actor_handles_only_one_message_at_a_time` | 1,000 simultaneous increments: none lost, never two messages in progress |
+| `Different_actors_work_in_parallel` | two actors, two messages at the same time |
+| `The_messages_of_a_sender_are_handled_in_sending_order` | mailbox order |
+| `The_first_message_activates_the_actor_and_inactivity_passivates_it`, `A_busy_actor_is_never_passivated` | virtual actors |
+| `Never_two_incarnations_of_the_same_actor_at_the_same_time` | messages and passivations colliding, slow stops |
+| `A_failure_replaces_the_incarnation_without_losing_the_next_messages`, `A_failure_does_not_affect_the_other_actors` | supervision |
+| `Too_many_failures_stop_the_actor_until_the_end_of_the_window` | quarantine, dead letters |
+| `A_request_that_takes_too_long_expires_without_the_message_being_lost` | a request's timeout |
+| `A_thousand_simultaneous_withdrawals_never_make_the_balance_negative` | 333 accepted out of 1,000, balance €1 |
+| `Simultaneous_crossed_transfers_do_not_deadlock` | 200 + 200 transfers, total preserved |
+| `A_failure_before_saving_cancels_the_withdrawal_in_progress` | the state reread from storage |
+| `A_transfer_interrupted_after_the_debit_completes_when_replayed`, `La_panne_d_un_compte_remonte_au_virement…` | recovery without a double debit |
+| `A_transfer_to_an_account_that_does_not_exist_is_compensated`, `Replaying_a_refused_transfer_never_credits_the_target` | compensation, final refusal |
+| `Replaying_a_completed_transfer_returns_the_same_result_without_effect`, `A_debit_replayed_with_the_same_key_is_applied_only_once` | idempotency: actor identity, operation key |
+| `Business_refusals_are_responses_not_failures` | a refusal restarts nothing |
+| `A_passivated_account_finds_its_balance_again_in_the_storage` | passivation, waking up a single actor |
+| `Repeated_failures_put_the_actor_in_quarantine`, `A_slowness_answers_504_without_blocking_the_other_accounts` | `500`, `503`, `504` over HTTP |
 
 Checked by mutation: creating one incarnation per message, not waiting for the previous incarnation, keeping the faulty
 incarnation after a failure, passivating a busy actor, removing the quarantine, the idempotency of debits, the

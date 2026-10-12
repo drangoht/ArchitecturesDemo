@@ -5,7 +5,7 @@
 > **In one sentence**: autonomous modules — each with its own API, database and events — connected only through
 > **contracts**, and deployed together in a single process.
 
-📁 Code: [`07-MonolitheModulaire`](../../07-MonolitheModulaire) · ⬅️ [Package by Component](06-composants.md) · ➡️ [Microservices](08-microservices.md) ·
+📁 Code: [`07-ModularMonolith`](../../07-ModularMonolith) · ⬅️ [Package by Component](06-composants.md) · ➡️ [Microservices](08-microservices.md) ·
 🌐 [Français](../07-monolithe-modulaire.md)
 
 ---
@@ -18,19 +18,18 @@ module, communication through contracts). Shopify, among others, popularized it 
 
 Compared with [components](06-composants.md), a module is no longer just "business logic behind an interface": it is a
 **mini-application** that owns its HTTP routes, its database and its subscriptions, and is plugged in with one line.
-(In the code: *Comptes* = accounts, *Virements* = transfers, *Hote* = host, *Partage* = shared, *Contrats* = contracts.)
 
 **Who references whom** (projects):
 
 ```mermaid
 flowchart TB
-    Hote["Modulaire.Hote<br/>IModule[] modules = [Comptes, Virements, Notifications]"]
-    CI["Modulaire.Comptes<br/>ComptesModule + internal"]
-    VI["Modulaire.Virements<br/>VirementsModule + internal"]
-    NI["Modulaire.Notifications<br/>NotificationsModule + internal"]
-    CC["Modulaire.Comptes.Contrats<br/>IComptesApi · RetraitEffectue"]
-    VC["Modulaire.Virements.Contrats<br/>VirementEffectue"]
-    P["Modulaire.Partage<br/>IModule · IBusEvenements"]
+    Hote["Modular.Host<br/>IModule[] modules = [Accounts, Transfers, Notifications]"]
+    CI["Modular.Accounts<br/>AccountsModule + internal"]
+    VI["Modular.Transfers<br/>TransfersModule + internal"]
+    NI["Modular.Notifications<br/>NotificationsModule + internal"]
+    CC["Modular.Accounts.Contracts<br/>IAccountsApi · WithdrawalMade"]
+    VC["Modular.Transfers.Contracts<br/>TransferMade"]
+    P["Modular.Shared<br/>IModule · IEventBus"]
 
     Hote --> CI & VI & NI
     CI --> CC
@@ -48,9 +47,9 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    V["Transfers module"] ==>|"synchronous call<br/>IComptesApi.Debiter / Crediter"| C["Accounts module"]
-    C -.->|"publishes RetraitEffectue"| B(["Event bus"])
-    V -.->|"publishes VirementEffectue"| B
+    V["Transfers module"] ==>|"synchronous call<br/>IAccountsApi.Debit / Credit"| C["Accounts module"]
+    C -.->|"publishes WithdrawalMade"| B(["Event bus"])
+    V -.->|"publishes TransferMade"| B
     B -.->|"delivers"| N["Notifications module"]
 ```
 
@@ -58,7 +57,7 @@ flowchart LR
 1. A module **never** references another module's implementation, only its **Contracts**.
 2. A module publicly exposes **only** its `IModule` class.
 3. Contracts depend on no module.
-4. One database per module (`Banque-Comptes`, `Banque-Virements`, `Banque-Notifications`).
+4. One database per module (`Bank-Accounts`, `Bank-Transfers`, `Bank-Notifications`).
 
 ---
 
@@ -66,7 +65,7 @@ flowchart LR
 
 | | **Synchronous** (interface call) | **Asynchronous** (event) |
 |---|---|---|
-| Example | Transfers → `IComptesApi.Debiter/Crediter` | Accounts publishes `RetraitEffectue` |
+| Example | Transfers → `IAccountsApi.Debit/Credit` | Accounts publishes `WithdrawalMade` |
 | When | You need the answer **right away** | You **announce** a fact, without knowing who listens |
 | Coupling | the caller knows the called module's interface | the publisher doesn't know the subscribers |
 | Failure on the other side | the caller fails | the publisher is not affected |
@@ -80,7 +79,7 @@ The code is quoted exactly as it is, French comments included.
 ### 1. A module's contract
 
 What each module implements to plug into the host; the host only knows this interface.
-([IModule.cs](../../07-MonolitheModulaire/Modulaire.Partage/IModule.cs))
+([IModule.cs](../../07-ModularMonolith/Modular.Shared/IModule.cs))
 
 ```csharp
 /// What each module implements to plug itself into the host.
@@ -97,7 +96,7 @@ public interface IModule
 ### 2. The host assembles, without any business logic
 
 The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
-([Program.cs](../../07-MonolitheModulaire/Modulaire.Hote/Program.cs))
+([Program.cs](../../07-ModularMonolith/Modular.Host/Program.cs))
 
 ```csharp
 // The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
@@ -119,7 +118,7 @@ foreach (var module in modules)
 ### 3. The contracts: what others are allowed to know
 
 A synchronous API other modules can call, and the events the module publishes.
-([Comptes.Contrats/Contrats.cs](../../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs))
+([Accounts.Contracts/Contracts.cs](../../07-ModularMonolith/Modular.Accounts.Contracts/Contracts.cs))
 
 ```csharp
 // ─── Synchronous communication: an API the other modules can call ───
@@ -138,7 +137,7 @@ public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance)
 
 Synchronous call through the public contract only; each module has its own database, so no shared transaction: the
 debit is compensated; then the transfer is announced to whoever wants to hear it.
-([VirementsEndpoints.cs](../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs))
+([TransfersEndpoints.cs](../../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs))
 
 ```csharp
 // Synchronous call to another module, only through its public contract.
@@ -164,7 +163,7 @@ await bus.Publish(new TransferMade(source.Id, source.Owner, target.Id, target.Ow
 ### 5. A module added without touching the others
 
 Notifications only **listens**. It was added without changing a single line of Accounts or Transfers.
-([NotificationsModule.cs](../../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs))
+([NotificationsModule.cs](../../07-ModularMonolith/Modular.Notifications/NotificationsModule.cs))
 
 ```csharp
 // Subscriptions to the other modules' events.
@@ -174,7 +173,7 @@ services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 
 ### 6. The bus isolates failures
 
-([Evenements.cs](../../07-MonolitheModulaire/Modulaire.Partage/Evenements.cs)) — each handler runs in its own scope,
+([Events.cs](../../07-ModularMonolith/Modular.Shared/Events.cs)) — each handler runs in its own scope,
 and an error in a subscriber doesn't make the publishing module fail.
 
 ```csharp
@@ -198,21 +197,21 @@ foreach (var handler in scope.ServiceProvider.GetServices<IEventHandler<T>>())
 sequenceDiagram
     actor Client
     participant V as Transfers module
-    participant C as Accounts module (IComptesApi)
+    participant C as Accounts module (IAccountsApi)
     participant DBV as Transfers database
     participant B as Event bus
     participant N as Notifications module
-    Client->>V: POST /virements
-    V->>C: Consulter(source), Consulter(cible)
-    V->>C: Debiter(source, 250)
-    V->>C: Crediter(cible, 250)
+    Client->>V: POST /transfers
+    V->>C: Get(source), Get(cible)
+    V->>C: Debit(source, 250)
+    V->>C: Credit(cible, 250)
     V->>DBV: save the transfer
-    V->>B: Publier(VirementEffectue + holders' names)
-    B->>N: SurVirementEffectue
+    V->>B: Publish(TransferMade + holders' names)
+    B->>N: OnTransferMade
     N->>N: 2 notifications (sent / received)
     V-->>Client: 200 OK
     Client->>N: GET /notifications/{bob}
-    N-->>Client: "Virement de 250,00 € reçu de Alice."
+    N-->>Client: "Transfer of 250,00 € received from Alice."
 ```
 
 The event carries the **holders' names** (*event-carried state transfer*): Notifications doesn't need to call
@@ -222,12 +221,12 @@ Accounts back.
 
 ## The tests
 
-- **Cross-module journeys** ([ParcoursTests.cs](../../07-MonolitheModulaire/Modulaire.Tests/ParcoursTests.cs)): a
+- **Cross-module journeys** ([JourneyTests.cs](../../07-ModularMonolith/Modular.Tests/JourneyTests.cs)): a
   transfer goes through the three modules.
-- **Isolation** ([IsolationTests.cs](../../07-MonolitheModulaire/Modulaire.Tests/IsolationTests.cs)): a module is
-  replaced by a fake through its contract (`services.AddScoped<IComptesApi>(_ => faux)`), and we check that a failure
+- **Isolation** ([IsolationTests.cs](../../07-ModularMonolith/Modular.Tests/IsolationTests.cs)): a module is
+  replaced by a fake through its contract (`services.AddScoped<IAccountsApi>(_ => fake)`), and we check that a failure
   in a subscriber doesn't break the publishing module.
-- **Architecture** ([ArchitectureTests.cs](../../07-MonolitheModulaire/Modulaire.Tests/ArchitectureTests.cs)):
+- **Architecture** ([ArchitectureTests.cs](../../07-ModularMonolith/Modular.Tests/ArchitectureTests.cs)):
 
 ```csharp
 [Theory]

@@ -3,7 +3,7 @@
 > **The difference in one sentence**: the hexagonal center **still does input/output**, through ports; the functional
 > core does **none at all**: it receives values and returns a decision, the shell does everything else.
 
-📁 Demos: [`01-Hexagonale`](../../../01-Hexagonale) · [`04-CoeurFonctionnel`](../../../04-CoeurFonctionnel) ·
+📁 Demos: [`01-Hexagonal`](../../../01-Hexagonal) · [`04-FunctionalCore`](../../../04-FunctionalCore) ·
 📖 Pages: [Hexagonal](../01-hexagonale.md) · [Functional Core](../04-coeur-fonctionnel.md) · 🗂️ Cheat sheets: [1](../fiches/01-hexagonale.md) · [4](../fiches/04-coeur-fonctionnel.md)
 
 ⬅️ [Clean or Vertical Slice?](04-clean-vs-vertical-slice.md) · ➡️ [DDD or Hexagonal / Onion?](06-ddd-vs-hexagonale-onion.md) · 🌐 [Français](../../differences/05-hexagonale-vs-coeur-fonctionnel.md)
@@ -19,10 +19,10 @@ is often described as **hexagonal taken to the extreme**.
 
 | | Hexagonal | Functional Core |
 |---|---|---|
-| The center calls… | **outbound ports** (`IComptes.Charger`, `INotifications`) | **nothing** |
-| Style | objects, `async`, entities modified in place | **pure** functions, immutable `record`s (`compte with { Solde = … }`) |
+| The center calls… | **outbound ports** (`IAccounts.Load`, `INotifications`) | **nothing** |
+| Style | objects, `async`, entities modified in place | **pure** functions, immutable `record`s (`account with { Balance = … }`) |
 | Who orchestrates read → decide → write | the use case, **at the center** | the **shell**, outside |
-| What the rule returns | nothing (it modifies the entity) or an exception | a **decision**: `Accepte` or `Refuse` |
+| What the rule returns | nothing (it modifies the entity) or an exception | a **decision**: `Accepted` or `Refused` |
 | Time ("today") | read at the center through a port (clock) if needed | **an input** computed by the shell |
 | Testing the center | with test adapters (memory, fakes) | values → value, **no test doubles** |
 | Limit | interfaces to maintain | load everything **before** deciding |
@@ -33,13 +33,13 @@ is often described as **hexagonal taken to the extreme**.
 flowchart LR
     subgraph H["HEXAGONAL"]
         direction TB
-        CU["Use case<br/>(center)"] -->|"Charger"| P["IComptes port"]
-        CU -->|"Retirer, Deposer"| E["Compte"]
-        CU -->|"Sauvegarder"| P
+        CU["Use case<br/>(center)"] -->|"Load"| P["IAccounts port"]
+        CU -->|"Withdraw, Deposit"| E["Account"]
+        CU -->|"Save"| P
     end
     subgraph F["FUNCTIONAL CORE"]
         direction TB
-        L["Shell: read"] --> R["Regles.Virer<br/>(pure)"] --> A["Shell: apply"]
+        L["Shell: read"] --> R["Rules.Transfer<br/>(pure)"] --> A["Shell: apply"]
     end
     H ~~~ F
 ```
@@ -49,7 +49,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments and messages included.
 
 **Hexagonal**: the use case, at the center, loads, modifies and saves through its ports
-([CasUtilisation.cs](../../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs)):
+([UseCases.cs](../../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs)):
 
 ```csharp
 var source = await accounts.Load(sourceId) ?? throw new AccountNotFoundException(sourceId);
@@ -63,7 +63,7 @@ await accounts.Save(target);
 ```
 
 **Functional Core**: the rule receives everything it needs, including the day's total, and returns a decision
-([Regles.cs](../../../04-CoeurFonctionnel/Fonctionnel.Coeur/Regles.cs)):
+([Rules.cs](../../../04-FunctionalCore/Functional.Core/Rules.cs)):
 
 ```csharp
 public static TransferDecision Transfer(Account source, Account target, decimal amount, decimal alreadyTransferredToday)
@@ -75,7 +75,7 @@ public static TransferDecision Transfer(Account source, Account target, decimal 
 ```
 
 The shell does the three stages (2. DECIDE, pure; 3. APPLY, I/O)
-([Endpoints.cs](../../../04-CoeurFonctionnel/Fonctionnel.Coquille/Endpoints.cs)):
+([Endpoints.cs](../../../04-FunctionalCore/Functional.Shell/Endpoints.cs)):
 
 ```csharp
 // 2. DECIDE (pure)

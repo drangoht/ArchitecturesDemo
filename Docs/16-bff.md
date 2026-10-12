@@ -120,7 +120,7 @@ Le même besoin (« l'accueil ») donne deux réponses très différentes.
 | | BFF web : `/api/dashboard` | BFF mobile : `/mobile/v1/home` |
 |---|---|---|
 | Contenu | client, conseiller, comptes avec IBAN, 10 opérations par compte, dépenses par catégorie, offres | prénom, solde total, soldes, 3 dernières opérations |
-| Libellés | bruts (« CB CARREFOUR 0910 PARIS 15 ») | raccourcis (« Carrefour ») |
+| Libellés | bruts (« CARD CARREFOUR 0910 PARIS 15 ») | raccourcis (« Carrefour ») |
 | Taille (démo) | ≈ 2,8 Ko | ≈ 0,4 Ko |
 | Champs nuls | présents | omis |
 | Liste longue | 10 dernières opérations | pages de 10, **curseur opaque** |

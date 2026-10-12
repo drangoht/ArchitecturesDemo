@@ -3,7 +3,7 @@
 > **The difference in one sentence**: in layers, the business **depends on the database**; in hexagonal, it is the
 > other way around, the database **plugs into the business**. Everything else follows from that.
 
-📁 Demos: [`00-Couches`](../../../00-Couches) · [`01-Hexagonale`](../../../01-Hexagonale) ·
+📁 Demos: [`00-Layered`](../../../00-Layered) · [`01-Hexagonal`](../../../01-Hexagonal) ·
 📖 Pages: [Layered](../00-couches.md) · [Hexagonal](../01-hexagonale.md) · 🗂️ Cheat sheets: [0](../fiches/00-couches.md) · [1](../fiches/01-hexagonale.md)
 
 ⬅️ [Contents](README.md) · ➡️ [Hexagonal or Onion?](02-hexagonale-vs-onion.md) · 🌐 [Français](../../differences/01-couches-vs-hexagonale.md)
@@ -20,13 +20,13 @@ has the same rules (positive amount, sufficient balance), the scenario is the sa
 | | Layered | Hexagonal |
 |---|---|---|
 | Picture | a stack: top → bottom | a center and a perimeter: inside / outside |
-| The business references… | `Couches.Donnees` | **no project** |
-| The data-access interface is defined by… | the data layer (`IComptesDao`) | the business (outbound port `IComptes`) |
-| …in the vocabulary of… | persistence (`CompteEntite`, `Enregistrer`) | the business (`Compte`, `Charger`, `Sauvegarder`) |
-| The entity | **anemic** (public setters); the rule is in the service | **rich**: `Compte.Retirer` protects its balance |
+| The business references… | `Layered.Data` | **no project** |
+| The data-access interface is defined by… | the data layer (`IAccountsDao`) | the business (outbound port `IAccounts`) |
+| …in the vocabulary of… | persistence (`AccountEntity`, `Save`) | the business (`Account`, `Load`, `Save`) |
+| The entity | **anemic** (public setters); the rule is in the service | **rich**: `Account.Withdraw` protects its balance |
 | Input channels | one: the presentation | several, on an equal footing: API, CLI, tests |
 | Replacing the storage | touches the business (it handles the persistence entities) | write an adapter; the **contract tests** prove equivalence |
-| Testing the business | with a fake DAO… which returns `CompteEntite` objects | with a test adapter, no database |
+| Testing the business | with a fake DAO… which returns `AccountEntity` objects | with a test adapter, no database |
 | Safeguard | non-transitive references | hexagon with no references + architecture test |
 
 ## Side by side
@@ -35,11 +35,11 @@ has the same rules (positive amount, sufficient balance), the scenario is the sa
 flowchart LR
     subgraph C["LAYERED"]
         direction TB
-        P0["Presentation"] --> M0["Business<br/>ComptesService"] -->|"depends on"| D0["Data<br/>defines IComptesDao"]
+        P0["Presentation"] --> M0["Business<br/>AccountsService"] -->|"depends on"| D0["Data<br/>defines IAccountsDao"]
     end
     subgraph H["HEXAGONAL"]
         direction TB
-        W1["Web adapter"] --> M1["Hexagon<br/>defines IComptes"]
+        W1["Web adapter"] --> M1["Hexagon<br/>defines IAccounts"]
         J1["JSON adapter"] -->|"depends on"| M1
     end
     C ~~~ H
@@ -53,7 +53,7 @@ The code is quoted exactly as it is, French comments included.
 
 **Who defines the data-access contract.** In layers, it is the data layer, with its own types (the comment: the
 interface is defined BY the data layer, in ITS vocabulary)
-([ComptesDao.cs](../../../00-Couches/Couches.Donnees/ComptesDao.cs)):
+([AccountsDao.cs](../../../00-Layered/Layered.Data/AccountsDao.cs)):
 
 ```csharp
 // The interface is defined BY the data layer, in ITS vocabulary (AccountEntity).
@@ -67,7 +67,7 @@ public interface IAccountsDao
 ```
 
 In hexagonal, it is the business, which says what it needs
-([PortsSortants.cs](../../../01-Hexagonale/Hexa.Hexagone/Ports/Sortants/PortsSortants.cs)):
+([OutboundPorts.cs](../../../01-Hexagonal/Hexa.Hexagon/Ports/Outbound/OutboundPorts.cs)):
 
 ```csharp
 public interface IAccounts
@@ -78,8 +78,8 @@ public interface IAccounts
 ```
 
 **Where the rule lives.** Layered: in the service, on an entity anyone can modify — the entity being anemic, nothing
-stops another class from doing `compte.Solde -= x` without this check
-([ComptesService.cs](../../../00-Couches/Couches.Metier/ComptesService.cs)):
+stops another class from doing `account.Balance -= x` without this check
+([AccountsService.cs](../../../00-Layered/Layered.Business/AccountsService.cs)):
 
 ```csharp
 // Since the entity is anemic, nothing stops another class from doing "account.Balance -= x"
@@ -88,7 +88,7 @@ private static void CheckWithdrawalAllowed(AccountEntity account, decimal amount
 ```
 
 Hexagonal: in the entity itself, whose balance has no public setter
-([Compte.cs](../../../01-Hexagonale/Hexa.Hexagone/Domaine/Compte.cs)):
+([Account.cs](../../../01-Hexagonal/Hexa.Hexagon/Domain/Account.cs)):
 
 ```csharp
 public decimal Balance { get; private set; }
@@ -106,11 +106,11 @@ public void Withdraw(decimal amount)
 
 | Step | Layered | Hexagonal |
 |---|---|---|
-| Input | `ComptesController` (the only possible entry) | Web adapter **or** CLI adapter, same use case |
-| Load | `dao.ParId` → `CompteEntite` | `comptes.Charger` → domain `Compte` |
-| Decide | `ComptesService.VerifierRetraitPossible` | `Compte.Retirer` |
-| Modify | `compte.Solde -= montant` in the service | in `Compte.Retirer` |
-| Save | `dao.Enregistrer()` (EF's `SaveChanges`) | `comptes.Sauvegarder(compte)`: memory or JSON file depending on configuration |
+| Input | `AccountsController` (the only possible entry) | Web adapter **or** CLI adapter, same use case |
+| Load | `dao.ById` → `AccountEntity` | `accounts.Load` → domain `Account` |
+| Decide | `AccountsService.CheckWithdrawalAllowed` | `Account.Withdraw` |
+| Modify | `account.Balance -= amount` in the service | in `Account.Withdraw` |
+| Save | `dao.Save()` (EF's `SaveChanges`) | `accounts.Save(account)`: memory or JSON file depending on configuration |
 
 ## How to choose
 

@@ -4,7 +4,7 @@
 > owner** (no write is ever lost), while the space-based architecture **replicates** it in every unit (simultaneous
 > writes can be lost).
 
-📁 Demos: [`18-ModeleActeurs`](../../../18-ModeleActeurs) · [`19-SpaceBased`](../../../19-SpaceBased) ·
+📁 Demos: [`18-ActorModel`](../../../18-ActorModel) · [`19-SpaceBased`](../../../19-SpaceBased) ·
 📖 Pages: [Actors](../18-modele-acteurs.md) · [Space-based](../19-space-based.md) ·
 🗂️ Cheat sheets: [18](../fiches/18-modele-acteurs.md) · [19](../fiches/19-space-based.md)
 
@@ -23,14 +23,14 @@ simultaneous withdrawals on Alice's account) reveals everything.
 | | Actors | Space-based |
 |---|---|---|
 | Problem targeted | **concurrency**: several requests on the same data | **the database saturating**: too many requests for it |
-| A piece of data lives… | in **a single** actor (`compte/alice`) | **replicated** in every processing unit |
+| A piece of data lives… | in **a single** actor (`account/alice`) | **replicated** in every processing unit |
 | Simultaneous writes | **queued** in the mailbox, handled one at a time | applied **in parallel** in several replicas |
 | Lost write? | **never** | **possible** (collision: the highest version wins) |
 | Countermeasure | structural: one owner, one message at a time | **affinity routing** (same key → same unit), imperfect |
 | The database | durable state written by the actor; reread by a new incarnation | **deferred** backup (pump); can go down without stopping the service |
 | Scaling | millions of actors, **activated on demand**, spread out | 2 to 6 units, added with the load, each with **all** the data |
 | A failure | the faulty actor is **replaced** (supervision); the others notice nothing | one unit goes down: its requests go elsewhere; all go down: cold start from the database |
-| An operation on two pieces of data | a conversation (a `virement/…` actor), with compensation | no transaction; collision risk on each key |
+| An operation on two pieces of data | a conversation (a `transfer/…` actor), with compensation | no transaction; collision risk on each key |
 | Limit | cross-cutting reads, request cycles (deadlocks) | everything in memory, database lagging, collisions |
 
 ## Side by side: 3 requests on Alice's account
@@ -56,7 +56,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments and messages included.
 
 **Actors**: a single reader per mailbox, which waits for the end of each message before the next one
-([SystemeActeurs.cs](../../../18-ModeleActeurs/Acteurs.Noyau/SystemeActeurs.cs)):
+([ActorSystem.cs](../../../18-ActorModel/Actors.Runtime/ActorSystem.cs)):
 
 ```csharp
 // THE key point of the model: only one message at a time, each handled to the end before the next one.
@@ -64,7 +64,7 @@ response = await activation.Instance!.Receive(envelope.Message);
 ```
 
 The account can therefore write the most naive code: read, check, modify, without a lock
-([CompteActeur.cs](../../../18-ModeleActeurs/Acteurs.Banque/CompteActeur.cs)):
+([AccountActor.cs](../../../18-ActorModel/Actors.Bank/AccountActor.cs)):
 
 ```csharp
 if (debit && amount > state.Balance)
@@ -73,7 +73,7 @@ if (debit && amount > state.Balance)
 
 **Space-based**: the write is applied in the local replica, then **published** to the other replicas and the pump,
 without waiting for them — the database is not on the request path
-([GrilleDeDonnees.cs](../../../19-SpaceBased/Espace.Grille/GrilleDeDonnees.cs)):
+([DataGrid.cs](../../../19-SpaceBased/Space.Grid/DataGrid.cs)):
 
 ```csharp
 // The database is not on the request path: the write goes into the pump, we do not wait.
@@ -81,14 +81,14 @@ _toThePump(modification);
 ```
 
 On receipt, a replica detects that a modification doesn't start from the version it knows: that is a collision, and the
-highest version wins ([Replique.cs](../../../19-SpaceBased/Espace.Grille/Replique.cs)):
+highest version wins ([Replica.cs](../../../19-SpaceBased/Space.Grid/Replica.cs)):
 
 ```csharp
 var concurrent = local != m.Previous && local.Unit != "" && local.Unit != m.Version.Unit;
 ```
 
 The countermeasure is to always route the same key to the same unit
-([GrilleDeMessages.cs](../../../19-SpaceBased/Espace.Grille/GrilleDeMessages.cs)):
+([MessagingGrid.cs](../../../19-SpaceBased/Space.Grid/MessagingGrid.cs)):
 
 ```csharp
 : _units.MaxBy(u => Hash($"{key}/{u.Id}"))!;
@@ -103,7 +103,7 @@ The countermeasure is to always route the same key to the same unit
 | | | **round robin**: 200 accepted, €700: **€100 lost**, 199 updates overwritten |
 
 In space-based, even affinity isn't a guarantee: while a unit arrives or leaves, a key can change owner and a write can
-be lost (test `En_affinite_un_changement_d_unites_ouvre_une_fenetre_de_collision`). Actors don't have this problem,
+be lost (test `With_affinity_a_change_of_units_opens_a_collision_window`). Actors don't have this problem,
 because **the owner is the data itself**.
 
 ## How to choose

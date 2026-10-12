@@ -5,17 +5,17 @@
 > **In one sentence**: no service drives the process; each one **reacts to the events** of the others and publishes its
 > own.
 
-**Family**: system decomposition · **Demo**: [`21-Choregraphie`](../../../21-Choregraphie) (port 5121; `/bus` and
+**Family**: system decomposition · **Demo**: [`21-Choreography`](../../../21-Choreography) (port 5121; `/bus` and
 `/chaos` to observe and break things) · 📖 [Full page](../21-choregraphie.md) ·
 🌐 [Français](../../fiches/21-choregraphie.md)
 
 ```mermaid
 flowchart TB
-    API(["API"]) -->|VirementDemande| CO["Accounts<br/>reserve"]
-    CO -->|FondsReserves| CF["Compliance"]
-    CF -->|ConformiteApprouvee| CH["Exchange"]
-    CH -->|DevisesConverties| CO2["Accounts<br/>settle"]
-    CO2 -->|VirementRegle| NO["Notifications"] & FI["Loyalty"]
+    API(["API"]) -->|TransferRequested| CO["Accounts<br/>reserve"]
+    CO -->|FundsReserved| CF["Compliance"]
+    CF -->|ComplianceApproved| CH["Exchange"]
+    CH -->|CurrenciesConverted| CO2["Accounts<br/>settle"]
+    CO2 -->|TransferSettled| NO["Notifications"] & FI["Loyalty"]
 ```
 
 ## Key points

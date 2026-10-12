@@ -5,7 +5,7 @@
 > **In one sentence**: technical layers are stacked — presentation, business, data — and each layer only calls the one
 > below it.
 
-📁 Code: [`00-Couches`](../../00-Couches) · ⬅️ [Contents](README.md) · ➡️ [Hexagonal](01-hexagonale.md) ·
+📁 Code: [`00-Layered`](../../00-Layered) · ⬅️ [Contents](README.md) · ➡️ [Hexagonal](01-hexagonale.md) ·
 🌐 [Français](../00-couches.md)
 
 ---
@@ -13,23 +13,22 @@
 ## The idea
 
 It has been the "default" architecture of most business applications since the 1990s, and the baseline for all the
-others. Its principle is simple: **separate the technical responsibilities**. (In the code: *Presentation*,
-*Metier* = business, *Donnees* = data.)
+others. Its principle is simple: **separate the technical responsibilities**.
 
 ```mermaid
 flowchart TB
     Client(["HTTP client"])
-    subgraph P["Couches.Presentation"]
-        CC["ComptesController"]
+    subgraph P["Layered.Presentation"]
+        CC["AccountsController"]
     end
-    subgraph M["Couches.Metier"]
-        CS["ComptesService<br/><i>all the rules</i>"]
-        DTO["CompteDto"]
+    subgraph M["Layered.Business"]
+        CS["AccountsService<br/><i>all the rules</i>"]
+        DTO["AccountDto"]
     end
-    subgraph D["Couches.Donnees"]
-        DAO["IComptesDao / ComptesDao"]
-        E["CompteEntite<br/><i>anemic</i>"]
-        DB[("BanqueDbContext")]
+    subgraph D["Layered.Data"]
+        DAO["IAccountsDao / AccountsDao"]
+        E["AccountEntity<br/><i>anemic</i>"]
+        DB[("BankDbContext")]
     end
     Client --> CC
     CC -->|"calls"| CS
@@ -42,7 +41,7 @@ flowchart TB
 ```
 
 **The key point: dependencies flow down to the database.** The business layer *depends* on the data layer: it is the
-data layer that defines the `IComptesDao` interface and the `CompteEntite` entity, in its own vocabulary, and the
+data layer that defines the `IAccountsDao` interface and the `AccountEntity` entity, in its own vocabulary, and the
 business layer adapts to them. This is exactly what the following architectures (Hexagonal, Onion, Clean) will **invert**.
 
 ---
@@ -51,10 +50,10 @@ business layer adapts to them. This is exactly what the following architectures 
 
 | Project | Role | References |
 |---|---|---|
-| `Couches.Donnees` | Entity, `DbContext`, DAO interface and implementation | nothing |
-| `Couches.Metier` | `ComptesService` (rules), DTOs, exceptions | `Couches.Donnees` |
-| `Couches.Presentation` | MVC controllers, `Program.cs` | `Couches.Metier` **only** |
-| `Couches.Tests` | Tests of the service and of the architecture | — |
+| `Layered.Data` | Entity, `DbContext`, DAO interface and implementation | nothing |
+| `Layered.Business` | `AccountsService` (rules), DTOs, exceptions | `Layered.Data` |
+| `Layered.Presentation` | MVC controllers, `Program.cs` | `Layered.Business` **only** |
+| `Layered.Tests` | Tests of the service and of the architecture | — |
 
 ---
 
@@ -65,7 +64,7 @@ The code is quoted exactly as it is, French comments included.
 ### 1. The data layer defines the model… and the contract
 
 The entity is **anemic**: data only, with public setters.
-([CompteEntite.cs](../../00-Couches/Couches.Donnees/CompteEntite.cs))
+([AccountEntity.cs](../../00-Layered/Layered.Data/AccountEntity.cs))
 
 ```csharp
 public class AccountEntity
@@ -78,7 +77,7 @@ public class AccountEntity
 
 The access interface is defined **by the data layer**, in **its** vocabulary (the comment says so, and points out that
 in Onion/Hexagonal it is the business that defines the interface it needs).
-([ComptesDao.cs](../../00-Couches/Couches.Donnees/ComptesDao.cs))
+([AccountsDao.cs](../../00-Layered/Layered.Data/AccountsDao.cs))
 
 ```csharp
 // The interface is defined BY the data layer, in ITS vocabulary (AccountEntity).
@@ -95,8 +94,8 @@ public interface IAccountsDao
 ### 2. The business layer contains all the rules (*transaction script*)
 
 One method = one use case, from start to finish. The comment notes that, the entity being anemic, nothing stops another
-class from doing `compte.Solde -= x` without this check: the rule is only protected by discipline.
-([ComptesService.cs](../../00-Couches/Couches.Metier/ComptesService.cs))
+class from doing `account.Balance -= x` without this check: the rule is only protected by discipline.
+([AccountsService.cs](../../00-Layered/Layered.Business/AccountsService.cs))
 
 ```csharp
 public class AccountsService(IAccountsDao dao)
@@ -126,7 +125,7 @@ public class AccountsService(IAccountsDao dao)
 ### 3. The presentation only sees the layer right below it
 
 A classic MVC controller translates HTTP ⇄ business.
-([ComptesController.cs](../../00-Couches/Couches.Presentation/Controllers/ComptesController.cs))
+([AccountsController.cs](../../00-Layered/Layered.Presentation/Controllers/AccountsController.cs))
 
 ```csharp
 [HttpPost("accounts/{id:guid}/withdrawal")]
@@ -134,17 +133,17 @@ public Task<IActionResult> Withdraw(Guid id, WithdrawalRequest request) =>
     Execute(async () => Ok(await accounts.Withdraw(id, request.Amount)));
 ```
 
-**Strict layers** are enforced by the compiler: without this setting, the presentation could use `BanqueDbContext`
-through the transitive reference via `Couches.Metier`.
-([Couches.Presentation.csproj](../../00-Couches/Couches.Presentation/Couches.Presentation.csproj))
+**Strict layers** are enforced by the compiler: without this setting, the presentation could use `BankDbContext`
+through the transitive reference via `Layered.Business`.
+([Layered.Presentation.csproj](../../00-Layered/Layered.Presentation/Layered.Presentation.csproj))
 
 ```xml
 <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
 ```
 
-Trying to inject `BanqueDbContext` into a controller then gives `CS0234: the name 'Donnees' does not exist`.
+Trying to inject `BankDbContext` into a controller then gives `CS0234: the name 'Data' does not exist`.
 It is the business layer that plugs in the layer below it itself
-([MetierExtensions.cs](../../00-Couches/Couches.Metier/MetierExtensions.cs)):
+([BusinessExtensions.cs](../../00-Layered/Layered.Business/BusinessExtensions.cs)):
 
 ```csharp
 public static IServiceCollection AddBusinessLayer(this IServiceCollection services, string databaseName = "Bank")
@@ -160,20 +159,20 @@ public static IServiceCollection AddBusinessLayer(this IServiceCollection servic
 ```mermaid
 sequenceDiagram
     actor Client
-    participant C as ComptesController
-    participant S as ComptesService
-    participant D as ComptesDao
-    participant DB as BanqueDbContext
-    Client->>C: POST /comptes/{id}/retrait
-    C->>S: Retirer(id, montant)
-    S->>D: ParId(id)
+    participant C as AccountsController
+    participant S as AccountsService
+    participant D as AccountsDao
+    participant DB as BankDbContext
+    Client->>C: POST /accounts/{id}/withdrawal
+    C->>S: Withdraw(id, montant)
+    S->>D: ById(id)
     D->>DB: FindAsync
-    DB-->>S: CompteEntite
-    S->>S: VerifierRetraitPossible
-    S->>S: compte.Solde -= montant
-    S->>D: Enregistrer()
+    DB-->>S: AccountEntity
+    S->>S: CheckWithdrawalAllowed
+    S->>S: account.Balance -= montant
+    S->>D: Save()
     D->>DB: SaveChangesAsync
-    S-->>C: CompteDto
+    S-->>C: AccountDto
     C-->>Client: 200 OK
 ```
 
@@ -181,9 +180,9 @@ sequenceDiagram
 
 ## The tests
 
-Testing the business layer forces you to handle the data layer: even the fake DAO returns `CompteEntite` objects.
+Testing the business layer forces you to handle the data layer: even the fake DAO returns `AccountEntity` objects.
 **The business test is coupled to the persistence schema.**
-([ComptesServiceTests.cs](../../00-Couches/Couches.Tests/ComptesServiceTests.cs))
+([AccountsServiceTests.cs](../../00-Layered/Layered.Tests/AccountsServiceTests.cs))
 
 ```csharp
 private readonly FakeDao _dao = new(
@@ -192,7 +191,7 @@ private readonly FakeDao _dao = new(
 ```
 
 The architecture tests check the direction of dependencies
-([ArchitectureTests.cs](../../00-Couches/Couches.Tests/ArchitectureTests.cs)):
+([ArchitectureTests.cs](../../00-Layered/Layered.Tests/ArchitectureTests.cs)):
 
 ```csharp
 [Fact]
@@ -216,11 +215,11 @@ public void The_presentation_only_sees_the_layer_right_below()
 flowchart LR
     subgraph Couches["Layered (demo 0)"]
         direction TB
-        M0["Business"] -->|"depends on"| D0["Data<br/>defines IComptesDao"]
+        M0["Business"] -->|"depends on"| D0["Data<br/>defines IAccountsDao"]
     end
     subgraph Onion["Onion, Hexagonal"]
         direction TB
-        D2["Infrastructure<br/>implements the interface"] -->|"depends on"| M2["Domain<br/>defines IComptesRepository"]
+        D2["Infrastructure<br/>implements the interface"] -->|"depends on"| M2["Domain<br/>defines IAccountsRepository"]
     end
     Couches ==>|"dependency inversion"| Onion
 ```

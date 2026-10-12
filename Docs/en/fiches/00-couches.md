@@ -5,12 +5,12 @@
 > **In one sentence**: Presentation → Business → Data; each layer only calls the one below it.
 
 **Family**: code organization · **Origin**: common practice since the 1990s ·
-**Demo**: [`00-Couches`](../../../00-Couches) (port 5100) · 📖 [Full page](../00-couches.md) ·
+**Demo**: [`00-Layered`](../../../00-Layered) (port 5100) · 📖 [Full page](../00-couches.md) ·
 🌐 [Français](../../fiches/00-couches.md)
 
 ```mermaid
 flowchart TB
-    P["Presentation<br/>controllers"] --> M["Metier (business)<br/>ComptesService"] --> D["Donnees (data)<br/>DAO, entities, DbContext"] --> DB[("Database")]
+    P["Presentation<br/>controllers"] --> M["Business (business)<br/>AccountsService"] --> D["Data (data)<br/>DAO, entities, DbContext"] --> DB[("Database")]
 ```
 
 ## Key points

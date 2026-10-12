@@ -38,7 +38,7 @@ A single entry point for the client, who doesn't see what lies behind; internal 
 flowchart TB
     subgraph P["GATEWAY"]
         direction LR
-        C1(["Everyone"]) --> G["/comptes → Accounts<br/>/virements → Transfers"]
+        C1(["Everyone"]) --> G["/accounts → Accounts<br/>/transfers → Transfers"]
     end
     subgraph B["BFF"]
         direction LR
@@ -61,7 +61,7 @@ flowchart TB
 The code is quoted exactly as it is, French comments included.
 
 **Gateway**: a "prefix → service" table; what isn't in it stays invisible
-([Micro.Passerelle/Program.cs](../../../08-Microservices/Micro.Passerelle/Program.cs)):
+([Micro.Gateway/Program.cs](../../../08-Microservices/Micro.Gateway/Program.cs)):
 
 ```csharp
 // Routing table: public prefix → service. Anything not listed (e.g. /internal/…) stays invisible.
@@ -69,7 +69,7 @@ var routes = app.Configuration.GetSection("Routes").Get<Dictionary<string, strin
 ```
 
 **BFF**: one screen, one browser request, and behind it, calls in parallel — the total duration is that of the slowest
-call, not the sum ([TableauDeBord.cs](../../../16-BFF/Bff.Web/TableauDeBord.cs)):
+call, not the sum ([Dashboard.cs](../../../16-BFF/Bff.Web/Dashboard.cs)):
 
 ```csharp
 // ② Then all the rest IN PARALLEL: the total duration is that of the slowest call, not the sum.
@@ -98,7 +98,7 @@ Measured result for the mobile home screen: **1 request** with GraphQL, versus 5
 but with **a route written for that screen**; GraphQL gets it without a dedicated route.
 
 **Strangler façade**: the same mechanism as a gateway, plus a **mode** per route, changeable live; anything undeclared
-stays on the legacy ([Relais.cs](../../../22-StranglerFig/Fig.Facade/Relais.cs)):
+stays on the legacy ([Relay.cs](../../../22-StranglerFig/Fig.Facade/Relay.cs)):
 
 ```csharp
 var route = table.Find(http.Request.Method, path);
@@ -118,7 +118,7 @@ var mode = route?.Mode ?? Mode.Legacy;   // what nobody took over stays with the
 
 The most common stack: a **gateway** at the entrance (security, quotas), a **BFF** behind it for each application, and a
 BFF can expose **GraphQL** to its application. During a migration, the Strangler façade **is** the gateway; at the end,
-it stays one, with all its routes in `Nouveau`.
+it stays one, with all its routes in `Modern`.
 
 ## Misconceptions
 

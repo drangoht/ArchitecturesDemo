@@ -18,21 +18,21 @@ flowchart TB
         subgraph App["Application Services"]
             subgraph DS["Domain Services"]
                 subgraph DM["Domain Model"]
-                    Compte["Compte"]
+                    Account["Account"]
                 end
-                SV["ServiceVirement"]
-                I["IComptesRepository<br/>IUnitOfWork"]
+                SV["TransferService"]
+                I["IAccountsRepository<br/>IUnitOfWork"]
             end
-            AS["ComptesAppService<br/>VirementsAppService"]
+            AS["AccountsAppService<br/>TransfersAppService"]
         end
-        EF["BanqueDbContext<br/>ComptesRepository"]
+        EF["BankDbContext<br/>AccountsRepository"]
         Api["Endpoints + middleware"]
     end
 
     EF -. "implements" .-> I
     Api --> AS
     AS --> SV
-    SV --> Compte
+    SV --> Account
 
     classDef c1 fill:#ddf4ff,stroke:#0969da
     classDef c2 fill:#fff8c5,stroke:#9a6700
@@ -46,9 +46,9 @@ flowchart TB
 
 | Layer | Contents | Role |
 |---|---|---|
-| **Domain Model** | `Compte` (account), exceptions | The entities and their invariants |
-| **Domain Services** | `ServiceVirement` (transfer service) + interfaces `IComptesRepository`, `IUnitOfWork` | Rules that span several entities; what the domain needs |
-| **Application Services** | `ComptesAppService`, `VirementsAppService`, DTOs | Orchestration: load, delegate, save |
+| **Domain Model** | `Account` (account), exceptions | The entities and their invariants |
+| **Domain Services** | `TransferService` (transfer service) + interfaces `IAccountsRepository`, `IUnitOfWork` | Rules that span several entities; what the domain needs |
+| **Application Services** | `AccountsAppService`, `TransfersAppService`, DTOs | Orchestration: load, delegate, save |
 | **Infrastructure / UI** | EF Core, API, middleware | Implements the interfaces, exposes the application |
 
 ### Dependencies between projects
@@ -71,7 +71,7 @@ The code is quoted exactly as it is, French comments included.
 ### 1. The domain service
 
 A rule that concerns **two** accounts naturally belongs to neither of them.
-([ServiceVirement.cs](../../02-Onion/Onion.Domain/Services/ServiceVirement.cs))
+([TransferService.cs](../../02-Onion/Onion.Domain/Services/TransferService.cs))
 
 ```csharp
 public class TransferService
@@ -94,7 +94,7 @@ public class TransferService
 ### 2. The interfaces are declared at the center
 
 The infrastructure (outer layer) implements them: dependencies point inward.
-([IComptesRepository.cs](../../02-Onion/Onion.Domain/Interfaces/IComptesRepository.cs))
+([IAccountsRepository.cs](../../02-Onion/Onion.Domain/Interfaces/IAccountsRepository.cs))
 
 ```csharp
 // The data access interfaces are declared at the center;
@@ -116,7 +116,7 @@ public interface IUnitOfWork
 ### 3. The application service orchestrates, without deciding
 
 The rule (limit, same account, balance…) lives in the domain service; a single save for both accounts: all or nothing.
-([VirementsAppService.cs](../../02-Onion/Onion.Application/VirementsAppService.cs))
+([TransfersAppService.cs](../../02-Onion/Onion.Application/TransfersAppService.cs))
 
 ```csharp
 public class TransfersAppService(IAccountsRepository accounts, IUnitOfWork unitOfWork, TransferService transferService)
@@ -139,7 +139,7 @@ public class TransfersAppService(IAccountsRepository accounts, IUnitOfWork unitO
 ### 4. The infrastructure implements the domain's interfaces
 
 The `DbContext` **is** the unit of work; the mapping is described here, never through attributes in the domain.
-([BanqueDbContext.cs](../../02-Onion/Onion.Infrastructure/BanqueDbContext.cs))
+([BankDbContext.cs](../../02-Onion/Onion.Infrastructure/BankDbContext.cs))
 
 ```csharp
 public class BankDbContext(DbContextOptions<BankDbContext> options) : DbContext(options), IUnitOfWork
@@ -180,20 +180,20 @@ app.Use(async (context, next) =>
 sequenceDiagram
     actor Client
     participant API as Onion.Api
-    participant AS as VirementsAppService
-    participant R as IComptesRepository
-    participant SV as ServiceVirement
-    participant C as Compte
+    participant AS as TransfersAppService
+    participant R as IAccountsRepository
+    participant SV as TransferService
+    participant C as Account
     participant U as IUnitOfWork
-    Client->>API: POST /virements
-    API->>AS: Virer(source, cible, 250)
-    AS->>R: ObtenirOuEchouer(source), (cible)
-    AS->>SV: Virer(source, cible, 250)
+    Client->>API: POST /transfers
+    API->>AS: Transfer(source, cible, 250)
+    AS->>R: GetOrThrow(source), (cible)
+    AS->>SV: Transfer(source, cible, 250)
     SV->>SV: limit, same account?
-    SV->>C: source.Retirer(250)
-    SV->>C: cible.Deposer(250)
-    AS->>U: Enregistrer() — only once
-    AS-->>API: VirementResultat
+    SV->>C: source.Withdraw(250)
+    SV->>C: target.Deposit(250)
+    AS->>U: Save() — only once
+    AS-->>API: TransferResult
     API-->>Client: 200 OK
 ```
 
@@ -202,7 +202,7 @@ sequenceDiagram
 ## The tests
 
 The central layers are tested **without any test double**; the application layer with a fake repository / unit of work.
-([VirementsAppServiceTests.cs](../../02-Onion/Onion.Tests/Application/VirementsAppServiceTests.cs))
+([TransfersAppServiceTests.cs](../../02-Onion/Onion.Tests/Application/TransfersAppServiceTests.cs))
 
 ```csharp
 [Fact]

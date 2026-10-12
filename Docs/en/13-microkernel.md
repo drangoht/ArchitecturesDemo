@@ -12,23 +12,23 @@
 
 The model of VS Code, Eclipse, web browsers, rule engines or payroll software: the core does few things but does them
 well, and everything that **varies** (by customer, country, commercial offer) is plugged in around it. None of the
-previous demos dealt with this axis: **extensibility**. (In the code: *Noyau* = core, *Contrats* = contracts.)
+previous demos dealt with this axis: **extensibility**.
 
 ```mermaid
 flowchart TB
-    subgraph Noyau["Core — Mk.Noyau"]
+    subgraph Noyau["Core — Mk.Kernel"]
         direction LR
-        N["NoyauBancaire<br/>accounts · debit · credit"]
-        R["RegistrePlugins"]
-        C["ChargeurPlugins"]
+        N["BankingKernel<br/>accounts · debit · credit"]
+        R["PluginRegistry"]
+        C["PluginLoader"]
     end
-    SDK["Mk.Contrats (SDK)<br/>IPlugin · IControleOperation<br/>IRegleFrais · IFormatReleve"]
+    SDK["Mk.Contracts (SDK)<br/>IPlugin · IOperationCheck<br/>IFeeRule · IStatementFormat"]
     subgraph Plugins["plugins/ folder — loaded at runtime"]
         direction LR
-        P1["PlafondNocturne"]
-        P2["ListeNoire"]
-        P3["FraisDeVirement"]
-        P4["ExportCsv + ExportQif"]
+        P1["NightLimit"]
+        P2["Blocklist"]
+        P3["TransferFees"]
+        P4["CsvExport + QifExport"]
     end
     Noyau --> SDK
     Plugins --> SDK
@@ -38,16 +38,16 @@ flowchart TB
     class SDK sdk
 ```
 
-**The core references no plug-in**, and the plug-ins only see the SDK (`Mk.Contrats`) of the core. The two sides only
+**The core references no plug-in**, and the plug-ins only see the SDK (`Mk.Contracts`) of the core. The two sides only
 meet at runtime.
 
 ### The three extension points
 
 | Extension point | Role | Demo plug-ins |
 |---|---|---|
-| `IControleOperation` | Can **refuse** an operation before it happens | `PlafondNocturne` (withdrawals limited at night), `ListeNoire` (blacklist: transfers to forbidden accounts) |
-| `IRegleFrais` | Adds **fees** | `FraisDeVirement` (0.1%, between €0.20 and €5) |
-| `IFormatReleve` | Produces a **statement** in a format | `ExportCsv`, `ExportQif` — **two extensions in a single DLL** |
+| `IOperationCheck` | Can **refuse** an operation before it happens | `NightLimit` (withdrawals limited at night), `Blocklist` (blacklist: transfers to forbidden accounts) |
+| `IFeeRule` | Adds **fees** | `TransferFees` (0.1%, between €0.20 and €5) |
+| `IStatementFormat` | Produces a **statement** in a format | `CsvExport`, `QifExport` — **two extensions in a single DLL** |
 
 ---
 
@@ -55,12 +55,12 @@ meet at runtime.
 
 ```
 13-Microkernel/
-├── Mk.Contrats/               the SDK: interfaces and exchanged data
-├── Mk.Noyau/                  NoyauBancaire, RegistrePlugins, ChargeurPlugins
-├── Mk.Hote/                   HTTP API + watching of the plug-in folder
-├── Mk.Plugins.FraisVirement/  ┐
-├── Mk.Plugins.PlafondNocturne/│  plug-in projects: built into plugins/{Name}/,
-├── Mk.Plugins.ListeNoire/     │  each with its plugin.json settings
+├── Mk.Contracts/               the SDK: interfaces and exchanged data
+├── Mk.Kernel/                  BankingKernel, PluginRegistry, PluginLoader
+├── Mk.Host/                   HTTP API + watching of the plug-in folder
+├── Mk.Plugins.TransferFees/  ┐
+├── Mk.Plugins.NightLimit/│  plug-in projects: built into plugins/{Name}/,
+├── Mk.Plugins.Blocklist/     │  each with its plugin.json settings
 ├── Mk.Plugins.Exports/        ┘
 ├── Plugins.props              settings shared by the plug-ins
 └── plugins/                   ← build output (not versioned), read by the core
@@ -74,9 +74,9 @@ The code is quoted exactly as it is, French comments and messages included.
 
 ### 1. The SDK: what the core and the plug-ins share
 
-The comments explain the minimum core version (a plug-in too recent is refused on load) and `Initialiser` (called once
+The comments explain the minimum core version (a plug-in too recent is refused on load) and `Initialize` (called once
 on load, with the settings read from the plug-in's `plugin.json`).
-([Contrats.cs](../../13-Microkernel/Mk.Contrats/Contrats.cs))
+([Contracts.cs](../../13-Microkernel/Mk.Contracts/Contracts.cs))
 
 ```csharp
 public interface IPlugin
@@ -99,11 +99,11 @@ public interface IOperationCheck : IPlugin
 }
 ```
 
-Plug-ins receive **values** (`OperationProposee`, `ReleveCompte`), never the core's internal objects.
+Plug-ins receive **values** (`ProposedOperation`, `AccountStatement`), never the core's internal objects.
 
 ### 2. A plug-in: a class that implements an extension point
 
-([PlafondNocturne.cs](../../13-Microkernel/Mk.Plugins.PlafondNocturne/PlafondNocturne.cs))
+([NightLimit.cs](../../13-Microkernel/Mk.Plugins.NightLimit/NightLimit.cs))
 
 ```csharp
 public sealed class NightLimit : IOperationCheck
@@ -147,15 +147,15 @@ Its settings come from its own `plugin.json`, next to its DLL:
 </ItemGroup>
 ```
 
-`Private="false"` avoids copying `Mk.Contrats.dll` into the plug-in folder. Why this is vital: see the next step.
+`Private="false"` avoids copying `Mk.Contracts.dll` into the plug-in folder. Why this is vital: see the next step.
 
 ### 4. Loading each plug-in in its own context
 
 The DLL is loaded from MEMORY, not from the file, so it isn't locked and can be rebuilt, replaced or deleted while the
 application runs. And the crucial point: the contracts must come from the CORE (default context). If the plug-in loaded
-its own copy of `Mk.Contrats`, its `IPlugin` would be ANOTHER type than the core's `IPlugin` (same name, different
+its own copy of `Mk.Contracts`, its `IPlugin` would be ANOTHER type than the core's `IPlugin` (same name, different
 assemblies), and nothing would work.
-([ChargeurPlugins.cs](../../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs))
+([PluginLoader.cs](../../13-Microkernel/Mk.Kernel/PluginLoader.cs))
 
 ```csharp
 internal sealed class PluginLoadContext(string dllPath)
@@ -184,19 +184,19 @@ internal sealed class PluginLoadContext(string dllPath)
 ```mermaid
 flowchart TB
     subgraph Defaut["Default context (the process)"]
-        H["Mk.Hote"] --> N["Mk.Noyau"] --> K["Mk.Contrats<br/>(a single copy)"]
+        H["Mk.Host"] --> N["Mk.Kernel"] --> K["Mk.Contracts<br/>(a single copy)"]
     end
-    subgraph A1["'ListeNoire' context (unloadable)"]
-        L["Mk.Plugins.ListeNoire"]
+    subgraph A1["'Blocklist' context (unloadable)"]
+        L["Mk.Plugins.Blocklist"]
     end
     subgraph A2["'Exports' context (unloadable)"]
         E["Mk.Plugins.Exports"]
     end
-    L -->|"Load(Mk.Contrats) → null:<br/>delegated to the default context"| K
+    L -->|"Load(Mk.Contracts) → null:<br/>delegated to the default context"| K
     E -->|"same"| K
 ```
 
-A test checks it: after loading, `Mk.Contrats` is present **only once** in the process.
+A test checks it: after loading, `Mk.Contracts` is present **only once** in the process.
 
 ### 5. Discovering the extensions through reflection
 
@@ -207,24 +207,24 @@ return assembly.GetExportedTypes()
     .ToList();
 ```
 
-`Preparer` checks the required core version, then calls `Initialiser` with the settings from `plugin.json`.
+`Prepare` checks the required core version, then calls `Initialize` with the settings from `plugin.json`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Incompatible : VersionNoyauMinimale > core version
-    [*] --> EnErreur : exception in Initialiser
-    [*] --> Actif : loaded and initialized
-    Actif --> Desactive : POST /admin/plugins/{nom}/desactiver
-    Desactive --> Actif : POST /admin/plugins/{nom}/activer
-    Actif --> EnErreur : exception during a call
-    EnErreur --> Actif : reactivation or reload
+    [*] --> Incompatible : MinimumKernelVersion > core version
+    [*] --> Faulted : exception in Initialize
+    [*] --> Active : loaded and initialized
+    Active --> Disabled : POST /admin/plugins/{nom}/disable
+    Disabled --> Active : POST /admin/plugins/{nom}/enable
+    Active --> Faulted : exception during a call
+    Faulted --> Active : reactivation or reload
 ```
 
 ### 6. The core calls the extensions at the planned places
 
 1. "Check" extension point: a single refusal is enough. 2. "Fees" extension point: each rule can add its own.
 3. The heart of the business, which belongs to the core alone.
-([NoyauBancaire.cs](../../13-Microkernel/Mk.Noyau/NoyauBancaire.cs))
+([BankingKernel.cs](../../13-Microkernel/Mk.Kernel/BankingKernel.cs))
 
 ```csharp
 // 1. "Check" extension point: a single refusal is enough.
@@ -249,16 +249,16 @@ if (amount + totalFees > account.Balance)
 ```mermaid
 sequenceDiagram
     actor Client
-    participant N as NoyauBancaire
-    participant C1 as PlafondNocturne
-    participant C2 as ListeNoire
-    participant F as FraisDeVirement
-    Client->>N: Virer(Alice → Bob, 300)
-    N->>C1: Verifier(operation)
+    participant N as BankingKernel
+    participant C1 as NightLimit
+    participant C2 as Blocklist
+    participant F as TransferFees
+    Client->>N: Transfer(Alice → Bob, 300)
+    N->>C1: Check(operation)
     C1-->>N: null (not a withdrawal)
-    N->>C2: Verifier(operation)
+    N->>C2: Check(operation)
     C2-->>N: null (Bob isn't listed)
-    N->>F: CalculerFrais(operation)
+    N->>F: ComputeFee(operation)
     F-->>N: €0.30
     N->>N: sufficient balance? debit 300 + fees 0.30, credit 300
     N-->>Client: 200 { solde: 699.70, frais: 0.30 }
@@ -291,27 +291,27 @@ A safety choice (*fail-closed*): the current operation is **refused**, rather th
 
 ### 8. Hot reload
 
-The registry is **replaced in one block**; the old contexts are then unloaded. `SurveillanceDesPlugins`
-([Endpoints.cs](../../13-Microkernel/Mk.Hote/Endpoints.cs)) watches the folder and reloads 750 ms after the last change
+The registry is **replaced in one block**; the old contexts are then unloaded. `PluginWatcher`
+([Endpoints.cs](../../13-Microkernel/Mk.Host/Endpoints.cs)) watches the folder and reloads 750 ms after the last change
 (a build writes several files in a row).
 
 ```mermaid
 sequenceDiagram
     actor Dev as Developer
     participant FS as plugins/ folder
-    participant S as SurveillanceDesPlugins
-    participant C as ChargeurPlugins
-    participant R as RegistrePlugins
-    participant N as NoyauBancaire
-    Dev->>FS: dotnet build Mk.Plugins.ListeNoire (API running)
+    participant S as PluginWatcher
+    participant C as PluginLoader
+    participant R as PluginRegistry
+    participant N as BankingKernel
+    Dev->>FS: dotnet build Mk.Plugins.Blocklist (API running)
     Note over FS: DLL replaced: possible,<br/>it was read into memory
     FS-->>S: file events
     S->>S: wait for 750 ms of quiet
-    S->>C: Recharger(folder)
+    S->>C: Reload(folder)
     C->>C: new contexts, new instances
-    C->>R: Publier(new list) — atomic replacement
+    C->>R: Publish(new list) — atomic replacement
     C->>C: Unload() the old contexts
-    N->>R: Actifs<IControleOperation>() → new version
+    N->>R: Active<IOperationCheck>() → new version
 ```
 
 ---
@@ -320,8 +320,8 @@ sequenceDiagram
 
 | File | What is checked |
 |---|---|
-| [NoyauTests.cs](../../13-Microkernel/Mk.Tests/NoyauTests.cs) | The core alone, with plug-ins **written in the test** (no DLL): fees, faulty plug-in isolated, incompatible plug-in refused, no export without a format plug-in |
-| [ChargementTests.cs](../../13-Microkernel/Mk.Tests/ChargementTests.cs) | The real DLLs: discovery, settings, **a single** `Mk.Contrats`, plug-in deleted then **context actually unloaded** |
+| [KernelTests.cs](../../13-Microkernel/Mk.Tests/KernelTests.cs) | The core alone, with plug-ins **written in the test** (no DLL): fees, faulty plug-in isolated, incompatible plug-in refused, no export without a format plug-in |
+| [LoadingTests.cs](../../13-Microkernel/Mk.Tests/LoadingTests.cs) | The real DLLs: discovery, settings, **a single** `Mk.Contracts`, plug-in deleted then **context actually unloaded** |
 | [ApiTests.cs](../../13-Microkernel/Mk.Tests/ApiTests.cs) | End to end: fees, blacklist, night-time limit depending on the time (adjustable clock), formats, hot disabling |
 
 Deleting the plug-in folder is possible while the plug-in is loaded, since the DLL was read into memory:

@@ -4,7 +4,7 @@
 > data, rules and quotas, never seeing anyone else's.
 
 **Family**: system decomposition · **Demo**: [`15-MultiTenant`](../../../15-MultiTenant) (port 5114; tenant from
-the subdomain `beta.localhost:5114` or the `X-Locataire` header) · 📖 [Full page](../15-multi-tenant.md) ·
+the subdomain `beta.localhost:5114` or the `X-Tenant` header) · 📖 [Full page](../15-multi-tenant.md) ·
 🌐 [Français](../../fiches/15-multi-tenant.md)
 
 ```mermaid
@@ -16,10 +16,10 @@ flowchart LR
 
 ## Key points
 
-- The tenant is resolved **once** (middleware) and then **ambient** (`ContexteLocataire`).
+- The tenant is resolved **once** (middleware) and then **ambient** (`TenantContext`).
 - Safeguards: EF Core **global filter**, automatic **stamping** on write, **composite key** (tenant + id).
 - Plans: shared database by default, **dedicated database** for those who pay for it; quotas against the **noisy neighbor**.
-- `Mt.Locataires` contains no banking logic: the business code is written as if for a single bank.
+- `Mt.Tenants` contains no banking logic: the business code is written as if for a single bank.
 
 | ✅ When to use it | ❌ Cost |
 |---|---|

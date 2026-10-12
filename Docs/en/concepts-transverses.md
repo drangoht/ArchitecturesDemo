@@ -26,31 +26,31 @@ delivers "at least once". Without idempotency: a double debit.
 
 ```mermaid
 flowchart LR
-    A["Message / call<br/>with an identifier<br/>(operationId, Message-Id,<br/>virementId…)"] --> B{"Identifier<br/>already handled?"}
+    A["Message / call<br/>with an identifier<br/>(operationId, Message-Id,<br/>transferId…)"] --> B{"Identifier<br/>already handled?"}
     B -->|"yes"| C["Return the remembered<br/>result, without redoing anything"]
     B -->|"no"| D["Apply the effect<br/>+ remember the identifier<br/>(same transaction)"]
 ```
 
 | Technique | Example in the demos |
 |---|---|
-| Table of handled operations | [Micro.Comptes/Endpoints.cs](../../08-Microservices/Micro.Comptes/Endpoints.cs): `OperationsTraitees` by `operationId` |
-| Table of handled messages | [Micro.Notifications/Program.cs](../../08-Microservices/Micro.Notifications/Program.cs): `MessagesTraites` by `Message-Id` |
-| Recent operations inside the entity | [Sls.Fonctions/Modele.cs](../../12-Serverless/Sls.Fonctions/Modele.cs): `Compte.Operations` |
-| Deterministic key (overwrite without duplicates) | [Sls.Fonctions/Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs): notification `{compte}/{virement}` |
-| Identifier derived from the input | `IdentifiantDeterministe($"{fichier}#{ligne}")`: a reprocessed import creates no duplicates |
-| Checkpoint | [Projecteur.cs](../../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs): `if (sequence <= DerniereSequence) return;` |
-| Handled operations, migrated with the customer | [Magasin.cs](../../17-CellBased/Cell.Cellule/Magasin.cs): `OperationsTraitees` follows the customer from one cell to another |
-| Period key on the operation | [ServiceBancaire.cs](../../15-MultiTenant/Mt.Banque/ServiceBancaire.cs): `var cle = $"frais-{mois}";` (monthly fees charged once) |
-| The actor's identity | [VirementActeur.cs](../../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs): replaying `virement/facture-42` wakes up the same actor, which already knows the answer |
-| One inbox per service | [Autres.cs](../../21-Choregraphie/Choreo.Services/Autres.cs): `Reactif.UneSeuleFois`, tested with a broker that delivers every event twice |
-| Line reference, at two levels | [Filtres.cs](../../20-Pipeline/Pipeline.Banque/Filtres.cs): `Dedupliquer` drops already executed references early; the ledger refuses as a last resort. An interrupted import is replayed as is |
-| Operation identifier, in both directions of a synchronization | [SystemeBancaire.cs](../../22-StranglerFig/Fig.Ancien/SystemeBancaire.cs): the legacy ignores a batch resent after a lost response; [Domaine.cs](../../22-StranglerFig/Fig.Nouveau/Domaine.cs): the new system ignores the echo of its own writes (no loop) |
+| Table of handled operations | [Micro.Accounts/Endpoints.cs](../../08-Microservices/Micro.Accounts/Endpoints.cs): `ProcessedOperations` by `operationId` |
+| Table of handled messages | [Micro.Notifications/Program.cs](../../08-Microservices/Micro.Notifications/Program.cs): `ProcessedMessages` by `Message-Id` |
+| Recent operations inside the entity | [Sls.Functions/Model.cs](../../12-Serverless/Sls.Functions/Model.cs): `Account.Operations` |
+| Deterministic key (overwrite without duplicates) | [Sls.Functions/Functions.cs](../../12-Serverless/Sls.Functions/Functions.cs): notification `{account}/{transfer}` |
+| Identifier derived from the input | `DeterministicId($"{file}#{line}")`: a reprocessed import creates no duplicates |
+| Checkpoint | [Projector.cs](../../09-CQRS/Cqrs.Read/Projections/Projector.cs): `if (sequence <= LastSequence) return;` |
+| Handled operations, migrated with the customer | [Store.cs](../../17-CellBased/Cell.App/Store.cs): `ProcessedOperations` follows the customer from one cell to another |
+| Period key on the operation | [BankingService.cs](../../15-MultiTenant/Mt.Bank/BankingService.cs): `var key = $"fee-{month}";` (monthly fees charged once) |
+| The actor's identity | [TransferActor.cs](../../18-ActorModel/Actors.Bank/TransferActor.cs): replaying `transfer/invoice-42` wakes up the same actor, which already knows the answer |
+| One inbox per service | [Others.cs](../../21-Choreography/Choreo.Services/Others.cs): `Reactive.Once`, tested with a broker that delivers every event twice |
+| Line reference, at two levels | [Filters.cs](../../20-Pipeline/Pipeline.Bank/Filters.cs): `Deduplicate` drops already executed references early; the ledger refuses as a last resort. An interrupted import is replayed as is |
+| Operation identifier, in both directions of a synchronization | [BankingSystem.cs](../../22-StranglerFig/Fig.Legacy/BankingSystem.cs): the legacy ignores a batch resent after a lost response; [Domain.cs](../../22-StranglerFig/Fig.Modern/Domain.cs): the new system ignores the echo of its own writes (no loop) |
 
 ---
 
 ## Outbox
 
-**Problem**: save a withdrawal then publish `RetraitEffectue`. If the process stops between the two, or if the broker is
+**Problem**: save a withdrawal then publish `WithdrawalMade`. If the process stops between the two, or if the broker is
 down, the event is lost — or worse, published for a cancelled withdrawal.
 
 **Solution**: write the message into an *outbox* table **in the same transaction** as the data, then publish it in the
@@ -60,18 +60,18 @@ background, retrying until it succeeds.
 sequenceDiagram
     participant H as Handler
     participant DB as Service database
-    participant R as RelaisOutbox (background task)
+    participant R as OutboxRelay (background task)
     participant K as Broker
     H->>DB: BEGIN
     H->>DB: UPDATE account (balance)
-    H->>DB: INSERT outbox (retrait-effectue)
+    H->>DB: INSERT outbox (withdrawal-made)
     H->>DB: COMMIT — both, or neither
     loop every 500 ms
         R->>DB: unsent messages?
-        R->>K: POST /sujets/retrait-effectue (Message-Id)
+        R->>K: POST /topics/withdrawal-made (Message-Id)
         alt broker available
             K-->>R: 202
-            R->>DB: EnvoyeLe = now
+            R->>DB: SentAt = now
         else broker down
             K--xR: error
             Note over R: retried on the next round
@@ -79,10 +79,10 @@ sequenceDiagram
     end
 ```
 
-The relay may send a message twice (crash between the send and the update of `EnvoyeLe`): hence **idempotency** on the
-subscribers' side. Code: [RelaisOutbox.cs](../../08-Microservices/Micro.Comptes/RelaisOutbox.cs). In CQRS, the event
-log of [EcritureDb](../../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs) plays the same role. In demo 22, the operations
-written by the new service wait in an outbox (`Depot.AReporter`, filled under the same lock as the transfer) to be
+The relay may send a message twice (crash between the send and the update of `SentAt`): hence **idempotency** on the
+subscribers' side. Code: [OutboxRelay.cs](../../08-Microservices/Micro.Accounts/OutboxRelay.cs). In CQRS, the event
+log of [WriteDb](../../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs) plays the same role. In demo 22, the operations
+written by the new service wait in an outbox (`Store.ToForward`, filled under the same lock as the transfer) to be
 carried over to the legacy system; they only leave it once the import is confirmed.
 
 ---
@@ -109,9 +109,9 @@ sequenceDiagram
 
 | | Event Sourcing | Serverless |
 |---|---|---|
-| Where | [MagasinEvenements.Ajouter](../../10-EventSourcing/Es.Stockage/MagasinEvenements.cs) | [TableGeree.Ecrire](../../12-Serverless/Sls.Plateforme/ServicesGeres.cs) |
+| Where | [EventStore.Add](../../10-EventSourcing/Es.Storage/EventStore.cs) | [ManagedTable.Write](../../12-Serverless/Sls.Platform/ManagedServices.cs) |
 | Version | number of events in the stream | the entity's ETag |
-| On conflict | 409 to the client (`If-Match`) | reread and retry ([`Concurrence.Modifier`](../../12-Serverless/Sls.Fonctions/Modele.cs)) |
+| On conflict | 409 to the client (`If-Match`) | reread and retry ([`Concurrency.Modify`](../../12-Serverless/Sls.Functions/Model.cs)) |
 
 "Optimistic": nothing is locked, you bet there will be no conflict, and detect it if there is one.
 
@@ -145,12 +145,12 @@ flowchart LR
 
 | Demo | Where | Specifics |
 |---|---|---|
-| 6 | [VirementsComposant.cs](../../06-Composants/Composants.Virements/Interne/VirementsComposant.cs) | simple compensation, in the same process |
-| 7 | [VirementsEndpoints.cs](../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs) | between two modules, via `IComptesApi` |
-| 8 | [Micro.Virements/Endpoints.cs](../../08-Microservices/Micro.Virements/Endpoints.cs) | saga with a status (`EnCours` → `Effectue` / `Refuse` / `Annule` / `AReprendre`), idempotent calls |
-| 14 | [MoteurSaga.cs](../../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs) | **orchestrated** saga: process described in one place, persistent state, waiting for an external event, point of no return |
-| 18 | [VirementActeur.cs](../../18-ModeleActeurs/Acteurs.Banque/VirementActeur.cs) | one **actor per transfer**, talking to two account actors; its stored state (`DebitFait`…) allows recovery after a failure |
-| 21 | [Comptes.cs](../../21-Choregraphie/Choreo.Services/Comptes.cs) | **choreographed** saga: no coordinator; Accounts compensates by listening to the others' failures, and an expiring reservation unblocks a process left hanging |
+| 6 | [TransfersComponent.cs](../../06-Components/Components.Transfers/Internal/TransfersComponent.cs) | simple compensation, in the same process |
+| 7 | [TransfersEndpoints.cs](../../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs) | between two modules, via `IAccountsApi` |
+| 8 | [Micro.Transfers/Endpoints.cs](../../08-Microservices/Micro.Transfers/Endpoints.cs) | saga with a status (`InProgress` → `Done` / `Refused` / `Cancelled` / `ToResume`), idempotent calls |
+| 14 | [SagaEngine.cs](../../14-OrchestratedSaga/Saga.Orchestrator/SagaEngine.cs) | **orchestrated** saga: process described in one place, persistent state, waiting for an external event, point of no return |
+| 18 | [TransferActor.cs](../../18-ActorModel/Actors.Bank/TransferActor.cs) | one **actor per transfer**, talking to two account actors; its stored state (`DebitDone`…) allows recovery after a failure |
+| 21 | [Accounts.cs](../../21-Choreography/Choreo.Services/Accounts.cs) | **choreographed** saga: no coordinator; Accounts compensates by listening to the others' failures, and an expiring reservation unblocks a process left hanging |
 
 Two ways to coordinate a saga: **choreography** (each service reacts to the others' events, demos 7, 8 and
 [21](21-choregraphie.md)) and **orchestration** (an explicit conductor drives the steps, [demo 14](14-saga-orchestree.md)).
@@ -178,15 +178,15 @@ flowchart LR
 
 | | Microservices | Serverless |
 |---|---|---|
-| HTTP calls | [`AddStandardResilienceHandler`](../../08-Microservices/Micro.Virements/Program.cs): 3 retries + timeout + circuit breaker | — |
-| Messages | [Broker](../../08-Microservices/Micro.Courtier/Courtier.cs): 8 attempts then dead letters | [ServiceFiles](../../12-Serverless/Sls.Plateforme/ServicesGeres.cs): 3 attempts then `-poison`, replayable |
+| HTTP calls | [`AddStandardResilienceHandler`](../../08-Microservices/Micro.Transfers/Program.cs): 3 retries + timeout + circuit breaker | — |
+| Messages | [Broker](../../08-Microservices/Micro.Broker/Broker.cs): 8 attempts then dead letters | [QueueService](../../12-Serverless/Sls.Platform/ManagedServices.cs): 3 attempts then `-poison`, replayable |
 
 The [actor model](18-modele-acteurs.md) applies the same idea to the actors themselves: a crashing actor is restarted
 (up to 3 times per minute), then stopped and quarantined; the messages sent to it meanwhile are "dead letters", counted
 by the runtime.
 
 To be distinguished: a **business refusal** (insufficient balance) is **not** a failure. It must not trigger a retry
-(see `VirementsFonctions.Executer`, which marks the transfer "Refusé" without throwing an exception).
+(see `TransfersFunctions.Execute`, which marks the transfer "Refusé" without throwing an exception).
 
 ---
 
@@ -210,8 +210,8 @@ sequenceDiagram
     L-->>U: new balance
 ```
 
-Made visible in the CQRS demo (`Projections:DelaiMs`, `GET /admin/projections`), in the microservices (Notifications
-stopped then restarted), in serverless (`202` then `GET /virements/{id}`) and during a migration (demo 22: a transfer
+Made visible in the CQRS demo (`Projections:DelayMs`, `GET /admin/projections`), in the microservices (Notifications
+stopped then restarted), in serverless (`202` then `GET /transfers/{id}`) and during a migration (demo 22: a transfer
 served by the legacy system only shows up in the lookup, served by the new one, at the next synchronization cycle). On
 the interface side: show "in progress", return the known state right after a command, or poll until it is updated.
 
@@ -222,15 +222,15 @@ the interface side: show "in progress", return the known state right after a com
 | | **Domain** event | **Integration** event |
 |---|---|---|
 | Scope | inside a context / module | between contexts, modules or services |
-| Types | rich (`Argent`, `Iban`, `CompteId`) | simple (`Guid`, `string`, `decimal`) |
+| Types | rich (`Money`, `Iban`, `AccountId`) | simple (`Guid`, `string`, `decimal`) |
 | Stability | evolves freely with the model | public contract, to evolve carefully |
-| Example | [`VirementEffectue`](../../11-DDD/Ddd.TenueDeCompte.Domaine/Fondations.cs) (DDD) | [`VirementEmis`](../../11-DDD/Ddd.TenueDeCompte.Contrats/Contrats.cs) (DDD), [`VirementEffectue`](../../07-MonolitheModulaire/Modulaire.Virements.Contrats/VirementEffectue.cs) (demo 7) |
+| Example | [`TransferMade`](../../11-DDD/Ddd.AccountKeeping.Domain/Foundations.cs) (DDD) | [`TransferSent`](../../11-DDD/Ddd.AccountKeeping.Contracts/Contracts.cs) (DDD), [`TransferMade`](../../07-ModularMonolith/Modular.Transfers.Contracts/TransferMade.cs) (demo 7) |
 
 ```mermaid
 flowchart LR
-    A["Compte aggregate"] -->|"raises"| D["VirementEffectue<br/>(domain: Argent, Iban…)"]
-    D --> T["PublicateurEvenements<br/>(translation)"]
-    T -->|"publishes"| I["VirementEmis<br/>(integration: Guid, string, decimal)"]
+    A["Account aggregate"] -->|"raises"| D["TransferMade<br/>(domain: Money, Iban…)"]
+    D --> T["EventPublisher<br/>(translation)"]
+    T -->|"publishes"| I["TransferSent<br/>(integration: Guid, string, decimal)"]
     I --> C["Other contexts"]
 ```
 

@@ -5,7 +5,7 @@
 > **In one sentence**: no service drives the process; each one **reacts to the events** of the others and publishes its
 > own, and the transfer moves forward from reaction to reaction, like dancers following the music without a conductor.
 
-📁 Code: [`21-Choregraphie`](../../21-Choregraphie) · ⬅️ [Pipeline](20-pipeline.md) · ➡️ [Strangler Fig](22-strangler-fig.md) ·
+📁 Code: [`21-Choreography`](../../21-Choreography) · ⬅️ [Pipeline](20-pipeline.md) · ➡️ [Strangler Fig](22-strangler-fig.md) ·
 🌐 [Français](../21-choregraphie.md)
 
 ---
@@ -14,17 +14,16 @@
 
 The [orchestrated saga](14-saga-orchestree.md) hands the process to an orchestrator that calls each service in turn.
 Here, the **same process**, with the same data (Alice €50,000, Bob €500, Carla $1,000) and the same rules (analyst above
-€10,000, same exchange rates), is written… **nowhere**. It emerges from the subscriptions (*Comptes* = Accounts,
-*Conformité* = Compliance, *Change* = Exchange, *Fidélité* = Loyalty):
+€10,000, same exchange rates), is written… **nowhere**. It emerges from the subscriptions:
 
 ```mermaid
 flowchart LR
-    API(["API"]) -->|"VirementDemande"| CO["Accounts<br/>reserves"]
-    CO -->|"FondsReserves"| CF["Compliance<br/>reviews"]
-    CF -->|"ConformiteApprouvee"| CH["Exchange<br/>converts"]
-    CH -->|"DevisesConverties"| CO2["Accounts<br/>settles"]
-    CO2 -->|"VirementRegle"| NO["Notifications"]
-    CO2 -->|"VirementRegle"| FI["Loyalty"]
+    API(["API"]) -->|"TransferRequested"| CO["Accounts<br/>reserves"]
+    CO -->|"FundsReserved"| CF["Compliance<br/>reviews"]
+    CF -->|"ComplianceApproved"| CH["Exchange<br/>converts"]
+    CH -->|"CurrenciesConverted"| CO2["Accounts<br/>settles"]
+    CO2 -->|"TransferSettled"| NO["Notifications"]
+    CO2 -->|"TransferSettled"| FI["Loyalty"]
 ```
 
 Each arrow is an event published **without knowing who listens to it**. Demos 7 and 8 already used choreography, but
@@ -45,16 +44,16 @@ compensations and failures. That is where its strengths and limits show.
 
 ## The components
 
-- **The broker** ([Bus.cs](../../21-Choregraphie/Choreo.Bus/Bus.cs), simulated in-process, no package): one queue
+- **The broker** ([Bus.cs](../../21-Choreography/Choreo.Bus/Bus.cs), simulated in-process, no package): one queue
   **per subscriber** (a slow subscriber doesn't delay the others), "at least once" delivery, retries, dead letters, and
   the log of all events.
-- **The contracts** ([Contrats.cs](../../21-Choregraphie/Choreo.Services/Contrats.cs)): the shape of the events, the
+- **The contracts** ([Contracts.cs](../../21-Choreography/Choreo.Services/Contracts.cs)): the shape of the events, the
   only shared code. Each event carries **all the transfer's data**, completed along the way (currencies, amount in
   euros, then converted amount): each service finds what it needs without calling anyone back.
-- **The services** ([Comptes.cs](../../21-Choregraphie/Choreo.Services/Comptes.cs),
-  [Autres.cs](../../21-Choregraphie/Choreo.Services/Autres.cs)): Accounts, Compliance, Exchange, Notifications,
+- **The services** ([Accounts.cs](../../21-Choreography/Choreo.Services/Accounts.cs),
+  [Others.cs](../../21-Choreography/Choreo.Services/Others.cs)): Accounts, Compliance, Exchange, Notifications,
   Loyalty, each in its own namespace, with its own data. An architecture test checks that none knows the others.
-- **The Tracking** (*Suivi*, [Suivi.cs](../../21-Choregraphie/Choreo.Services/Suivi.cs)): it listens to everything and
+- **The Tracking** (*Suivi*, [Tracking.cs](../../21-Choreography/Choreo.Services/Tracking.cs)): it listens to everything and
   rebuilds the state of each transfer. It observes, it decides nothing.
 
 A service is a list of subscriptions. Here is everything Accounts listens to (two of them are compensations; the code is
@@ -83,16 +82,16 @@ public T Next<T>(T next, string emitter) where T : Event =>
     next with { Correlation = Correlation, Cause = Id, Emitter = emitter };
 ```
 
-It is the only thread that lets you tell what happened. **Real run**, `GET /virements/{id}` (each line: the event and
+It is the only thread that lets you tell what happened. **Real run**, `GET /transfers/{id}` (each line: the event and
 its publisher, in reaction to the line above):
 
 ```text
-VirementDemande                                  ← API
-  FondsReserves                                  ← Comptes, en réaction à VirementDemande
-    ConformiteApprouvee                          ← Conformité
-      DevisesConverties                          ← Change
-        VirementRegle                            ← Comptes
-          ClientNotifie                          ← Notifications : « Virement de 100,00 EUR effectué (108,32 USD reçus). »
+TransferRequested                      ← API
+  FundsReserved                        ← Accounts, reacting to TransferRequested
+    ComplianceApproved                 ← Compliance
+      CurrenciesConverted              ← Exchange
+        TransferSettled                ← Accounts
+          CustomerNotified             ← Notifications: "Transfer of 100,00 EUR done (108,32 USD received)."
 ```
 
 To know **where a transfer stands**, you need one more service, the **Tracking**, which listens to all events (a
@@ -102,12 +101,12 @@ means remembering it.
 The system's only "map" is the list of subscriptions, and it only exists at runtime (`GET /bus`):
 
 ```text
-Comptes        écoute ChangeEchoue, ConformiteRefusee, DevisesConverties, VirementDemande
-Conformité     écoute FondsReserves, ReservationExpiree
-Change         écoute ConformiteApprouvee
-Notifications  écoute VirementRegle
-Fidélité       écoute VirementRegle
-Suivi          écoute les 13 types d'événements
+Accounts       listens to ComplianceRefused, CurrenciesConverted, ExchangeFailed, TransferRequested
+Compliance     listens to FundsReserved, ReservationExpired
+Exchange       listens to ComplianceApproved
+Loyalty        listens to TransferSettled
+Notifications  listens to TransferSettled
+Tracking       listens to all 13 event types
 ```
 
 ---
@@ -115,18 +114,18 @@ Suivi          écoute les 13 types d'événements
 ## 2. Scattered compensations
 
 No engine undoes the steps in reverse order: each service must know **which events from the others mean "undo what you
-did"**. Accounts releases the reservation on `ConformiteRefusee` **and** on `ChangeEchoue`; if tomorrow a new service
+did"**. Accounts releases the reservation on `ComplianceRefused` **and** on `ExchangeFailed`; if tomorrow a new service
 can fail, it will have to be subscribed too. Real run (blacklisted beneficiary → cancelled; yen not quoted → cancelled;
 insufficient balance → refused):
 
 ```text
-Alice → Mallory (liste noire)    VirementDemande → FondsReserves → ConformiteRefusee → FondsLiberes      Annule
-Alice → Yuki (yens, non cotés)   … → ConformiteApprouvee → ChangeEchoue → FondsLiberes                   Annule
-Bob → Alice, 900 € (solde 500)   VirementDemande → FondsRefuses                                          Refuse
+Alice → Mallory (blocklist)       TransferRequested → FundsReserved → ComplianceRefused → FundsReleased    Cancelled
+Alice → Yuki (yen, not quoted)    … → ComplianceApproved → ExchangeFailed → FundsReleased                 Cancelled
+Bob → Alice, 900 € (balance 500)  TransferRequested → FundsRefused                                        Refused
 ```
 
 As in demo 14, the funds are first **reserved** (unavailable for another transfer, test
-`L_argent_reserve_n_est_plus_disponible_pour_un_autre_virement`), and only debited at settlement: the point of no
+`Reserved_money_is_no_longer_available_for_another_transfer`), and only debited at settlement: the point of no
 return. After it (notification), you retry, you undo nothing.
 
 ---
@@ -139,10 +138,10 @@ letters… and that's it. Real run (status in progress, €200 reserved; then th
 later the reservation expires and the transfer is abandoned):
 
 ```text
-POST /chaos { "changeEnPanne": true } ; POST /virements (200 €)   → statut EnCours, 200 € réservés sur le compte d'Alice
-GET /bus/lettres-mortes          → Change, 4 tentatives, « Service de change indisponible. »
-GET /virements/bloques           → le virement, sans activité récente
-… 30 s plus tard                 → ReservationExpiree (émise par Comptes, sans cause) : Abandonne, 0 € réservé
+POST /chaos { "exchangeDown": true }; POST /transfers (200 €)   → status InProgress, 200 € reserved on Alice's account
+GET /bus/dead-letters          → Exchange, 4 attempts, "Exchange service unavailable."
+GET /transfers/stuck           → the transfer, with no recent activity
+… 30 s later                   → ReservationExpired (emitted by Accounts, with no cause): Abandoned, 0 € reserved
 ```
 
 The safety net is **local**: Accounts protects itself by giving its reservations a lifetime.
@@ -151,8 +150,8 @@ The safety net is **local**: Accounts protects itself by giving its reservations
 expired = _reservations.Where(r => r.Value.ExpiresAt <= now).ToList()
 ```
 
-And the other services must take it into account: Compliance listens to `ReservationExpiree` so as not to have an
-analyst decide on an abandoned transfer; Accounts refuses a settlement that arrives too late (`VirementAbandonne`); the
+And the other services must take it into account: Compliance listens to `ReservationExpired` so as not to have an
+analyst decide on an abandoned transfer; Accounts refuses a settlement that arrives too late (`TransferAbandoned`); the
 Tracking doesn't reopen a finished transfer. Each of these cases is a **test**, and each required a line of code in a
 different service: that is the hidden cost of choreography.
 
@@ -175,7 +174,7 @@ lock (Lock)
 }
 ```
 
-Test `Des_evenements_livres_deux_fois_ne_produisent_leur_effet_qu_une_fois`: with a broker that delivers **every** event
+Test `Events_delivered_twice_produce_their_effect_only_once`: with a broker that delivers **every** event
 twice, 20 €10 transfers give exactly €200 debited, 20 notifications, 20 loyalty points. (In a real service with a
 database, "in a single block" requires the outbox of [demo 8](08-microservices.md).)
 
@@ -189,7 +188,7 @@ The Loyalty service (points on every settled transfer) was added **afterwards**.
 public void Register() => Bus.Subscribe<TransferSettled>(Name, e => Once(e, () =>
 ```
 
-No other service changed, none knows it exists: the test `Ajouter_un_abonne_ne_change_rien_pour_les_autres` runs the
+No other service changed, none knows it exists: the test `Adding_a_subscriber_changes_nothing_for_the_others` runs the
 system with and without it, and gets exactly the same events. It is choreography's major asset, and the reason it suits
 **reactions** (notify, count, archive, feed a dashboard) so well rather than processes.
 
@@ -198,22 +197,22 @@ system with and without it, and gets exactly the same events. It is choreography
 ## The tests
 
 The services and the bus without HTTP, with a manual clock for expiry
-([ChoregraphieTests.cs](../../21-Choregraphie/Choreo.Tests/ChoregraphieTests.cs)), and the API
-([ApiTests.cs](../../21-Choregraphie/Choreo.Tests/ApiTests.cs)).
+([ChoreographyTests.cs](../../21-Choreography/Choreo.Tests/ChoreographyTests.cs)), and the API
+([ApiTests.cs](../../21-Choreography/Choreo.Tests/ApiTests.cs)).
 
 | Test | What is checked |
 |---|---|
-| `Un_virement_avance_par_reactions_en_chaine_sans_que_personne_le_conduise` | the 6 events, their publishers, the chain of causes |
-| `Un_refus_de_la_conformite_est_compense_par_le_service_comptes`, `Un_echec_du_change_est_compense_lui_aussi` | compensations |
-| `Un_solde_insuffisant_arrete_tout_des_la_premiere_reaction`, `L_argent_reserve_n_est_plus_disponible_pour_un_autre_virement` | reservation |
-| `Un_gros_virement_attend_la_decision_d_un_analyste` | human waiting, approval and refusal |
-| `Un_service_en_panne_bloque_le_processus_jusqu_a_l_expiration_de_la_reservation` | dead letters, stuck transfer, expiry |
-| `Apres_l_expiration_ni_l_analyste_ni_un_message_en_retard_ne_reglent_le_virement` | the late cases, in three services |
-| `Des_evenements_livres_deux_fois_ne_produisent_leur_effet_qu_une_fois` | inbox |
-| `Apres_le_point_de_non_retour_une_notification_en_echec_est_reessayee_jamais_compensee` | retries, dead letters |
-| `Ajouter_un_abonne_ne_change_rien_pour_les_autres` | extensibility |
-| `Aucun_service_ne_connait_les_autres` | **architecture test** (reflection) |
-| `Demander_un_virement_repond_202_et_la_suite_se_fait_sans_l_appelant`, `L_analyste_decide_par_l_API`, `Un_service_en_panne_se_voit_aux_lettres_mortes_et_aux_virements_bloques`, `Le_bus_montre_qui_ecoute_quoi` | the API |
+| `A_transfer_moves_forward_through_chain_reactions_without_anyone_driving_it` | the 6 events, their publishers, the chain of causes |
+| `A_compliance_refusal_is_compensated_by_the_accounts_service`, `An_exchange_failure_is_compensated_too` | compensations |
+| `An_insufficient_balance_stops_everything_from_the_first_reaction`, `Reserved_money_is_no_longer_available_for_another_transfer` | reservation |
+| `A_big_transfer_waits_for_an_analyst_decision` | human waiting, approval and refusal |
+| `A_failed_service_blocks_the_process_until_the_reservation_expires` | dead letters, stuck transfer, expiry |
+| `After_the_expiry_neither_the_analyst_nor_a_late_message_settles_the_transfer` | the late cases, in three services |
+| `Events_delivered_twice_produce_their_effect_only_once` | inbox |
+| `After_the_point_of_no_return_a_failed_notification_is_retried_never_compensated` | retries, dead letters |
+| `Adding_a_subscriber_changes_nothing_for_the_others` | extensibility |
+| `No_service_knows_the_others` | **architecture test** (reflection) |
+| `Requesting_a_transfer_answers_202_and_the_rest_happens_without_the_caller`, `The_analyst_decides_through_the_API`, `A_failed_service_shows_in_the_dead_letters_and_the_stuck_transfers`, `The_bus_shows_who_listens_to_what` | the API |
 
 Checked by mutation: no inbox, each of the two compensations, an expiry that doesn't give the money back or doesn't
 happen, Compliance deaf to the expiry, a silent late settlement, a Tracking that reopens a finished transfer, a broker

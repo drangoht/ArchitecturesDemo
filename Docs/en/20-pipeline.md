@@ -12,10 +12,9 @@
 ## The idea: an assembly line
 
 It is the oldest of the architectures in this repository: that of the Unix shell
-(`cat virements.csv | grep EUR | sort | uniq`), of compilers (lexical → syntactic → semantic analysis → generation), of
+(`cat transfers.csv | grep EUR | sort | uniq`), of compilers (lexical → syntactic → semantic analysis → generation), of
 ETL and stream processing. It doesn't apply to a whole application, but to a **data processing job**: here, importing a
-file of transfers sent by a company (thousands of lines to check, then execute). (In the code: *Filtre* = filter,
-*Étage* = stage, *Tuyau* = pipe.)
+file of transfers sent by a company (thousands of lines to check, then execute).
 
 ```mermaid
 flowchart LR
@@ -45,11 +44,11 @@ Three rules make the architecture:
 
 ## The components
 
-- **The engine** ([Pipeline.Noyau](../../20-Pipeline/Pipeline.Noyau), generic, no package, on `System.Threading.Channels`):
-  [`IFiltre`](../../20-Pipeline/Pipeline.Noyau/Filtre.cs), the stages and their bounded pipes
-  ([Etage.cs](../../20-Pipeline/Pipeline.Noyau/Etage.cs)), assembly and execution ([Pipeline.cs](../../20-Pipeline/Pipeline.Noyau/Pipeline.cs)).
-- **The banking filters** ([Filtres.cs](../../20-Pipeline/Pipeline.Banque/Filtres.cs)) and their assembly
-  ([Imports.cs](../../20-Pipeline/Pipeline.Banque/Imports.cs)).
+- **The engine** ([Pipeline.Core](../../20-Pipeline/Pipeline.Core), generic, no package, on `System.Threading.Channels`):
+  [`IFilter`](../../20-Pipeline/Pipeline.Core/Filter.cs), the stages and their bounded pipes
+  ([Stage.cs](../../20-Pipeline/Pipeline.Core/Stage.cs)), assembly and execution ([Pipeline.cs](../../20-Pipeline/Pipeline.Core/Pipeline.cs)).
+- **The banking filters** ([Filters.cs](../../20-Pipeline/Pipeline.Bank/Filters.cs)) and their assembly
+  ([Imports.cs](../../20-Pipeline/Pipeline.Bank/Imports.cs)).
 - **The API** ([Endpoints.cs](../../20-Pipeline/Pipeline.Api/Endpoints.cs)): the body of `POST /imports` *is* the
   file, read line by line as it arrives.
 
@@ -87,20 +86,20 @@ CI pipelines).
 
 A faulty line doesn't interrupt the import: the filter that detects it **rejects** it with a reason, and the stream
 continues. The report counts the rejects by reason and keeps the first ones, with their line and the filter that set
-them aside. **Real run** with [Virements-exemple.csv](../../20-Pipeline/Pipeline.Api/Virements-exemple.csv) (11 lines;
+them aside. **Real run** with [Transfers-sample.csv](../../20-Pipeline/Pipeline.Api/Transfers-sample.csv) (11 lines;
 the report is in French: malformed line, invalid IBAN, identical accounts, duplicate, unknown currency, blacklisted
 beneficiary, limit exceeded, insufficient balance):
 
 ```text
-ligne 3   Analyser              ligne mal formée              montant « douze » illisible
-ligne 4   Valider               IBAN invalide                 FR7630006000011234567890188
-ligne 5   Valider               comptes identiques
-ligne 6   Dédupliquer           doublon                       dans le fichier
-ligne 7   Convertir             devise inconnue               JPY
-ligne 8   Contrôler la fraude   bénéficiaire sur liste noire
-ligne 9   Contrôler la fraude   plafond dépassé               10530,00 €
-ligne 10  Exécuter              solde insuffisant             VIR-009
-→ 3 virements exécutés : Alice 842,80 €, Bob 657,20 €
+line 3   Parse              malformed line                unreadable amount "twelve"
+line 4   Validate           invalid IBAN                  FR7630006000011234567890188
+line 5   Validate           identical accounts
+line 6   Deduplicate        duplicate                     in the file
+line 7   Convert currency   unknown currency              JPY
+line 8   Check fraud        payee on blocklist
+line 9   Check fraud        ceiling exceeded              10530,00 €
+line 10  Execute            insufficient balance          VIR-009
+→ 3 transfers executed: Alice 842.80 €, Bob 657.20 €
 ```
 
 An **exception**, on the other hand, signals a failure: the whole pipeline stops (the first failing stage cancels the
@@ -117,7 +116,7 @@ foreach (var task in tasks)
 ## 2. Recomposing: the same filters, another pipeline
 
 Since the filters don't know each other, they can be reassembled at will. The **dry-run import**
-(`POST /imports?aBlanc=true`) is the same pipeline **without the last filter**: it tells what would be rejected, without
+(`POST /imports?dryRun=true`) is the same pipeline **without the last filter**: it tells what would be rejected, without
 touching a single account.
 
 ```csharp
@@ -130,7 +129,7 @@ with test filters. Two assembly tips:
 - **cheap filters first**: whatever *Parse* or *Deduplicate* rejects never reaches the expensive fraud check;
 - the filters are independent, but the pipeline has a **logical order**: *Execute* assumes *Convert* has run (amount in
   euros). It therefore checks its precondition rather than trusting the assembly (test
-  `Executer_refuse_un_virement_qui_n_est_pas_passe_par_la_conversion`, written after this trap showed up).
+  `Execute_refuses_a_transfer_that_did_not_go_through_the_conversion`, written after this trap showed up).
 
 ---
 
@@ -160,12 +159,12 @@ its time waiting on the next pipe. **Real run**, 100,000 lines (1 copy of the fr
 fraud check 94% busy; 8 copies: 763 ms, 131,000 lines/s, same result):
 
 ```text
-1 copie du contrôle de fraude : 4 117 ms (24 000 lignes/s)
-   Analyser               occupation 0,02   attente du suivant 3 976 ms
-   Valider                occupation 0,05   attente du suivant 3 847 ms
-   Contrôler la fraude    occupation 0,94   ← le goulot
-   Exécuter               occupation 0,01
-8 copies : 763 ms (131 000 lignes/s), même résultat
+1 copy of the fraud check: 4,117 ms (24,000 lines/s)
+   Parse         busy 0.02   waiting for the next 3,976 ms
+   Validate      busy 0.05   waiting for the next 3,847 ms
+   Check fraud   busy 0.94   ← the bottleneck
+   Execute       busy 0.01
+8 copies: 763 ms (131,000 lines/s), same result
 ```
 
 The fast stages spend their time waiting: only the bottleneck matters. A **stateless** filter (like the fraud check) can
@@ -188,8 +187,8 @@ while (early.Remove(expected, out var next))
 ```
 
 Without this, line 2 reaches *Execute* first and is rejected (test
-`L_ordre_du_fichier_compte_et_l_etage_parallele_ordonne_le_respecte`). Parallelizing therefore doesn't change the
-result (test `Paralleliser_le_controle_de_fraude_ne_change_pas_le_resultat`).
+`The_file_order_matters_and_the_ordered_parallel_stage_respects_it`). Parallelizing therefore doesn't change the
+result (test `Parallelizing_the_fraud_check_does_not_change_the_result`).
 
 ---
 
@@ -201,9 +200,9 @@ execute the same one twice. You **simply replay the file**. Real run (VIR-001 ha
 the replay executes 2, with 2 duplicates, and ends with the same balances as without a failure):
 
 ```text
-POST /imports?panneALaReference=VIR-010   → 500, « Panne simulée en traitant VIR-010. », bilan : 0 exécuté
-GET  /comptes/<Alice>                      → 880 € : VIR-001 avait pourtant été exécuté
-POST /imports                              → 2 exécutés, doublons : 2 ; Alice 842,80 €, Bob 657,20 € (comme sans panne)
+POST /imports?failureAtReference=VIR-010   → 500, "Simulated failure while processing VIR-010.", summary: 0 executed
+GET  /accounts/<Alice>                     → 880 €: yet VIR-001 had been executed
+POST /imports                              → 2 executed, duplicates: 2; Alice 842.80 €, Bob 657.20 € (as without failure)
 ```
 
 ⚠ The report of a **failed** import tells what *came out* of the pipeline, not what was *done*: VIR-001 was executed,
@@ -214,27 +213,27 @@ is why recovery relies on the executed references, not on the report.
 
 ## The tests
 
-The engine with test filters ([NoyauTests.cs](../../20-Pipeline/Pipeline.Tests/NoyauTests.cs)), the banking filters
+The engine with test filters ([CoreTests.cs](../../20-Pipeline/Pipeline.Tests/CoreTests.cs)), the banking filters
 assembled as in the API ([ImportTests.cs](../../20-Pipeline/Pipeline.Tests/ImportTests.cs)), and the API
 ([ApiTests.cs](../../20-Pipeline/Pipeline.Tests/ApiTests.cs)).
 
 | Test | What is checked |
 |---|---|
-| `Les_elements_traversent_les_filtres_dans_l_ordre`, `Un_rejet_ecarte_l_element_sans_arreter_le_flux` | the stream, rejects by reason |
-| `Les_etages_travaillent_en_meme_temps_chacun_sur_un_element` | 3 stages busy at the same time |
-| `La_contre_pression_borne_ce_qui_est_en_memoire` | 20,000 items, at most 37 in transit |
-| `Un_etage_parallele_ordonne_rend_les_elements_dans_leur_ordre_d_arrivee` | ordered or not, with a very slow item |
-| `Une_exception_dans_un_filtre_arrete_tout_le_pipeline`, `L_annulation_arrete_un_flux_sans_fin` | failure, cancellation |
-| `Le_goulot_est_l_etage_le_plus_occupe_et_chaque_execution_a_ses_compteurs` | metrics |
-| `Le_fichier_d_exemple_donne_trois_virements_et_un_rejet_par_motif` | each reject by the right filter, balances |
-| `Rejouer_un_fichier_n_execute_rien_deux_fois`, `Le_registre_n_execute_jamais_deux_fois_la_meme_reference` | idempotency, at two levels |
-| `Apres_une_panne_en_plein_import_le_rejeu_termine_sans_rien_executer_deux_fois` | recovery |
-| `Un_import_a_blanc_dit_ce_qui_passerait_sans_rien_modifier` | recomposition |
-| `L_ordre_du_fichier_compte_et_l_etage_parallele_ordonne_le_respecte`, `Paralleliser_le_controle_de_fraude_ne_change_pas_le_resultat` | order and determinism |
-| `Executer_refuse_un_virement_qui_n_est_pas_passe_par_la_conversion` | a filter's precondition |
-| `Un_gros_fichier_passe_en_flux_avec_une_memoire_bornee` | 20,000 lines, expected rejects, money preserved |
-| `La_cle_d_un_iban_est_verifiee` | mod 97 |
-| `Un_import_execute_le_fichier_et_garde_son_compte_rendu`, `Un_import_a_blanc_ne_touche_a_aucun_compte`, `Une_panne_repond_500_avec_le_compte_rendu`, `La_demo_de_l_import_massif_designe_le_goulot` | the API |
+| `The_items_go_through_the_filters_in_order`, `A_rejection_discards_the_item_without_stopping_the_flow` | the stream, rejects by reason |
+| `The_stages_work_at_the_same_time_each_on_one_item` | 3 stages busy at the same time |
+| `Back_pressure_bounds_what_is_in_memory` | 20,000 items, at most 37 in transit |
+| `An_ordered_parallel_stage_returns_the_items_in_their_arrival_order` | ordered or not, with a very slow item |
+| `An_exception_in_a_filter_stops_the_whole_pipeline`, `Cancellation_stops_an_endless_flow` | failure, cancellation |
+| `The_bottleneck_is_the_busiest_stage_and_each_run_has_its_counters` | metrics |
+| `The_sample_file_gives_three_transfers_and_one_rejection_per_reason` | each reject by the right filter, balances |
+| `Replaying_a_file_executes_nothing_twice`, `The_ledger_never_executes_the_same_reference_twice` | idempotency, at two levels |
+| `After_a_failure_in_the_middle_of_an_import_the_replay_finishes_without_executing_anything_twice` | recovery |
+| `A_dry_run_import_tells_what_would_go_through_without_modifying_anything` | recomposition |
+| `The_file_order_matters_and_the_ordered_parallel_stage_respects_it`, `Parallelizing_the_fraud_check_does_not_change_the_result` | order and determinism |
+| `Execute_refuses_a_transfer_that_did_not_go_through_the_conversion` | a filter's precondition |
+| `A_big_file_flows_through_with_bounded_memory` | 20,000 lines, expected rejects, money preserved |
+| `The_check_digits_of_an_iban_are_verified` | mod 97 |
+| `An_import_executes_the_file_and_keeps_its_report`, `A_dry_run_import_touches_no_account`, `A_failure_answers_500_with_the_report`, `The_bulk_import_demo_points_out_the_bottleneck` | the API |
 
 Checked by mutation: unbounded pipes, a parallel stage never ordered, a failure that doesn't stop the other stages, each
 of the two duplicate protections, the conversion precondition, a reject that doesn't free its slot, counters shared

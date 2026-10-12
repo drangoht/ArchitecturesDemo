@@ -3,7 +3,7 @@
 > **The difference in one sentence**: between two parts of the system, a **method call** or **the network**. Everything
 > that was free in the monolith (a call that succeeds, an event that isn't lost) becomes code in microservices.
 
-📁 Demos: [`07-MonolitheModulaire`](../../../07-MonolitheModulaire) · [`08-Microservices`](../../../08-Microservices) ·
+📁 Demos: [`07-ModularMonolith`](../../../07-ModularMonolith) · [`08-Microservices`](../../../08-Microservices) ·
 📖 Pages: [Modular Monolith](../07-monolithe-modulaire.md) · [Microservices](../08-microservices.md) ·
 🗂️ Cheat sheets: [7](../fiches/07-monolithe-modulaire.md) · [8](../fiches/08-microservices.md)
 
@@ -21,12 +21,12 @@ part, contracts between parts, events to notify, compensation if the credit fail
 | | Modular Monolith | Microservices |
 |---|---|---|
 | Deployments | **1** process | **5** (gateway, 3 services, broker) |
-| The contract | a C# project (`Modulaire.Comptes.Contrats`) | **the exchanged JSON**: no shared code, each client has its copy of the remote model |
-| Call between parts | `IComptesApi.Debiter(...)`: succeeds or throws an exception | HTTP: **retry, timeout, circuit breaker** |
+| The contract | a C# project (`Modular.Accounts.Contracts`) | **the exchanged JSON**: no shared code, each client has its copy of the remote model |
+| Call between parts | `IAccountsApi.Debit(...)`: succeeds or throws an exception | HTTP: **retry, timeout, circuit breaker** |
 | A replayed call | impossible | common (lost response) → **idempotency** through `operationId` |
 | Events | **in-memory** bus: lost if the process goes down | **outbox** (same transaction) + "at least once" broker |
 | A message received twice | impossible | common → the subscriber ignores **duplicates** (`Message-Id`) |
-| State of a transfer | succeeded or compensated, within the request | a **saga with a status**: `EnCours`, `Effectue`, `Annule`, `AReprendre` |
+| State of a transfer | succeeded or compensated, within the request | a **saga with a status**: `InProgress`, `Done`, `Cancelled`, `ToResume` |
 | One part down | the whole process is down | the others carry on; **eventual consistency** |
 | Scaling | the whole | **per service** |
 | Safeguard | `internal` + architecture tests | **the network**: impossible to cheat |
@@ -38,7 +38,7 @@ part, contracts between parts, events to notify, compensation if the credit fail
 flowchart LR
     subgraph M["MODULAR MONOLITH (1 process)"]
         direction TB
-        V1["Transfers"] -->|"Debiter / Crediter<br/>method call"| C1["Accounts"]
+        V1["Transfers"] -->|"Debit / Credit<br/>method call"| C1["Accounts"]
         V1 -.->|"in-memory bus"| N1["Notifications"]
     end
     subgraph S["MICROSERVICES (5 processes)"]
@@ -54,7 +54,7 @@ flowchart LR
 The code is quoted exactly as it is, French comments included.
 
 **The call.** Monolith: a method of the contract
-([VirementsEndpoints.cs](../../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs)):
+([TransfersEndpoints.cs](../../../07-ModularMonolith/Modular.Transfers/Internal/TransfersEndpoints.cs)):
 
 ```csharp
 // Synchronous call to another module, only through its public contract.
@@ -62,7 +62,7 @@ var debit = await accounts.Debit(source.Id, request.Amount);
 ```
 
 Microservices: an HTTP client armed against failures
-([Micro.Virements/Program.cs](../../../08-Microservices/Micro.Virements/Program.cs)):
+([Micro.Transfers/Program.cs](../../../08-Microservices/Micro.Transfers/Program.cs)):
 
 ```csharp
 // Calls to the Accounts service: the network can fail, so we protect ourselves.
@@ -77,7 +77,7 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
     });
 ```
 
-**The retry requires idempotency** on the Accounts side ([Micro.Comptes/Endpoints.cs](../../../08-Microservices/Micro.Comptes/Endpoints.cs)):
+**The retry requires idempotency** on the Accounts side ([Micro.Accounts/Endpoints.cs](../../../08-Microservices/Micro.Accounts/Endpoints.cs)):
 
 ```csharp
 if (await db.ProcessedOperations.FindAsync(request.OperationId) is { } alreadyProcessed)
@@ -95,7 +95,7 @@ await db.SaveChangesAsync();
 ```
 
 **The compensation.** Monolith: if the credit fails, the source is credited back, and that call necessarily succeeds.
-Microservices: the compensation itself can fail (Accounts unreachable); the transfer then goes to `AReprendre` (to
+Microservices: the compensation itself can fail (Accounts unreachable); the transfer then goes to `ToResume` (to
 resume), a state that doesn't exist in the monolith.
 
 Result: with equal features, most of demo 8's extra code is there to **handle network failures**.

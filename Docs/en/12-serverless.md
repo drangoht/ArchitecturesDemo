@@ -15,7 +15,7 @@ Popularized by **AWS Lambda** (2014), then Azure Functions and Google Cloud Func
 the traffic.
 
 > **In this demo, the platform is simulated** (nothing to download) but it reproduces the behaviors that change the way
-> you code. `Sls.Plateforme` plays the provider — **you never write it for real** —; `Sls.Fonctions` contains the only
+> you code. `Sls.Platform` plays the provider — **you never write it for real** —; `Sls.Functions` contains the only
 > code you would actually write.
 
 ```mermaid
@@ -26,12 +26,12 @@ flowchart LR
         S["Uploaded file<br/>(written by a function)"]
         M["Timer"]
     end
-    Mo["Platform<br/>MoteurExecution<br/>instances · cold start<br/>scaling · billing"]
+    Mo["Platform<br/>ExecutionEngine<br/>instances · cold start<br/>scaling · billing"]
     subgraph Fonctions["Your functions"]
-        F1["OuvrirCompte, Retirer,<br/>DemanderVirement…"]
-        F2["ExecuterVirement<br/>EnvoyerNotification"]
-        F3["TraiterImport"]
-        F4["ProduireRapport"]
+        F1["OpenAccount, Withdraw,<br/>RequestTransfer…"]
+        F2["ExecuteTransfer<br/>SendNotification"]
+        F3["ProcessImport"]
+        F4["ProduceReport"]
     end
     subgraph Geres["Managed services"]
         T[("Tables (ETag)")]
@@ -64,9 +64,9 @@ The loop is **event-driven**: a function writes to a queue or to storage, which 
 
 | Project | Role | For real |
 |---|---|---|
-| `Sls.Plateforme` | The simulated provider + its `/plateforme/…` "console" | AWS Lambda, Azure Functions |
-| `Sls.Fonctions` | The manifest and the functions | your code |
-| `Sls.Hote` | Runs the platform locally | `func start`, `sam local` |
+| `Sls.Platform` | The simulated provider + its `/platform/…` "console" | AWS Lambda, Azure Functions |
+| `Sls.Functions` | The manifest and the functions | your code |
+| `Sls.Host` | Runs the platform locally | `func start`, `sam local` |
 | `Sls.Tests` | Platform, functions, full system | |
 
 ---
@@ -80,7 +80,7 @@ The code is quoted exactly as it is, French comments included.
 The equivalent of `serverless.yml` or Azure's `[Function]` attributes: HTTP triggers (behind a managed API gateway),
 queue triggers (asynchronous processing with automatic retries), a storage trigger (an uploaded file starts its
 processing) and a scheduled trigger.
-([Deploiement.cs](../../12-Serverless/Sls.Fonctions/Deploiement.cs))
+([Deployment.cs](../../12-Serverless/Sls.Functions/Deployment.cs))
 
 ```csharp
 public static void Declare(Manifest manifest) => manifest
@@ -102,7 +102,7 @@ public static void Declare(Manifest manifest) => manifest
 
 Input = the trigger + the context; output = a response. Everything that must last goes into a managed service. Here,
 the transfer is NOT made in the HTTP function: it is accepted (202) and handed to a queue, for an immediate response.
-([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs))
+([Functions.cs](../../12-Serverless/Sls.Functions/Functions.cs))
 
 ```csharp
 /// <summary>HTTP: the transfer is NOT made here. It is accepted (202) and handed to a queue: immediate response.</summary>
@@ -120,7 +120,7 @@ public static async Task<HttpResponseData> Request(HttpRequestData request, Func
 ### 3. Cold start, warm instances, scale to zero
 
 Downloading the code, starting the .NET runtime, initializing: that is the "cold start".
-([MoteurExecution.cs](../../12-Serverless/Sls.Plateforme/MoteurExecution.cs))
+([ExecutionEngine.cs](../../12-Serverless/Sls.Platform/ExecutionEngine.cs))
 
 ```csharp
 lock (state)
@@ -149,16 +149,16 @@ sequenceDiagram
     actor C as Client
     participant P as Platform
     participant I1 as Instance #1
-    C->>P: GET /comptes/alice
+    C->>P: GET /accounts/alice
     P->>I1: create the instance (cold start ≈ 600 ms)
-    I1-->>C: 200 (X-Demarrage-A-Froid: oui, 610 ms)
-    C->>P: GET /comptes/alice
+    I1-->>C: 200 (X-Cold-Start: oui, 610 ms)
+    C->>P: GET /accounts/alice
     P->>I1: reuse the warm instance
-    I1-->>C: 200 (X-Demarrage-A-Froid: non, 0 ms)
+    I1-->>C: 200 (X-Cold-Start: non, 0 ms)
     Note over P,I1: 20 s without a call…
     P->>I1: recycle (scale to zero)
     Note over P: nothing runs anymore, nothing is billed
-    C->>P: GET /comptes/alice
+    C->>P: GET /accounts/alice
     P->>P: new instance #2 (cold again)
 ```
 
@@ -168,24 +168,24 @@ An instance handles **only one call at a time**: 8 simultaneous messages = 8 ins
 
 ```mermaid
 flowchart LR
-    U(["POST /imports<br/>8-line CSV"]) --> D["DeposerImport"]
+    U(["POST /imports<br/>8-line CSV"]) --> D["UploadImport"]
     D -->|"writes imports/….csv"| B[("Storage")]
-    B -->|"triggers"| T["TraiterImport<br/>1 instance"]
+    B -->|"triggers"| T["ProcessImport<br/>1 instance"]
     T -->|"8 messages"| Q[["'virements' queue"]]
-    Q --> E1["ExecuterVirement #1"]
-    Q --> E2["ExecuterVirement #2"]
+    Q --> E1["ExecuteTransfer #1"]
+    Q --> E2["ExecuteTransfer #2"]
     Q --> E3["…"]
-    Q --> E8["ExecuterVirement #8"]
+    Q --> E8["ExecuteTransfer #8"]
     E1 & E2 & E3 & E8 -->|"2 messages each"| N[["'notifications' queue"]]
 ```
 
-Measured on the demo: `picInstances = 8` for `ExecuterVirement`.
+Measured on the demo: `peakInstances = 8` for `ExecuteTransfer`.
 
 ### 5. Stateless: instance memory is misleading
 
 ✗ The instance's memory belongs to THAT instance and is reset on every cold start; ✓ a managed service is shared by
 all instances and durable.
-([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs))
+([Functions.cs](../../12-Serverless/Sls.Functions/Functions.cs))
 
 ```csharp
 // ✗ Instance memory: specific to THIS instance, reset at each cold start.
@@ -201,7 +201,7 @@ var global = await Concurrency.ModifyOrCreate(context.Table(Tables.Counters), "v
 
 Dozens of instances can modify the same account at the same time: read → modify → write "only if nobody wrote in
 the meantime", and start again otherwise.
-([Modele.cs](../../12-Serverless/Sls.Fonctions/Modele.cs))
+([Model.cs](../../12-Serverless/Sls.Functions/Model.cs))
 
 ```csharp
 /// Read → modify → write "only if nobody wrote in the meantime", and start over otherwise.
@@ -229,7 +229,7 @@ public static async Task<T> Modify<T>(ManagedTable table, string key, Func<T, T>
 ### 7. Retries, poison messages and idempotency
 
 An exception gets the message redelivered (increasing delay); after 3 failures, it goes to the `-poison` queue.
-([ServicesGeres.cs](../../12-Serverless/Sls.Plateforme/ServicesGeres.cs))
+([ManagedServices.cs](../../12-Serverless/Sls.Platform/ManagedServices.cs))
 
 ```csharp
 internal void Failed(string queue, QueuedMessage message, string error)
@@ -249,17 +249,17 @@ internal void Failed(string queue, QueuedMessage message, string error)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> EnFile : EnvoyerDansFile
-    EnFile --> EnCours : instance available
-    EnCours --> [*] : success (acknowledged)
-    EnCours --> EnFile : no instance (throttling), attempt not counted
-    EnCours --> EnAttente : exception, attempt n < 3
-    EnAttente --> EnFile : after 0.5 s × 2^(n-1)
-    EnCours --> Poison : 3rd failure
-    Poison --> EnFile : replay (after fixing)
+    [*] --> Queued : SendToQueue
+    Queued --> Processing : instance available
+    Processing --> [*] : success (acknowledged)
+    Processing --> Queued : no instance (throttling), attempt not counted
+    Processing --> Pending : exception, attempt n < 3
+    Pending --> Queued : after 0.5 s × 2^(n-1)
+    Processing --> Poison : 3rd failure
+    Poison --> Queued : replay (after fixing)
 ```
 
-Since a message can be delivered several times, **all processing must be idempotent**: `Compte.Appliquer` ignores an
+Since a message can be delivered several times, **all processing must be idempotent**: `Account.Apply` ignores an
 already known operation, notifications have a deterministic key, and a reprocessed import file creates no duplicates
 (identifier derived from the file and the line number).
 
@@ -276,7 +276,7 @@ public Account Apply(Guid operation, decimal change)
 
 ### 8. The bill
 
-`GET /plateforme/facture`: invocations × $0.20 / million + duration × memory (GB-s) × $0.0000166667 (AWS Lambda prices).
+`GET /platform/bill`: invocations × $0.20 / million + duration × memory (GB-s) × $0.0000166667 (AWS Lambda prices).
 The complete demo (49 invocations, 2.6 GB-s) costs **$0.000054**. But constant, high traffic can cost more than a
 dedicated server: serverless shines on **irregular** loads.
 
@@ -288,9 +288,9 @@ Three levels:
 
 | Level | File | Example |
 |---|---|---|
-| Platform alone | [PlateformeTests.cs](../../12-Serverless/Sls.Tests/PlateformeTests.cs) | cold then warm, scaling, throttling, recycling, timeout exceeded, GB-s |
-| Functions, called like methods | [FonctionsTests.cs](../../12-Serverless/Sls.Tests/FonctionsTests.cs) | 30 simultaneous withdrawals → exactly 10 succeed; double delivery → a single debit |
-| Full system | [SystemeTests.cs](../../12-Serverless/Sls.Tests/SystemeTests.cs) | HTTP transfer → queues; import → several instances; poison then replay |
+| Platform alone | [PlatformTests.cs](../../12-Serverless/Sls.Tests/PlatformTests.cs) | cold then warm, scaling, throttling, recycling, timeout exceeded, GB-s |
+| Functions, called like methods | [FunctionsTests.cs](../../12-Serverless/Sls.Tests/FunctionsTests.cs) | 30 simultaneous withdrawals → exactly 10 succeed; double delivery → a single debit |
+| Full system | [SystemTests.cs](../../12-Serverless/Sls.Tests/SystemTests.cs) | HTTP transfer → queues; import → several instances; poison then replay |
 
 In this test, 30 "instances" withdraw €100 at the same time from a €1,000 account: thanks to the ETags, exactly 10 succeed.
 

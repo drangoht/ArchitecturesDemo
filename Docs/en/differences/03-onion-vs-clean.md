@@ -27,13 +27,13 @@ behind an interface declared inside.
 
 | | Onion | Clean |
 |---|---|---|
-| A use case is… | a **method** of an application service | a **class**: `RetraitInteracteur` |
-| Input | parameters | a *request model* (`DemandeRetrait`) via an *input boundary* (`IRetraitEntree`) |
-| Output | a **returned value** (`VirementResultat`) or an exception | **nothing is returned**: a call to an *output boundary* (`IRetraitSortie`) |
-| Business errors | exceptions, translated by a middleware | output methods: `Refus`, `CompteIntrouvable` |
+| A use case is… | a **method** of an application service | a **class**: `WithdrawalInteractor` |
+| Input | parameters | a *request model* (`WithdrawalRequest`) via an *input boundary* (`IWithdrawalInput`) |
+| Output | a **returned value** (`TransferResult`) or an exception | **nothing is returned**: a call to an *output boundary* (`IWithdrawalOutput`) |
+| Business errors | exceptions, translated by a middleware | output methods: `Refused`, `AccountNotFound` |
 | Formatting the response | the API, from the DTO | one **presenter** per format (HTTP, text) |
 | Types for one withdrawal | 1 or 2 | ≈ 6 |
-| Data access | repository + unit of work | *gateway* (`IComptesPasserelle`) |
+| Data access | repository + unit of work | *gateway* (`IAccountsGateway`) |
 | Main cost | number of projects | **ceremony** |
 
 ## Side by side: the flow of the response
@@ -59,7 +59,7 @@ flowchart LR
 The code is quoted exactly as it is.
 
 **Onion**: the application service returns its result; errors bubble up as exceptions
-([VirementsAppService.cs](../../../02-Onion/Onion.Application/VirementsAppService.cs)):
+([TransfersAppService.cs](../../../02-Onion/Onion.Application/TransfersAppService.cs)):
 
 ```csharp
 transferService.Transfer(source, target, amount);
@@ -68,7 +68,7 @@ return new TransferResult(AccountDto.From(source), AccountDto.From(target));
 ```
 
 **Clean**: the interactor returns nothing; each outcome is a method of the output boundary
-([Retrait.cs](../../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs)):
+([Withdrawal.cs](../../../03-Clean/Clean.UseCases/Withdrawal/Withdrawal.cs)):
 
 ```csharp
 public interface IWithdrawalOutput

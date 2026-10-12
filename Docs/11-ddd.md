@@ -269,11 +269,11 @@ sequenceDiagram
         Pub->>Surv: TransferSent (langage publié, en euros)
         Surv->>Dos: Observe(ObservedTransfer)
     end
-    Dos-->>Surv: Alert Critical « fractionnement suspecté »
-    Surv->>Api: BlockAccount(bob, motif)
-    Api->>C: Block(motif)
+    Dos-->>Surv: Alert Critical « structuring suspected »
+    Surv->>Api: BlockAccount(bob, reason)
+    Api->>C: Block(reason)
     Bob->>SC: 4e virement
-    SC-->>Bob: 400 « Ce compte est bloqué (…) »
+    SC-->>Bob: 400 « This account is blocked (…) »
 ```
 
 ---

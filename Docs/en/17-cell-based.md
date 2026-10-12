@@ -15,8 +15,7 @@
 
 All the previous demos, even the microservices, have one thing in common: **a single copy** of each component serves all
 the customers. A saturated database, a wrong configuration or a deployed bug therefore hits everyone. You can replicate
-to survive machine failures, but not "logical" failures: all the replicas make the same mistake. (In the code:
-*Cellule* = cell, *Routeur* = router, *Lanceur* = launcher.)
+to survive machine failures, but not "logical" failures: all the replicas make the same mistake.
 
 ```mermaid
 flowchart LR
@@ -56,22 +55,22 @@ They combine: a cell can contain microservices, and it is usually multi-tenant i
 
 ```mermaid
 flowchart TB
-    PC["<b>Control plane</b> (/plateforme)<br/>place · migrate · deploy · probe"] -->|"writes"| TP[("Placement table<br/>customer → cell")]
-    CL["Customers"] -->|"/clients/bob/…"| RT["<b>Router</b> (data plane)<br/>reads the table, forwards"]
+    PC["<b>Control plane</b> (/platform)<br/>place · migrate · deploy · probe"] -->|"writes"| TP[("Placement table<br/>customer → cell")]
+    CL["Customers"] -->|"/customers/bob/…"| RT["<b>Router</b> (data plane)<br/>reads the table, forwards"]
     TP -.->|"read by"| RT
     RT --> C1["Cell c1 :5231<br/>alice, david"]
     RT --> C2["Cell c2 :5232<br/>bob, emma"]
     RT --> C3["Cell c3 :5233<br/>carla"]
 ```
 
-- **The cells** ([Cell.Cellule](../../17-CellBased/Cell.Cellule)): a single program, run several times with a different
+- **The cells** ([Cell.App](../../17-CellBased/Cell.App)): a single program, run several times with a different
   identifier. Each one only has its own customers' data.
-- **The router** (data plane, [Relais.cs](../../17-CellBased/Cell.Routeur/Relais.cs)): read the **partition key** (here
+- **The router** (data plane, [Relay.cs](../../17-CellBased/Cell.Router/Relay.cs)): read the **partition key** (here
   the customer, in the URL), find its cell, forward. It is the **only shared component**: it must be as simple as
   possible, with no business logic and no database, so that it never becomes the global outage itself.
-- **The control plane** ([PlanDeControle.cs](../../17-CellBased/Cell.Routeur/PlanDeControle.cs)): it decides (place,
+- **The control plane** ([ControlPlane.cs](../../17-CellBased/Cell.Router/ControlPlane.cs)): it decides (place,
   add a cell, migrate, deploy) and writes the placement table; to migrate, deploy or probe, it also talks directly to
-  the cells (`/interne` and `/admin` APIs). It is **off the request path**: if it goes down, you can no longer place or
+  the cells (`/internal` and `/admin` APIs). It is **off the request path**: if it goes down, you can no longer place or
   deploy, but traffic continues. In the demo, it lives in the same process as the router for simplicity; in production,
   it is a separate service.
 
@@ -91,7 +90,7 @@ Observed on the running demo, after **stopping the process** of cell c2:
 | Customer | Cell | Response |
 |---|---|---|
 | alice | c1 | 200 |
-| bob | c2 | **503** "Cellule c2 injoignable : seuls ses clients sont touchés." |
+| bob | c2 | **503** "Cell c2 unreachable: only its customers are affected." |
 | carla | c3 | 200 |
 | david | c1 | 200 |
 | emma | c2 | **503** |
@@ -121,10 +120,10 @@ public CellInfo? ChooseCell() => registry.All()
     .FirstOrDefault();
 ```
 
-Walkthrough in the demo: 9 slots for 5 customers; 4 new customers fill the three cells; the next one gets 503 "Toutes
-les cellules sont pleines : provisionner une nouvelle cellule" (all cells are full: provision a new one); you start c4
-(`dotnet run --project Cell.Lanceur -- c4`), register it (`POST /plateforme/cellules`), and the next customer is placed
-there. A cell can also be **closed** to new customers (`POST /plateforme/cellules/c1/fermer`) while still serving its own.
+Walkthrough in the demo: 9 slots for 5 customers; 4 new customers fill the three cells; the next one gets 503 "All
+the cells are full: provision a new cell."; you start c4
+(`dotnet run --project Cell.Launcher -- c4`), register it (`POST /platform/cells`), and the next customer is placed
+there. A cell can also be **closed** to new customers (`POST /platform/cells/c1/close`) while still serving its own.
 
 ---
 
@@ -141,14 +140,14 @@ sequenceDiagram
     participant C2 as c2
     participant C3 as c3
     PC->>C1: version 1.1
-    PC->>C1: GET /sante
+    PC->>C1: GET /health
     C1-->>PC: healthy = false (100 - 10 = 80)
     PC->>C1: back to 1.0
     Note over C2,C3: never touched:<br/>history = [1.0]
 ```
 
 Version 1.1 contains a bug (a withdrawal debited twice) that only shows up at runtime. Each cell's **health probe**
-replays a control withdrawal ([Version.cs](../../17-CellBased/Cell.Cellule/Version.cs)):
+replays a control withdrawal ([Version.cs](../../17-CellBased/Cell.App/Version.cs)):
 
 ```csharp
 public (bool Healthy, string Detail) Probe()
@@ -160,7 +159,7 @@ public (bool Healthy, string Detail) Probe()
 }
 ```
 
-Actual result of `POST /plateforme/deploiements {"version":"1.1"}`:
+Actual result of `POST /platform/deployments {"version":"1.1"}`:
 
 ```json
 {"version":"1.1","status":"Cancelled","waves":[{"wave":1,"cells":["c1"],
@@ -190,7 +189,7 @@ try
 
 During the copy, the router answers `503` with `Retry-After: 2` for **this** customer only. The identifiers of already
 processed operations travel with the customer's data: a credit replayed after the migration is not applied twice (test
-`Les_operations_deja_traitees_suivent_le_client_dans_sa_nouvelle_cellule`).
+`The_already_processed_operations_follow_the_customer_into_its_new_cell`).
 
 ---
 
@@ -206,7 +205,7 @@ sequenceDiagram
     participant R as Router
     participant B as c2 (bob)
     A->>A: debit alice (operation 42)
-    A->>R: POST /interne/clients/bob/credits (operation 42)
+    A->>R: POST /internal/customers/bob/credits (operation 42)
     R->>B: forward to bob's cell
     alt c2 answers
         B->>B: credit bob (only once for operation 42)
@@ -227,21 +226,21 @@ cells and microservices.
 ## The tests
 
 The four cells and the router run in memory, connected through their test servers
-([Systeme.cs](../../17-CellBased/Cell.Tests/Systeme.cs)).
+([CellSystem.cs](../../17-CellBased/Cell.Tests/CellSystem.cs)).
 
 | Test | What is checked |
 |---|---|
-| `Les_clients_de_demo_sont_repartis_entre_les_cellules` | initial placement |
-| `Le_routeur_envoie_chaque_client_vers_sa_cellule`, `Une_cellule_ne_contient_que_ses_clients` | routing, partitioning |
-| `Une_panne_de_cellule_ne_touche_que_ses_clients` | blast radius: 2 customers out of 5 |
-| `Un_virement_dans_une_meme_cellule_reste_local` | local transaction |
-| `Un_virement_entre_cellules_passe_par_le_routeur_et_ne_credite_qu_une_fois` | idempotent credit |
-| `Si_la_cellule_du_beneficiaire_est_en_panne_le_virement_est_compense` | compensation |
-| `Quand_les_cellules_sont_pleines_on_en_ajoute_une_au_lieu_de_les_agrandir` | capacity, registration of c4 |
+| `The_demo_customers_are_spread_across_the_cells` | initial placement |
+| `The_router_sends_each_customer_to_its_cell`, `A_cell_only_contains_its_customers` | routing, partitioning |
+| `A_cell_failure_only_affects_its_customers` | blast radius: 2 customers out of 5 |
+| `A_transfer_within_the_same_cell_stays_local` | local transaction |
+| `A_transfer_between_cells_goes_through_the_router_and_credits_only_once` | idempotent credit |
+| `If_the_beneficiary_s_cell_is_down_the_transfer_is_compensated` | compensation |
+| `When_the_cells_are_full_one_is_added_instead_of_enlarging_them` | capacity, registration of c4 |
 | `Migrer_un_client…`, `Les_operations_deja_traitees_suivent…` | migration, idempotency preserved |
-| `Un_deploiement_defectueux_s_arrete_a_la_cellule_canari` | canary, rollback, version history |
-| `Un_deploiement_sain_passe_vague_par_vague`, `Une_cellule_malade_arrete_le_deploiement_a_sa_vague` | waves |
-| `Le_routeur_et_les_cellules_ne_partagent_aucun_code` | **architecture test** |
+| `A_faulty_deployment_stops_at_the_canary_cell` | canary, rollback, version history |
+| `A_healthy_deployment_goes_wave_by_wave`, `A_sick_cell_stops_the_deployment_at_its_wave` | waves |
+| `The_router_and_the_cells_share_no_code` | **architecture test** |
 
 Checked by mutation: a single-wave deployment, removing idempotency, compensation, or the processed operations from the
 export each make the corresponding tests fail.

@@ -11,14 +11,14 @@ flowchart LR
     Api["Onion.Api"] --> App["Onion.Application<br/>application services"]
     Api --> Infra["Onion.Infrastructure<br/>EF Core, repositories"]
     Infra --> App
-    App --> Dom["Onion.Domain<br/>Compte, ServiceVirement,<br/>IComptesRepository, IUnitOfWork"]
+    App --> Dom["Onion.Domain<br/>Account, TransferService,<br/>IAccountsRepository, IUnitOfWork"]
     Infra -. implements .-> Dom
 ```
 
 ## Key points
 
 - Same rule as hexagonal, but the **center is split**: domain model → domain services → application services.
-- The data-access interfaces (`IComptesRepository`, `IUnitOfWork`) live **in the domain**; the infrastructure implements them.
+- The data-access interfaces (`IAccountsRepository`, `IUnitOfWork`) live **in the domain**; the infrastructure implements them.
 - The application service orchestrates: load, delegate to the domain, save (unit of work, all or nothing).
 
 | ✅ When to use it | ❌ Less useful if |

@@ -3,13 +3,13 @@
 > **In one sentence**: **pure** rules that return a decision; a thin **shell** around them does all the input/output.
 
 **Family**: code organization · **Origin**: Gary Bernhardt, "Boundaries", 2012 ·
-**Demo**: [`04-CoeurFonctionnel`](../../../04-CoeurFonctionnel) (port 5104) · 📖 [Full page](../04-coeur-fonctionnel.md) ·
+**Demo**: [`04-FunctionalCore`](../../../04-FunctionalCore) (port 5104) · 📖 [Full page](../04-coeur-fonctionnel.md) ·
 🌐 [Français](../../fiches/04-coeur-fonctionnel.md)
 
 ```mermaid
 flowchart LR
-    L["① READ<br/>database, clock, request"] -->|immutable values| D["② DECIDE (pure)<br/>Regles.Virer(…)<br/>→ DecisionVirement"]
-    D -->|"Accepte / Refuse"| A["③ APPLY<br/>write, log, respond"]
+    L["① READ<br/>database, clock, request"] -->|immutable values| D["② DECIDE (pure)<br/>Rules.Transfer(…)<br/>→ TransferDecision"]
+    D -->|"Accepted / Refused"| A["③ APPLY<br/>write, log, respond"]
 ```
 
 ## Key points

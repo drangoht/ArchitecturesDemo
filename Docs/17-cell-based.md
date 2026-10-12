@@ -87,7 +87,7 @@ Relevé sur la démo en fonctionnement, après avoir **arrêté le processus** d
 | Client | Cellule | Réponse |
 |---|---|---|
 | alice | c1 | 200 |
-| bob | c2 | **503** « Cellule c2 injoignable : seuls ses clients sont touchés. » |
+| bob | c2 | **503** « Cell c2 unreachable: only its customers are affected. » |
 | carla | c3 | 200 |
 | david | c1 | 200 |
 | emma | c2 | **503** |
@@ -116,7 +116,7 @@ public CellInfo? ChooseCell() => registry.All()
 ```
 
 Parcours dans la démo : 9 places pour 5 clients ; 4 nouveaux clients remplissent les trois cellules ; le suivant reçoit
-503 « Toutes les cellules sont pleines : provisionner une nouvelle cellule » ; on lance c4
+503 « All the cells are full: provision a new cell. » ; on lance c4
 (`dotnet run --project Cell.Launcher -- c4`), on l'enregistre (`POST /platform/cells`), et le client suivant y est placé.
 Une cellule peut aussi être **fermée** aux nouveaux clients (`POST /platform/cells/c1/close`) tout en continuant à
 servir les siens.
