@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    PUBLISHED LANGUAGE of the "Account keeping" context: what it exposes to the other contexts.
+    Only simple types (Guid, string, decimal): the internal model (Money, Iban…) can evolve
+    without breaking the contexts that consume these contracts.
+  -->
+
+</Project>

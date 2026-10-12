@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Infrastructure of the "Account keeping" context: EF Core persistence and anti-corruption layer towards the exchange. -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ddd.AccountKeeping.Application\Ddd.AccountKeeping.Application.csproj" />
+  </ItemGroup>
+
+</Project>

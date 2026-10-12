@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Application layer of the "Account keeping" context: the use cases.
+    Thin by nature: it loads the aggregates, delegates to the domain, saves, publishes. No business rule.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ddd.AccountKeeping.Domain\Ddd.AccountKeeping.Domain.csproj" />
+    <ProjectReference Include="..\Ddd.AccountKeeping.Contracts\Ddd.AccountKeeping.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

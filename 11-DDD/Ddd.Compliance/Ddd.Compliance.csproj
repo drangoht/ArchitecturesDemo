@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    "Compliance" bounded context (anti-money laundering). Its own model, its own language.
+    It only knows Account keeping THROUGH its published language (Ddd.AccountKeeping.Contracts).
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ddd.AccountKeeping.Contracts\Ddd.AccountKeeping.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="LANGUAGE.md" />
+  </ItemGroup>
+
+</Project>

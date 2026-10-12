@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- Hôte : héberge les deux contextes délimités dans un même processus (ils pourraient être séparés). -->
+  <!-- Host: hosts the two bounded contexts in the same process (they could be separated). -->
 
   <ItemGroup>
-    <ProjectReference Include="..\Ddd.TenueDeCompte.Infrastructure\Ddd.TenueDeCompte.Infrastructure.csproj" />
-    <ProjectReference Include="..\Ddd.Conformite\Ddd.Conformite.csproj" />
+    <ProjectReference Include="..\Ddd.AccountKeeping.Infrastructure\Ddd.AccountKeeping.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ddd.Compliance\Ddd.Compliance.csproj" />
   </ItemGroup>
 
 </Project>

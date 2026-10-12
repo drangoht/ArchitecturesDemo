@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    "Account keeping" bounded context — the DOMAIN: the heart of DDD.
+    Written in the language of the business experts (see LANGUAGE.md). No technical dependency.
+  -->
+
+  <ItemGroup>
+    <None Include="LANGUAGE.md" />
+  </ItemGroup>
+
+</Project>

@@ -1,60 +1,60 @@
-using Ddd.Conformite;
-using Ddd.TenueDeCompte.Application;
-using Ddd.TenueDeCompte.Domaine;
-using Ddd.TenueDeCompte.Infrastructure;
+using Ddd.Compliance;
+using Ddd.AccountKeeping.Application;
+using Ddd.AccountKeeping.Domain;
+using Ddd.AccountKeeping.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddTenueDeCompte(sp => sp.GetRequiredService<IConfiguration>()["NomBase"] ?? "TenueDeCompte");
-builder.Services.AddConformite();
+builder.Services.AddAccountKeeping(sp => sp.GetRequiredService<IConfiguration>()["DatabaseName"] ?? "AccountKeeping");
+builder.Services.AddCompliance();
 
 var app = builder.Build();
 
-// Comptes de démo : Alice et Bob en euros, Carla en dollars (pour voir la conversion).
+// Demo accounts: Alice and Bob in euros, Carla in dollars (to see the conversion).
 using (var scope = app.Services.CreateScope())
 {
-    var comptes = scope.ServiceProvider.GetRequiredService<ServiceComptes>();
-    await comptes.Ouvrir("Alice Martin", 50_000m, "EUR", DonneesDeDemo.Alice);
-    await comptes.Ouvrir("Bob Durand", 500m, "EUR", DonneesDeDemo.Bob);
-    await comptes.Ouvrir("Carla Smith", 1_000m, "USD", DonneesDeDemo.Carla);
+    var accounts = scope.ServiceProvider.GetRequiredService<AccountsService>();
+    await accounts.Open("Alice Martin", 50_000m, "EUR", DemoData.Alice);
+    await accounts.Open("Bob Durand", 500m, "EUR", DemoData.Bob);
+    await accounts.Open("Carla Smith", 1_000m, "USD", DemoData.Carla);
 }
 
-app.Use(async (contexte, suivant) =>
+app.Use(async (context, next) =>
 {
     try
     {
-        await suivant(contexte);
+        await next(context);
     }
-    catch (RegleMetierException e)
+    catch (BusinessRuleException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
-    catch (CompteIntrouvableException e)
+    catch (AccountNotFoundException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status404NotFound;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
 });
 
-// ─── Contexte « Tenue de compte » ───
-app.MapGet("/comptes", (ServiceComptes comptes) => comptes.Lister());
-app.MapGet("/comptes/{id:guid}", (Guid id, ServiceComptes comptes) => comptes.Consulter(id));
-app.MapPost("/comptes", (OuvertureRequete r, ServiceComptes comptes) => comptes.Ouvrir(r.Titulaire, r.DepotInitial, r.Devise ?? "EUR"));
-app.MapPost("/comptes/{id:guid}/retrait", (Guid id, RetraitRequete r, ServiceComptes comptes) => comptes.Retirer(id, r.Montant));
-app.MapPost("/comptes/{id:guid}/virements", (Guid id, VirementRequete r, ServiceComptes comptes) =>
-    comptes.Virer(id, r.IbanBeneficiaire, r.Montant));
+// ─── "Account keeping" context ───
+app.MapGet("/accounts", (AccountsService accounts) => accounts.List());
+app.MapGet("/accounts/{id:guid}", (Guid id, AccountsService accounts) => accounts.Get(id));
+app.MapPost("/accounts", (OpeningRequest r, AccountsService accounts) => accounts.Open(r.Owner, r.InitialDeposit, r.Currency ?? "EUR"));
+app.MapPost("/accounts/{id:guid}/withdrawal", (Guid id, WithdrawalRequest r, AccountsService accounts) => accounts.Withdraw(id, r.Amount));
+app.MapPost("/accounts/{id:guid}/transfers", (Guid id, TransferRequest r, AccountsService accounts) =>
+    accounts.Transfer(id, r.BeneficiaryIban, r.Amount));
 
-// ─── Contexte « Conformité » ───
-app.MapConformite();
+// ─── "Compliance" context ───
+app.MapCompliance();
 
 app.Run();
 
-record OuvertureRequete(string Titulaire, decimal DepotInitial, string? Devise);
-record RetraitRequete(decimal Montant);
-record VirementRequete(string IbanBeneficiaire, decimal Montant);
+record OpeningRequest(string Owner, decimal InitialDeposit, string? Currency);
+record WithdrawalRequest(decimal Amount);
+record TransferRequest(string BeneficiaryIban, decimal Amount);
 
-public static class DonneesDeDemo
+public static class DemoData
 {
     public static readonly Guid Alice = Guid.Parse("11111111-1111-1111-1111-111111111111");
     public static readonly Guid Bob = Guid.Parse("22222222-2222-2222-2222-222222222222");

@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    LANGAGE PUBLIÉ du contexte « Tenue de compte » : ce qu'il expose aux autres contextes.
-    Uniquement des types simples (Guid, string, decimal) : le modèle interne (Argent, Iban…) peut évoluer
-    sans casser les contextes qui consomment ces contrats.
-  -->
-
-</Project>

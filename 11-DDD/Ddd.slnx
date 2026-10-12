@@ -1,9 +1,9 @@
 <Solution>
   <Project Path="Ddd.Api/Ddd.Api.csproj" />
-  <Project Path="Ddd.Conformite/Ddd.Conformite.csproj" />
-  <Project Path="Ddd.TenueDeCompte.Application/Ddd.TenueDeCompte.Application.csproj" />
-  <Project Path="Ddd.TenueDeCompte.Contrats/Ddd.TenueDeCompte.Contrats.csproj" />
-  <Project Path="Ddd.TenueDeCompte.Domaine/Ddd.TenueDeCompte.Domaine.csproj" />
-  <Project Path="Ddd.TenueDeCompte.Infrastructure/Ddd.TenueDeCompte.Infrastructure.csproj" />
+  <Project Path="Ddd.Compliance/Ddd.Compliance.csproj" />
+  <Project Path="Ddd.AccountKeeping.Application/Ddd.AccountKeeping.Application.csproj" />
+  <Project Path="Ddd.AccountKeeping.Contracts/Ddd.AccountKeeping.Contracts.csproj" />
+  <Project Path="Ddd.AccountKeeping.Domain/Ddd.AccountKeeping.Domain.csproj" />
+  <Project Path="Ddd.AccountKeeping.Infrastructure/Ddd.AccountKeeping.Infrastructure.csproj" />
   <Project Path="Ddd.Tests/Ddd.Tests.csproj" />
 </Solution>
