@@ -1,31 +1,31 @@
 using System.Reflection;
-using Cqrs.Ecriture.Commandes;
-using Cqrs.Evenements;
-using Cqrs.Lecture.Requetes;
+using Cqrs.Write.Commands;
+using Cqrs.Events;
+using Cqrs.Read.Queries;
 
 namespace Cqrs.Tests;
 
-// Les deux côtés évoluent indépendamment : ils ne partagent que les événements.
+// The two sides evolve independently: they only share the events.
 public class ArchitectureTests
 {
-    private static string[] DependancesInternes(Assembly assembly) =>
-        assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(nom => nom.StartsWith("Cqrs.")).ToArray();
+    private static string[] InternalDependencies(Assembly assembly) =>
+        assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(name => name.StartsWith("Cqrs.")).ToArray();
 
     [Fact]
-    public void L_ecriture_ne_connait_pas_la_lecture()
+    public void The_write_side_does_not_know_the_read_side()
     {
-        Assert.Equal(["Cqrs.Evenements"], DependancesInternes(typeof(BusCommandes).Assembly));
+        Assert.Equal(["Cqrs.Events"], InternalDependencies(typeof(CommandBus).Assembly));
     }
 
     [Fact]
-    public void La_lecture_ne_connait_pas_l_ecriture()
+    public void The_read_side_does_not_know_the_write_side()
     {
-        Assert.Equal(["Cqrs.Evenements"], DependancesInternes(typeof(BusRequetes).Assembly));
+        Assert.Equal(["Cqrs.Events"], InternalDependencies(typeof(QueryBus).Assembly));
     }
 
     [Fact]
-    public void Les_evenements_ne_dependent_de_rien()
+    public void The_events_depend_on_nothing()
     {
-        Assert.Empty(DependancesInternes(typeof(IEvenementDomaine).Assembly));
+        Assert.Empty(InternalDependencies(typeof(IDomainEvent).Assembly));
     }
 }

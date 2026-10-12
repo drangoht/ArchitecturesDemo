@@ -1,98 +1,98 @@
 using Cqrs.Api;
-using Cqrs.Ecriture;
-using Cqrs.Ecriture.Commandes;
-using Cqrs.Ecriture.Domaine;
-using Cqrs.Evenements;
-using Cqrs.Lecture;
-using Cqrs.Lecture.Projections;
-using Cqrs.Lecture.Requetes;
+using Cqrs.Write;
+using Cqrs.Write.Commands;
+using Cqrs.Write.Domain;
+using Cqrs.Events;
+using Cqrs.Read;
+using Cqrs.Read.Projections;
+using Cqrs.Read.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string NomBase(IServiceProvider sp, string cote) =>
-    $"{sp.GetRequiredService<IConfiguration>()["NomBase"] ?? "Banque"}-{cote}";
+string DatabaseName(IServiceProvider sp, string side) =>
+    $"{sp.GetRequiredService<IConfiguration>()["DatabaseName"] ?? "Bank"}-{side}";
 
-builder.Services.AddCoteEcriture(sp => NomBase(sp, "ecriture"));
-builder.Services.AddCoteLecture(sp => NomBase(sp, "lecture"));
-builder.Services.AddHostedService<SynchroniseurProjections>();
+builder.Services.AddWriteSide(sp => DatabaseName(sp, "write"));
+builder.Services.AddReadSide(sp => DatabaseName(sp, "read"));
+builder.Services.AddHostedService<ProjectionSynchronizer>();
 
 var app = builder.Build();
 
-// Données de démo : elles passent, elles aussi, par des commandes.
+// Demo data: it too goes through commands.
 using (var scope = app.Services.CreateScope())
 {
-    var bus = scope.ServiceProvider.GetRequiredService<BusCommandes>();
-    await bus.Envoyer(new OuvrirCompte(DonneesDeDemo.Alice, "Alice", 1000m));
-    await bus.Envoyer(new OuvrirCompte(DonneesDeDemo.Bob, "Bob", 500m));
+    var bus = scope.ServiceProvider.GetRequiredService<CommandBus>();
+    await bus.Send(new OpenAccount(DemoData.Alice, "Alice", 1000m));
+    await bus.Send(new OpenAccount(DemoData.Bob, "Bob", 500m));
 }
 
-app.Use(async (contexte, suivant) =>
+app.Use(async (context, next) =>
 {
     try
     {
-        await suivant(contexte);
+        await next(context);
     }
-    catch (CommandeInvalideException e)
+    catch (InvalidCommandException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await contexte.Response.WriteAsJsonAsync(new { erreurs = e.Erreurs });
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { errors = e.Errors });
     }
-    catch (RegleMetierException e)
+    catch (BusinessRuleException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await contexte.Response.WriteAsJsonAsync(new { erreurs = new[] { e.Message } });
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { errors = new[] { e.Message } });
     }
-    catch (CompteIntrouvableException e)
+    catch (AccountNotFoundException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status404NotFound;
-        await contexte.Response.WriteAsJsonAsync(new { erreurs = new[] { e.Message } });
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(new { errors = new[] { e.Message } });
     }
 });
 
-// ─── Commandes (écriture) : 202 Accepted, la lecture sera à jour sous peu ───
+// ─── Commands (write): 202 Accepted, the read side will be up to date shortly ───
 
-app.MapPost("/comptes", async (OuvertureRequete r, BusCommandes bus) =>
+app.MapPost("/accounts", async (OpeningRequest r, CommandBus bus) =>
 {
     var id = Guid.NewGuid();
-    await bus.Envoyer(new OuvrirCompte(id, r.Titulaire, r.DepotInitial));
-    return Results.Accepted($"/comptes/{id}", new { id });
+    await bus.Send(new OpenAccount(id, r.Owner, r.InitialDeposit));
+    return Results.Accepted($"/accounts/{id}", new { id });
 });
 
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete r, BusCommandes bus) =>
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest r, CommandBus bus) =>
 {
-    await bus.Envoyer(new RetirerArgent(id, r.Montant));
-    return Results.Accepted($"/comptes/{id}");
+    await bus.Send(new WithdrawMoney(id, r.Amount));
+    return Results.Accepted($"/accounts/{id}");
 });
 
-app.MapPost("/virements", async (VirementRequete r, BusCommandes bus) =>
+app.MapPost("/transfers", async (TransferRequest r, CommandBus bus) =>
 {
-    var virementId = Guid.NewGuid();
-    await bus.Envoyer(new EffectuerVirement(virementId, r.Source, r.Cible, r.Montant));
-    return Results.Accepted($"/comptes/{r.Source}", new { virementId });
+    var transferId = Guid.NewGuid();
+    await bus.Send(new MakeTransfer(transferId, r.Source, r.Target, r.Amount));
+    return Results.Accepted($"/accounts/{r.Source}", new { transferId });
 });
 
-// ─── Requêtes (lecture) : servies par les modèles de lecture, sans passer par le domaine ───
+// ─── Queries (read): served by the read models, without going through the domain ───
 
-app.MapGet("/comptes/{id:guid}", async (Guid id, BusRequetes bus) =>
-    await bus.Demander(new ConsulterReleve(id)) is { } releve ? Results.Ok(releve) : Results.NotFound());
+app.MapGet("/accounts/{id:guid}", async (Guid id, QueryBus bus) =>
+    await bus.Ask(new GetStatement(id)) is { } statement ? Results.Ok(statement) : Results.NotFound());
 
-app.MapGet("/comptes/{id:guid}/operations", (Guid id, int? page, int? taille, BusRequetes bus) =>
-    bus.Demander(new ListerOperations(id, page ?? 1, taille ?? 20)));
+app.MapGet("/accounts/{id:guid}/operations", (Guid id, int? page, int? size, QueryBus bus) =>
+    bus.Ask(new ListOperations(id, page ?? 1, size ?? 20)));
 
-app.MapGet("/tableau-de-bord", (BusRequetes bus) => bus.Demander(new ConsulterTableauDeBord()));
+app.MapGet("/dashboard", (QueryBus bus) => bus.Ask(new GetDashboard()));
 
-// Observabilité : de combien d'événements la lecture est-elle en retard sur l'écriture ?
-app.MapGet("/admin/projections", async (IFluxEvenements flux, Projecteur projecteur) =>
+// Observability: by how many events is the read side lagging behind the write side?
+app.MapGet("/admin/projections", async (IEventStream stream, Projector projector) =>
 {
-    var ecrit = await flux.DerniereSequence();
-    var projete = await projecteur.DerniereSequence();
-    return Results.Ok(new { dernierEvenementEcrit = ecrit, dernierEvenementProjete = projete, retard = ecrit - projete });
+    var written = await stream.LastSequence();
+    var projected = await projector.LastSequence();
+    return Results.Ok(new { lastEventWritten = written, lastEventProjected = projected, lag = written - projected });
 });
 
 app.Run();
 
-record OuvertureRequete(string Titulaire, decimal DepotInitial);
-record RetraitRequete(decimal Montant);
-record VirementRequete(Guid Source, Guid Cible, decimal Montant);
+record OpeningRequest(string Owner, decimal InitialDeposit);
+record WithdrawalRequest(decimal Amount);
+record TransferRequest(Guid Source, Guid Target, decimal Amount);
 
 public partial class Program;

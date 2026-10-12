@@ -7,79 +7,79 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Cqrs.Tests;
 
-public class BanqueApplication(int delaiProjectionMs) : WebApplicationFactory<Program>
+public class BankApplication(int projectionDelayMs) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("NomBase", Guid.NewGuid().ToString());
-        builder.UseSetting("Projections:DelaiMs", delaiProjectionMs.ToString());
+        builder.UseSetting("DatabaseName", Guid.NewGuid().ToString());
+        builder.UseSetting("Projections:DelayMs", projectionDelayMs.ToString());
     }
 }
 
 public class ApiTests
 {
-    private static readonly Guid Alice = DonneesDeDemo.Alice;
-    private static readonly Guid Bob = DonneesDeDemo.Bob;
+    private static readonly Guid Alice = DemoData.Alice;
+    private static readonly Guid Bob = DemoData.Bob;
 
-    private static async Task<decimal?> Solde(HttpClient client, Guid id)
+    private static async Task<decimal?> Balance(HttpClient client, Guid id)
     {
-        var reponse = await client.GetAsync($"/comptes/{id}");
-        if (reponse.StatusCode == HttpStatusCode.NotFound)
+        var response = await client.GetAsync($"/accounts/{id}");
+        if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
-        return (await reponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("solde").GetDecimal();
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("balance").GetDecimal();
     }
 
-    private static async Task AttendreSolde(HttpClient client, Guid id, decimal attendu)
+    private static async Task WaitForBalance(HttpClient client, Guid id, decimal expected)
     {
-        var limite = DateTime.UtcNow.AddSeconds(10);
-        while (await Solde(client, id) != attendu && DateTime.UtcNow < limite)
+        var limit = DateTime.UtcNow.AddSeconds(10);
+        while (await Balance(client, id) != expected && DateTime.UtcNow < limit)
             await Task.Delay(50);
-        Assert.Equal(attendu, await Solde(client, id));
+        Assert.Equal(expected, await Balance(client, id));
     }
 
     [Fact]
-    public async Task Une_commande_est_acceptee_puis_visible_dans_les_vues()
+    public async Task A_command_is_accepted_then_visible_in_the_views()
     {
-        await using var app = new BanqueApplication(delaiProjectionMs: 0);
+        await using var app = new BankApplication(projectionDelayMs: 0);
         var client = app.CreateClient();
-        await AttendreSolde(client, Bob, 500m);
+        await WaitForBalance(client, Bob, 500m);
 
-        var reponse = await client.PostAsJsonAsync("/virements", new { source = Alice, cible = Bob, montant = 250m });
+        var response = await client.PostAsJsonAsync("/transfers", new { source = Alice, target = Bob, amount = 250m });
 
-        Assert.Equal(HttpStatusCode.Accepted, reponse.StatusCode);
-        await AttendreSolde(client, Bob, 750m);
-        var operations = await client.GetFromJsonAsync<JsonElement>($"/comptes/{Bob}/operations");
-        Assert.Equal("Virement reçu de Alice", operations[0].GetProperty("libelle").GetString());
-        var tableau = await client.GetFromJsonAsync<JsonElement>("/tableau-de-bord");
-        Assert.Equal(1, tableau.GetProperty("nombreVirements").GetInt32());
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        await WaitForBalance(client, Bob, 750m);
+        var operations = await client.GetFromJsonAsync<JsonElement>($"/accounts/{Bob}/operations");
+        Assert.Equal("Transfer received from Alice", operations[0].GetProperty("label").GetString());
+        var dashboard = await client.GetFromJsonAsync<JsonElement>("/dashboard");
+        Assert.Equal(1, dashboard.GetProperty("transferCount").GetInt32());
     }
 
     [Fact]
-    public async Task La_lecture_est_coherente_a_terme()
+    public async Task The_read_side_is_eventually_consistent()
     {
-        await using var app = new BanqueApplication(delaiProjectionMs: 1500);
+        await using var app = new BankApplication(projectionDelayMs: 1500);
         var client = app.CreateClient();
-        await AttendreSolde(client, Alice, 1000m);
+        await WaitForBalance(client, Alice, 1000m);
 
-        await client.PostAsJsonAsync($"/comptes/{Alice}/retrait", new { montant = 100m });
+        await client.PostAsJsonAsync($"/accounts/{Alice}/withdrawal", new { amount = 100m });
 
-        // Juste après la commande, la vue n'est pas encore à jour…
-        Assert.Equal(1000m, await Solde(client, Alice));
-        var etat = await client.GetFromJsonAsync<JsonElement>("/admin/projections");
-        Assert.Equal(1, etat.GetProperty("retard").GetInt64());
-        // …elle le devient dès que la projection est passée.
-        await AttendreSolde(client, Alice, 900m);
+        // Right after the command, the view is not up to date yet…
+        Assert.Equal(1000m, await Balance(client, Alice));
+        var state = await client.GetFromJsonAsync<JsonElement>("/admin/projections");
+        Assert.Equal(1, state.GetProperty("lag").GetInt64());
+        // …it becomes so as soon as the projection has run.
+        await WaitForBalance(client, Alice, 900m);
     }
 
     [Fact]
-    public async Task Une_commande_invalide_renvoie_toutes_les_erreurs_de_validation()
+    public async Task An_invalid_command_returns_all_the_validation_errors()
     {
-        await using var app = new BanqueApplication(delaiProjectionMs: 0);
+        await using var app = new BankApplication(projectionDelayMs: 0);
 
-        var reponse = await app.CreateClient().PostAsJsonAsync("/virements", new { source = Alice, cible = Alice, montant = 9000m });
+        var response = await app.CreateClient().PostAsJsonAsync("/transfers", new { source = Alice, target = Alice, amount = 9000m });
 
-        Assert.Equal(HttpStatusCode.BadRequest, reponse.StatusCode);
-        var corps = await reponse.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(2, corps.GetProperty("erreurs").GetArrayLength());
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, body.GetProperty("errors").GetArrayLength());
     }
 }

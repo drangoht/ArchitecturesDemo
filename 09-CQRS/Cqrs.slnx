@@ -1,7 +1,7 @@
 <Solution>
   <Project Path="Cqrs.Api/Cqrs.Api.csproj" />
-  <Project Path="Cqrs.Ecriture/Cqrs.Ecriture.csproj" />
-  <Project Path="Cqrs.Evenements/Cqrs.Evenements.csproj" />
-  <Project Path="Cqrs.Lecture/Cqrs.Lecture.csproj" />
+  <Project Path="Cqrs.Write/Cqrs.Write.csproj" />
+  <Project Path="Cqrs.Events/Cqrs.Events.csproj" />
+  <Project Path="Cqrs.Read/Cqrs.Read.csproj" />
   <Project Path="Cqrs.Tests/Cqrs.Tests.csproj" />
 </Solution>

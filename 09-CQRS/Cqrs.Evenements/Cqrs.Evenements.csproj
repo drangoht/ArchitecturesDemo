@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    Le seul lien entre les deux côtés : les événements du domaine.
-    Le côté écriture les produit, le côté lecture les consomme pour construire ses vues.
-  -->
-
-</Project>

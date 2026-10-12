@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The only link between the two sides: the domain events.
+    The write side produces them, the read side consumes them to build its views.
+  -->
+
+</Project>

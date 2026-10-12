@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    READ side (Query): denormalized tables, one per display need, ready to be served.
+    No business rule, no reference to the write side: only the events.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cqrs.Events\Cqrs.Events.csproj" />
+  </ItemGroup>
+
+</Project>

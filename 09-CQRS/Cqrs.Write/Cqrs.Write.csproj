@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    WRITE side (Command): a rich model, designed to enforce the rules.
+    It cannot answer "show me the history": that is not its role.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cqrs.Events\Cqrs.Events.csproj" />
+  </ItemGroup>
+
+</Project>
