@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE TOOLING, written by hand for lack of packages in the local NuGet cache: what Google.Protobuf
+    (Protobuf\), Grpc.Net.Client and Grpc.AspNetCore (Grpc\), and HotChocolate or GraphQL.NET (GraphQL\) would provide. Reduced to
+    the essentials, but faithful to the wire formats (Protobuf, gRPC frames and trailers, GraphQL responses).
+    It knows neither the bank nor its contracts.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

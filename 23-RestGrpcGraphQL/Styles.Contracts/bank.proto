@@ -1,0 +1,71 @@
+// The bank's gRPC contract. IT is the source of truth: for real, protoc generates from this file the code
+// of the server and that of the clients, in each language. Here, Messages.cs is written by hand, and a test checks
+// that it matches field by field (name, number, type).
+syntax = "proto3";
+
+package bank;
+
+service Bank {
+  // A customer's home screen in a single call: their accounts and their latest operations.
+  rpc GetDashboard (DashboardRequest) returns (Dashboard);
+  rpc GetAccount (AccountRequest) returns (Account);
+  rpc MakeTransfer (TransferRequest) returns (Transfer);
+  // Server stream: each new operation of the account, as soon as it happens, as long as the client listens.
+  rpc FollowOperations (FollowRequest) returns (stream Operation);
+}
+
+enum AccountType {
+  UNKNOWN_ACCOUNT_TYPE = 0;  // proto3: value 0 is the default one, and the one read by a client that is too old
+  CURRENT = 1;
+  SAVINGS = 2;
+}
+
+message DashboardRequest {
+  string customer_id = 1;
+  int32 operations_per_account = 2;
+}
+
+message Dashboard {
+  string customer_id = 1;
+  string name = 2;
+  repeated Account accounts = 3;
+}
+
+message AccountRequest {
+  string number = 1;
+}
+
+// No decimal type in Protobuf: amounts travel in cents, on integers.
+message Account {
+  string number = 1;
+  string label = 2;
+  AccountType type = 3;
+  int64 balance_cents = 4;
+  repeated Operation latest_operations = 5;
+}
+
+message Operation {
+  string id = 1;
+  int64 date_unix_ms = 2;
+  string label = 3;
+  sint64 amount_cents = 4;  // sint64 (zigzag): debits are negative
+}
+
+message TransferRequest {
+  string source = 1;
+  string target = 2;
+  int64 amount_cents = 3;
+  string label = 4;
+}
+
+message Transfer {
+  string id = 1;
+  string source = 2;
+  string target = 3;
+  int64 amount_cents = 4;
+  int64 source_balance_cents = 5;
+}
+
+message FollowRequest {
+  string number = 1;
+}

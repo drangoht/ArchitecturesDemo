@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    LE CLIENT DE COMPARAISON : les mêmes usages (écran d'accueil, virement, suivi en direct) joués avec les trois API,
-    en comptant requêtes et octets. Ses classes servent aussi aux tests (ComparaisonTests).
-    Lancer d'abord le serveur (projet Styles.Serveur).
+    THE COMPARISON CLIENT: the same uses (home screen, transfer, live following) played with the three APIs,
+    counting requests and bytes. Its classes are also used by the tests (ComparisonTests).
+    Start the server first (Styles.Server project).
   -->
 
   <PropertyGroup>
@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Styles.Contrats\Styles.Contrats.csproj" />
+    <ProjectReference Include="..\Styles.Contracts\Styles.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

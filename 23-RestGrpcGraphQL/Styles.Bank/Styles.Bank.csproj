@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE BUSINESS CODE, common to the three APIs: customers, accounts, operations, transfers. It knows nothing about HTTP, JSON,
+    Protobuf or GraphQL (checked by a test): REST, gRPC and GraphQL are only three ways of presenting it.
+  -->
+
+</Project>

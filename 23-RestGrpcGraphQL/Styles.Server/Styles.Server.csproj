@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    THE SERVER: the same bank exposed in three ways, in the same process.
+    - REST (RestApi.cs) and GraphQL (GraphQLApi.cs) on http://localhost:5123, in HTTP/1.1;
+    - gRPC (GrpcApi.cs) on http://localhost:5250, in HTTP/2 only (gRPC needs HTTP/2 trailers).
+    Each API is a thin translation layer; the rules are all in Styles.Bank.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Styles.Bank\Styles.Bank.csproj" />
+    <ProjectReference Include="..\Styles.Contracts\Styles.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    LE MÉTIER, commun aux trois API : clients, comptes, opérations, virements. Il ne sait rien de HTTP, de JSON, de
-    Protobuf ni de GraphQL (vérifié par un test) : REST, gRPC et GraphQL ne sont que trois façons de le présenter.
-  -->
-
-</Project>

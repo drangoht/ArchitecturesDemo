@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE gRPC CONTRACTS, shared by the server and the clients: bank.proto and the classes that match it
+    (what protoc generates for real). The .proto file is copied next to the binaries so that the tests compare it
+    with the classes.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Styles.Tooling\Styles.Tooling.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="bank.proto" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

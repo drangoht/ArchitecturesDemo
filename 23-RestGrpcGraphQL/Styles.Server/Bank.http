@@ -1,0 +1,80 @@
+@api = http://localhost:5123
+
+# The same bank, three APIs. REST and GraphQL below; gRPC (http://localhost:5250, HTTP/2) is played with the comparison
+# client: dotnet run --project Styles.Client (the HTTP clients of VS and VS Code do not speak gRPC).
+
+# ─── REST: resources, verbs, statuses ───
+
+### A resource and the addresses of the linked resources (_links)
+GET {{api}}/customers/alice
+
+### The accounts: a complete representation, the same for everyone (IBAN, owner, links… even if the screen does not want them)
+GET {{api}}/customers/alice/accounts
+
+### The operations: one more request PER account (the "1 + N")
+GET {{api}}/accounts/10001/operations?limit=3
+
+### An account, with its ETag (run again with If-None-Match: 304 without body as long as nothing changes)
+GET {{api}}/accounts/10001
+
+### … the same request with the received ETag: 304 Not Modified, without body
+GET {{api}}/accounts/10001
+If-None-Match: "10001-v6"
+
+### Create a transfer: 201 Created + Location
+POST {{api}}/transfers
+Content-Type: application/json
+
+{ "source": "10001", "target": "20001", "amount": 25.50, "label": "Cinema" }
+
+### An error: an HTTP status (422) and an application/problem+json body
+POST {{api}}/transfers
+Content-Type: application/json
+
+{ "source": "20001", "target": "10001", "amount": 1000000 }
+
+# ─── GraphQL: one address, the client writes its query ───
+
+### The whole home screen in one query: exactly the fields displayed
+POST {{api}}/graphql
+Content-Type: application/json
+
+{ "query": "{ customer(id: \"alice\") { name accounts { label balance operations(latest: 3) { date label amount } } } }" }
+
+### With variables, and the same field twice thanks to aliases
+POST {{api}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query ($a: ID!, $b: ID!) { current: account(number: $a) { balance } savings: account(number: $b) { balance } }",
+  "variables": { "a": "10001", "b": "10002" }
+}
+
+### An error: 200 anyway, the data at null, the error in "errors" (with its path and its code)
+POST {{api}}/graphql
+Content-Type: application/json
+
+{ "query": "{ a: account(number: \"10001\") { label } b: account(number: \"99999\") { label } }" }
+
+### A mutation
+POST {{api}}/graphql
+Content-Type: application/json
+
+{ "query": "mutation { makeTransfer(source: \"10001\", target: \"20001\", amount: 10) { id source { balance } } }" }
+
+### Refused before execution: too deep (limit: 6 levels)
+POST {{api}}/graphql
+Content-Type: application/json
+
+{ "query": "{ customer(id: \"alice\") { accounts { owner { accounts { owner { accounts { label } } } } } } }" }
+
+### The published contract (SDL), with the deprecated field
+GET {{api}}/graphql/schema
+
+### Which fields do the clients ask for? (enough to know when to remove "balanceText")
+GET {{api}}/graphql/usage
+
+# ─── Behind the scenes ───
+
+### How many "database" reads of the operations (one per account with REST, one in all with GraphQL and gRPC)
+GET {{api}}/statistics

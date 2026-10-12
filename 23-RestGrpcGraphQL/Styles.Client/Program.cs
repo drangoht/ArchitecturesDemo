@@ -1,117 +1,117 @@
 using System.Net;
 using Styles.Client;
-using Styles.Outillage.Grpc;
+using Styles.Tooling.Grpc;
 
-// Le client de comparaison : les mêmes usages, joués avec les trois API du serveur (lancé à part).
-//   dotnet run --project Styles.Client [-- --latence 50]   (latence simulée par requête, en ms : un réseau mobile)
+// The comparison client: the same uses, played with the server's three APIs (started separately).
+//   dotnet run --project Styles.Client [-- --latency 50]   (simulated latency per request, in ms: a mobile network)
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-var latence = TimeSpan.FromMilliseconds(args.SkipWhile(a => a != "--latence").Skip(1).Select(int.Parse).FirstOrDefault(50));
+var latency = TimeSpan.FromMilliseconds(args.SkipWhile(a => a != "--latency").Skip(1).Select(int.Parse).FirstOrDefault(50));
 
-var compteurRest = new CompteurHttp { Latence = latence };
-var compteurGraphQL = new CompteurHttp { Latence = latence };
-var compteurGrpc = new CompteurHttp { Latence = latence };
-var urlRest = new Uri("http://localhost:5123");
-var clients = new (IClientBanque Client, CompteurHttp Compteur)[]
+var restCounter = new HttpCounter { Latency = latency };
+var graphQLCounter = new HttpCounter { Latency = latency };
+var grpcCounter = new HttpCounter { Latency = latency };
+var restUrl = new Uri("http://localhost:5123");
+var clients = new (IBankClient Client, HttpCounter Counter)[]
 {
-    (new ClientRest(new HttpClient(compteurRest) { BaseAddress = urlRest }), compteurRest),
-    (new ClientGraphQL(new HttpClient(compteurGraphQL) { BaseAddress = urlRest }), compteurGraphQL),
-    (new ClientGrpcBanque(new HttpClient(compteurGrpc) { BaseAddress = new Uri("http://localhost:5250") }), compteurGrpc),
+    (new RestClient(new HttpClient(restCounter) { BaseAddress = restUrl }), restCounter),
+    (new GraphQLClient(new HttpClient(graphQLCounter) { BaseAddress = restUrl }), graphQLCounter),
+    (new GrpcBankClient(new HttpClient(grpcCounter) { BaseAddress = new Uri("http://localhost:5250") }), grpcCounter),
 };
 
 try
 {
-    await new HttpClient().GetAsync(urlRest);
+    await new HttpClient().GetAsync(restUrl);
 }
 catch (HttpRequestException)
 {
-    Console.WriteLine("Le serveur ne répond pas : lancez d'abord  dotnet run --project Styles.Serveur");
+    Console.WriteLine("The server does not answer: first start  dotnet run --project Styles.Server");
     return 1;
 }
 
-Console.WriteLine($"═══ 1. L'écran d'accueil d'Alice (3 comptes, 3 dernières opérations chacun) — latence simulée {latence.TotalMilliseconds} ms/requête ═══\n");
+Console.WriteLine($"═══ 1. Alice's home screen (3 accounts, last 3 operations each) — simulated latency {latency.TotalMilliseconds} ms/request ═══\n");
 foreach (var (client, _) in clients)
-    await client.EcranAccueil("bob");   // tour de chauffe : connexions ouvertes, code compilé, avant de mesurer
-EcranAccueil? reference = null;
-foreach (var (client, compteur) in clients)
+    await client.HomeScreen("bob");   // warm-up: connections open, code compiled, before measuring
+HomeScreen? reference = null;
+foreach (var (client, counter) in clients)
 {
-    var (ecran, mesure) = await Chrono.Mesurer(compteur, () => client.EcranAccueil("alice"));
-    Console.WriteLine($"  {client.Nom,-8} {mesure}");
-    reference ??= ecran;
-    if (!Identiques(reference, ecran))
-        Console.WriteLine("           ⚠ écran différent de celui obtenu en REST !");
+    var (screen, measure) = await Timing.Run(counter, () => client.HomeScreen("alice"));
+    Console.WriteLine($"  {client.Name,-8} {measure}");
+    reference ??= screen;
+    if (!Identical(reference, screen))
+        Console.WriteLine("           ⚠ screen different from the one obtained with REST!");
 }
 Console.WriteLine();
-foreach (var compte in reference!.Comptes)
+foreach (var account in reference!.Accounts)
 {
-    Console.WriteLine($"  {compte.Libelle,-15} {compte.Solde,10:N2} €");
-    foreach (var operation in compte.Operations)
-        Console.WriteLine($"      {operation.Date:dd/MM}  {operation.Libelle,-22} {operation.Montant,10:N2} €");
+    Console.WriteLine($"  {account.Label,-15} {account.Balance,10:N2} €");
+    foreach (var operation in account.Operations)
+        Console.WriteLine($"      {operation.Date:dd/MM}  {operation.Label,-22} {operation.Amount,10:N2} €");
 }
 
-Console.WriteLine("\n═══ 2. Un virement refusé (solde insuffisant) : la même erreur, trois langues ═══\n");
+Console.WriteLine("\n═══ 2. A refused transfer (insufficient balance): the same error, three languages ═══\n");
 foreach (var (client, _) in clients)
 {
-    var resultat = await client.Virer("20001", "10001", 1_000_000m, "Essai");
-    Console.WriteLine($"  {client.Nom,-8} {resultat.Erreur,-22} « {resultat.Message} »");
+    var result = await client.Transfer("20001", "10001", 1_000_000m, "Test");
+    Console.WriteLine($"  {client.Name,-8} {result.Error,-22} \"{result.Message}\"");
 }
 
-Console.WriteLine("\n═══ 3. Suivre les opérations d'un compte en direct ═══\n");
-var grpc = (ClientGrpcBanque)clients[2].Client;
-var rest = new HttpClient(compteurRest) { BaseAddress = urlRest };
-using (var arret = new CancellationTokenSource())
+Console.WriteLine("\n═══ 3. Following an account's operations live ═══\n");
+var grpc = (GrpcBankClient)clients[2].Client;
+var rest = new HttpClient(restCounter) { BaseAddress = restUrl };
+using (var stopping = new CancellationTokenSource())
 {
-    var recues = new List<string>();
-    var ecoute = Task.Run(async () =>
+    var received = new List<string>();
+    var listening = Task.Run(async () =>
     {
         try
         {
-            // Une seule requête, qui reste ouverte : le serveur pousse chaque opération. L'échéance la ferme.
-            await foreach (var operation in grpc.SuivreOperations("10001", TimeSpan.FromSeconds(2), arret.Token))
-                recues.Add($"{operation.Libelle} ({operation.MontantCentimes / 100m:N2} €)");
+            // A single request, which stays open: the server pushes each operation. The deadline closes it.
+            await foreach (var operation in grpc.FollowOperations("10001", TimeSpan.FromSeconds(2), stopping.Token))
+                received.Add($"{operation.Label} ({operation.AmountCents / 100m:N2} €)");
         }
-        catch (ErreurGrpc e)
+        catch (GrpcError e)
         {
-            recues.Add($"fin du flux : {e.Statut}");
+            received.Add($"end of stream: {e.Status}");
         }
     });
     await Task.Delay(300);
     foreach (var (client, _) in clients)
-        await client.Virer("10002", "10001", 10m, $"Épargne via {client.Nom}");
-    await ecoute;
-    Console.WriteLine("  gRPC (flux serveur, 1 requête ouverte 2 s) :");
-    foreach (var ligne in recues)
-        Console.WriteLine($"      {ligne}");
+        await client.Transfer("10002", "10001", 10m, $"Savings via {client.Name}");
+    await listening;
+    Console.WriteLine("  gRPC (server stream, 1 request open for 2 s):");
+    foreach (var line in received)
+        Console.WriteLine($"      {line}");
 }
 
-// REST n'a pas de flux : on interroge. L'ETag rend l'interrogation peu coûteuse quand rien ne change.
+// REST has no stream: we poll. The ETag makes polling cheap when nothing changes.
 string? etag = null;
-int modifie = 0, inchange = 0;
-var (_, mesurePolling) = await Chrono.Mesurer(compteurRest, async () =>
+int modified = 0, unchanged = 0;
+var (_, pollingMeasure) = await Timing.Run(restCounter, async () =>
 {
     for (var i = 0; i < 5; i++)
     {
-        using var requete = new HttpRequestMessage(HttpMethod.Get, "/comptes/10001");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/accounts/10001");
         if (etag is not null)
-            requete.Headers.TryAddWithoutValidation("If-None-Match", etag);
-        using var reponse = await rest.SendAsync(requete);
-        await reponse.Content.ReadAsByteArrayAsync();
-        if (reponse.StatusCode == HttpStatusCode.NotModified)
-            inchange++;
+            request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        using var response = await rest.SendAsync(request);
+        await response.Content.ReadAsByteArrayAsync();
+        if (response.StatusCode == HttpStatusCode.NotModified)
+            unchanged++;
         else
         {
-            modifie++;
-            etag = reponse.Headers.ETag?.Tag;
+            modified++;
+            etag = response.Headers.ETag?.Tag;
         }
     }
     return 0;
 });
-Console.WriteLine($"\n  REST (interrogation avec ETag, 5 fois) : {modifie} × 200, {inchange} × 304 Not Modified — {mesurePolling}");
+Console.WriteLine($"\n  REST (polling with ETag, 5 times): {modified} × 200, {unchanged} × 304 Not Modified — {pollingMeasure}");
 
 return 0;
 
-static bool Identiques(EcranAccueil a, EcranAccueil b) =>
-    a.Nom == b.Nom && a.Comptes.Count == b.Comptes.Count && a.Comptes.Zip(b.Comptes).All(p =>
-        p.First.Numero == p.Second.Numero && p.First.Libelle == p.Second.Libelle && p.First.Solde == p.Second.Solde
+static bool Identical(HomeScreen a, HomeScreen b) =>
+    a.Name == b.Name && a.Accounts.Count == b.Accounts.Count && a.Accounts.Zip(b.Accounts).All(p =>
+        p.First.Number == p.Second.Number && p.First.Label == p.Second.Label && p.First.Balance == p.Second.Balance
         && p.First.Operations.SequenceEqual(p.Second.Operations));

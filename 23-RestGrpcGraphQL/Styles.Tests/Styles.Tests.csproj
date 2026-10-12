@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Styles.Serveur\Styles.Serveur.csproj" />
+    <ProjectReference Include="..\Styles.Server\Styles.Server.csproj" />
     <ProjectReference Include="..\Styles.Client\Styles.Client.csproj" />
   </ItemGroup>
 

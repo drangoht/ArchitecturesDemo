@@ -6,81 +6,81 @@ namespace Styles.Tests;
 
 public class RestTests : IAsyncLifetime
 {
-    private readonly Systeme _systeme = new();
+    private readonly TestSystem _system = new();
 
     public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _systeme.DisposeAsync();
+    public async Task DisposeAsync() => await _system.DisposeAsync();
 
     [Fact]
-    public async Task Chaque_ressource_a_son_adresse_et_donne_celles_des_ressources_liees()
+    public async Task Each_resource_has_its_address_and_gives_those_of_the_linked_resources()
     {
-        var client = (await _systeme.Http.GetFromJsonAsync<JsonObject>("/clients/alice"))!;
-        var comptes = (await _systeme.Http.GetFromJsonAsync<JsonArray>(client["_links"]!["comptes"]!.GetValue<string>()))!;
-        var operations = (await _systeme.Http.GetFromJsonAsync<JsonArray>(comptes[0]!["_links"]!["operations"]!.GetValue<string>() + "?limite=2"))!;
+        var customer = (await _system.Http.GetFromJsonAsync<JsonObject>("/customers/alice"))!;
+        var accounts = (await _system.Http.GetFromJsonAsync<JsonArray>(customer["_links"]!["accounts"]!.GetValue<string>()))!;
+        var operations = (await _system.Http.GetFromJsonAsync<JsonArray>(accounts[0]!["_links"]!["operations"]!.GetValue<string>() + "?limit=2"))!;
 
-        Assert.Equal(["10001", "10002", "10003"], comptes.Select(c => c!["numero"]!.GetValue<string>()));
-        Assert.Equal(["Librairie", "Électricité"], operations.Select(o => o!["libelle"]!.GetValue<string>()));
+        Assert.Equal(["10001", "10002", "10003"], accounts.Select(c => c!["number"]!.GetValue<string>()));
+        Assert.Equal(["Bookshop", "Electricity"], operations.Select(o => o!["label"]!.GetValue<string>()));
     }
 
     [Fact]
-    public async Task La_representation_d_un_compte_est_complete_et_la_meme_pour_tous_les_clients()
+    public async Task The_representation_of_an_account_is_complete_and_the_same_for_all_clients()
     {
-        var compte = (await _systeme.Http.GetFromJsonAsync<JsonObject>("/comptes/10001"))!;
+        var account = (await _system.Http.GetFromJsonAsync<JsonObject>("/accounts/10001"))!;
 
-        // L'écran d'accueil n'a besoin que du libellé et du solde : il reçoit tout le reste aussi (sur-récupération).
-        Assert.Equal(["numero", "libelle", "type", "iban", "solde", "devise", "dateOuverture", "plafondDecouvert", "titulaire", "_links"],
-            compte.Select(p => p.Key));
+        // The home screen only needs the label and the balance: it receives all the rest too (over-fetching).
+        Assert.Equal(["number", "label", "type", "iban", "balance", "currency", "openingDate", "overdraftLimit", "owner", "_links"],
+            account.Select(p => p.Key));
     }
 
     [Fact]
-    public async Task Un_virement_cree_une_ressource_201_dont_l_adresse_est_dans_Location()
+    public async Task A_transfer_creates_a_201_resource_whose_address_is_in_Location()
     {
-        var reponse = await _systeme.Http.PostAsJsonAsync("/virements", new { source = "10001", cible = "20001", montant = 40m, libelle = "Places" });
+        var response = await _system.Http.PostAsJsonAsync("/transfers", new { source = "10001", target = "20001", amount = 40m, label = "Tickets" });
 
-        Assert.Equal(HttpStatusCode.Created, reponse.StatusCode);
-        Assert.Equal("/virements/V001", reponse.Headers.Location!.ToString());
-        var relu = (await _systeme.Http.GetFromJsonAsync<JsonObject>(reponse.Headers.Location))!;
-        Assert.Equal((40m, 1586.05m), (relu["montant"]!.GetValue<decimal>(), relu["soldeSource"]!.GetValue<decimal>()));
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("/transfers/V001", response.Headers.Location!.ToString());
+        var readBack = (await _system.Http.GetFromJsonAsync<JsonObject>(response.Headers.Location))!;
+        Assert.Equal((40m, 1586.05m), (readBack["amount"]!.GetValue<decimal>(), readBack["sourceBalance"]!.GetValue<decimal>()));
     }
 
     [Theory]
-    [InlineData("10001", "99999", 10, HttpStatusCode.NotFound, "COMPTE_INCONNU")]
-    [InlineData("10001", "20001", -5, HttpStatusCode.BadRequest, "MONTANT_INVALIDE")]
-    [InlineData("10001", "10001", 10, HttpStatusCode.BadRequest, "MEME_COMPTE")]
-    [InlineData("10002", "10001", 9000, HttpStatusCode.UnprocessableEntity, "SOLDE_INSUFFISANT")]
-    public async Task Les_erreurs_sont_des_statuts_HTTP_avec_un_corps_problem_json(string source, string cible, decimal montant,
-        HttpStatusCode statut, string code)
+    [InlineData("10001", "99999", 10, HttpStatusCode.NotFound, "UNKNOWN_ACCOUNT")]
+    [InlineData("10001", "20001", -5, HttpStatusCode.BadRequest, "INVALID_AMOUNT")]
+    [InlineData("10001", "10001", 10, HttpStatusCode.BadRequest, "SAME_ACCOUNT")]
+    [InlineData("10002", "10001", 9000, HttpStatusCode.UnprocessableEntity, "INSUFFICIENT_BALANCE")]
+    public async Task Errors_are_HTTP_statuses_with_a_problem_json_body(string source, string target, decimal amount,
+        HttpStatusCode status, string code)
     {
-        var reponse = await _systeme.Http.PostAsJsonAsync("/virements", new { source, cible, montant });
+        var response = await _system.Http.PostAsJsonAsync("/transfers", new { source, target, amount });
 
-        Assert.Equal(statut, reponse.StatusCode);
-        Assert.Equal("application/problem+json", reponse.Content.Headers.ContentType!.MediaType);
-        var probleme = (await reponse.Content.ReadFromJsonAsync<JsonObject>())!;
-        Assert.Equal(((int)statut, code), (probleme["status"]!.GetValue<int>(), probleme["code"]!.GetValue<string>()));
+        Assert.Equal(status, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType!.MediaType);
+        var problem = (await response.Content.ReadFromJsonAsync<JsonObject>())!;
+        Assert.Equal(((int)status, code), (problem["status"]!.GetValue<int>(), problem["code"]!.GetValue<string>()));
     }
 
     [Fact]
-    public async Task L_ETag_evite_de_retransferer_un_compte_qui_n_a_pas_change()
+    public async Task The_ETag_avoids_transferring_again_an_account_that_has_not_changed()
     {
-        var premiere = await _systeme.Http.GetAsync("/comptes/10001");
-        var etag = premiere.Headers.ETag!.Tag;
+        var first = await _system.Http.GetAsync("/accounts/10001");
+        var etag = first.Headers.ETag!.Tag;
 
-        var inchange = await Lire(etag);
-        Assert.Equal(HttpStatusCode.NotModified, inchange.StatusCode);
-        Assert.Empty(await inchange.Content.ReadAsByteArrayAsync());
+        var unchanged = await Read(etag);
+        Assert.Equal(HttpStatusCode.NotModified, unchanged.StatusCode);
+        Assert.Empty(await unchanged.Content.ReadAsByteArrayAsync());
 
-        await _systeme.Rest.Virer("10001", "20001", 1m, "Café");
+        await _system.Rest.Transfer("10001", "20001", 1m, "Coffee");
 
-        var modifie = await Lire(etag);
-        Assert.Equal(HttpStatusCode.OK, modifie.StatusCode);
-        Assert.NotEqual(etag, modifie.Headers.ETag!.Tag);
+        var modified = await Read(etag);
+        Assert.Equal(HttpStatusCode.OK, modified.StatusCode);
+        Assert.NotEqual(etag, modified.Headers.ETag!.Tag);
 
-        async Task<HttpResponseMessage> Lire(string etagConnu)
+        async Task<HttpResponseMessage> Read(string knownEtag)
         {
-            var requete = new HttpRequestMessage(HttpMethod.Get, "/comptes/10001");
-            requete.Headers.IfNoneMatch.ParseAdd(etagConnu);
-            return await _systeme.Http.SendAsync(requete);
+            var request = new HttpRequestMessage(HttpMethod.Get, "/accounts/10001");
+            request.Headers.IfNoneMatch.ParseAdd(knownEtag);
+            return await _system.Http.SendAsync(request);
         }
     }
 }
