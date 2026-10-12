@@ -1,8 +1,9 @@
 # English translation — plan, status and conventions
 
 The documentation exists in **two versions kept side by side**: French (the original, in `Docs/`) and English (in
-`Docs/en/`, same tree, **same file names**). The code of the demos stays in French for now; its translation will be
-decided once the documentation is done.
+`Docs/en/`, same tree, **same file names**). The **code** of the demos (identifiers, comments, messages, routes, tests,
+folder and project names) was translated into English and **replaces** the French code (batch 7): there is a single
+version of the code, shared by both languages of the documentation.
 
 ## Status
 
@@ -14,7 +15,7 @@ decided once the documentation is done.
 | 4 | Full pages 17 to 24 | ~19,000 | ✅ done (2026-10-11) |
 | 5 | `pour-tous/` (25 pages, index, glossary `lexique.md`; images shared) | ~12,600 | ✅ done (2026-10-11) |
 | 6 | `differences/` (17 comparisons + index) | ~14,700 | ✅ done (2026-10-11) |
-| 7 | Code (identifiers, comments, routes, tests) — strategy to be decided | 28,000 lines | ⏸ later |
+| 7 | Code (identifiers, comments, messages, routes, tests, folders and projects) in English, replacing the French code; code examples of both documentations updated | 28,000 lines | ✅ done (2026-10-12) |
 
 The whole documentation is now available in both languages (batches 1 to 6). From now on, **every change to a French
 page goes with the same change to its English twin** (and vice versa), in the same commit; a new demo gets its pages in
@@ -28,13 +29,13 @@ both languages. Then run the tools below.
 - **Not yet translated**: an English page links to the French page and marks it *(French)* or *FR*. When a batch is
   done, replace those links by their English twin (e.g. in the cheat sheets, `../../00-couches.md` → `../00-couches.md`
   and the label "Full page (French)" → "Full page").
-- **Code references stay in French**: folder, project, class, method, route and JSON field names (`AccountsService`,
-  `/transfers`, `Micro.Launcher`) are quoted exactly as in the code. In Mermaid diagrams, identifiers stay as they are;
-  descriptive labels are translated.
-- **Code blocks are never translated** (the code itself is in French): every `csharp`, `xml`, `json`, `powershell`,
-  `http`… block is a byte-for-byte copy of the French page's block, comments and messages included. When a French
-  comment carries the point, the surrounding English prose paraphrases it. Only the annotations of project trees
-  (blocks without a language) are translated; names stay as they are.
+- **Code references are quoted exactly as in the code** (in English, in both languages): folder, project, class, method,
+  route and JSON field names (`AccountsService`, `/transfers`, `Micro.Launcher`), program outputs and messages. In
+  Mermaid diagrams, code identifiers are quoted as they are; descriptive labels follow the page's language.
+- **Code blocks are identical in both languages**: every `csharp`, `xml`, `json`, `powershell`, `http`… block is a
+  byte-for-byte copy of the code (in English, comments included), the same on the French page and on its English twin.
+  Only the annotations of project trees and program walkthroughs (blocks without a language, or `text`) follow the
+  page's language; names and program outputs stay as the code prints them.
 
 ## Tools (`Docs/en/outils/`)
 

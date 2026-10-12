@@ -73,7 +73,7 @@ On a cold start (no unit left), the **data reader** reloads the grid from the da
 
 The **processing units** ([ProcessingUnit.cs](../../19-SpaceBased/Space.Grid/ProcessingUnit.cs)) contain the
 business ([Bank.cs](../../19-SpaceBased/Space.Bank/Bank.cs)), which only sees its own unit's replica (the code
-is quoted exactly as it is, French messages included):
+is quoted exactly as it is):
 
 ```csharp
 private static object Movement(UnitContext unit, Guid id, decimal amount, bool debit, string label) =>

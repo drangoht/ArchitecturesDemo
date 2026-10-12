@@ -58,7 +58,7 @@ flowchart TB
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Gateway**: a "prefix → service" table; what isn't in it stays invisible
 ([Micro.Gateway/Program.cs](../../../08-Microservices/Micro.Gateway/Program.cs)):

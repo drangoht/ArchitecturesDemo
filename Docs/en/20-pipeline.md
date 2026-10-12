@@ -53,7 +53,7 @@ Three rules make the architecture:
   file, read line by line as it arrives.
 
 A filter boils down to one method — a rejection is a normal result (the line is set aside, the stream continues); an
-exception stops the whole pipeline (the code is quoted exactly as it is, French comments included):
+exception stops the whole pipeline (the code is quoted exactly as it is):
 
 ```csharp
 public interface IFilter<in TInput, TOutput>
@@ -86,9 +86,7 @@ CI pipelines).
 
 A faulty line doesn't interrupt the import: the filter that detects it **rejects** it with a reason, and the stream
 continues. The report counts the rejects by reason and keeps the first ones, with their line and the filter that set
-them aside. **Real run** with [Transfers-sample.csv](../../20-Pipeline/Pipeline.Api/Transfers-sample.csv) (11 lines;
-the report is in French: malformed line, invalid IBAN, identical accounts, duplicate, unknown currency, blacklisted
-beneficiary, limit exceeded, insufficient balance):
+them aside. **Real run** with [Transfers-sample.csv](../../20-Pipeline/Pipeline.Api/Transfers-sample.csv) (11 lines):
 
 ```text
 line 3   Parse              malformed line                unreadable amount "twelve"

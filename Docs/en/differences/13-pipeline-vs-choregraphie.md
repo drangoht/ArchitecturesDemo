@@ -53,7 +53,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Pipeline**: a full pipe **blocks** the stage that writes; that is what bounds memory, whatever the file size
 ([Stage.cs](../../../20-Pipeline/Pipeline.Core/Stage.cs)):

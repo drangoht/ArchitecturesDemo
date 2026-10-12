@@ -59,7 +59,7 @@ business layer adapts to them. This is exactly what the following architectures 
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 ### 1. The data layer defines the model… and the contract
 

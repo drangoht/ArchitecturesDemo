@@ -126,7 +126,7 @@ request: the identifier in the URL, the form fields, the token, and a cookie for
 When the action runs, model binding has already filled the form and recorded in `ModelState` everything that's wrong:
 missing field (`[Required]`), "abc" instead of a number, cross-field rules (`IValidatableObject`, the same as the
 bank's). If there is an error, **the same view is shown again** (200), with the messages and what the user had typed
-(the code is quoted exactly as it is, French comments and messages included):
+(the code is quoted exactly as it is):
 
 ```csharp
         if (!ModelState.IsValid)
@@ -307,9 +307,7 @@ empty name means "everything may have changed").
     }
 ```
 
-The `⚠`, `»` and `[Transfer]` lines appear on their own, pushed by the ViewModel when it changes (the session is in French:
-choose two different accounts, enter an amount, insufficient balance, the Transfer button greyed out then enabled,
-transfer in progress, done):
+The `⚠`, `»` and `[Transfer]` lines appear on their own, pushed by the ViewModel when it changes:
 
 ```text
 > from 1

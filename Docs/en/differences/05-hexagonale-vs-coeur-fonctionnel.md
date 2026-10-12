@@ -46,7 +46,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 **Hexagonal**: the use case, at the center, loads, modifies and saves through its ports
 ([UseCases.cs](../../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs)):

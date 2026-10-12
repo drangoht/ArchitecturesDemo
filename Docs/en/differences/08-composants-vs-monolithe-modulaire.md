@@ -53,7 +53,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Package by Component**: the web layer declares the routes and calls the component through its interface
 ([Program.cs](../../../06-Components/Components.Api/Program.cs)):

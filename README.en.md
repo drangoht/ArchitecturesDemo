@@ -8,9 +8,7 @@ architectures, plus a Domain-Driven Design (DDD) demo, a demo of the progressive
 same screen in MVC and in MVVM. This makes it possible to compare the **shape** of the code with equal features.
 Demo 0 (classic layers) is the baseline: every other one was born to fix one of its limits.
 
-> The code (folders, projects, classes, routes, comments) is written in French. Identifiers are quoted as they are;
-> a few common words help reading them: *compte* = account, *virement* = transfer, *retrait / retirer* = withdrawal /
-> withdraw, *solde* = balance, *métier* = business, *banque* = bank.
+> The code (folders, projects, classes, routes, comments) is written in English, and quoted as it is.
 
 📘 **Full documentation, with diagrams: [`Docs/en/`](Docs/en/README.md)** (French original: 🌐 [Français](Docs/README.md)).
 

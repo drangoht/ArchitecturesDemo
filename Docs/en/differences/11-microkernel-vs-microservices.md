@@ -52,7 +52,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 **Microkernel**: it is the core that decides where the extensions come in, and in which order (1. "check" extension
 point: a single refusal is enough) ([BankingKernel.cs](../../../13-Microkernel/Mk.Kernel/BankingKernel.cs)):

@@ -82,7 +82,7 @@ inversion applied to the **output**.
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 ### 1. A complete use case in one file
 

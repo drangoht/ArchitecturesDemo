@@ -73,7 +73,7 @@ The loop is **event-driven**: a function writes to a queue or to storage, which 
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 ### 1. The manifest: no server, no controller
 

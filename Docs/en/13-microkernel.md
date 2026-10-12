@@ -70,7 +70,7 @@ meet at runtime.
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 ### 1. The SDK: what the core and the plug-ins share
 

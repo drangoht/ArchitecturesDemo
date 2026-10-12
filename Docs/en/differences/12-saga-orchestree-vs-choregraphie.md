@@ -54,7 +54,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Orchestration**: the process reads from top to bottom, with its compensations next to each step
 ([TransferDefinition.cs](../../../14-OrchestratedSaga/Saga.Orchestrator/TransferDefinition.cs)):

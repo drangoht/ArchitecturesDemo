@@ -219,7 +219,7 @@ Without a decision before the deadline, the engine triggers the compensation its
 
 ## Three real runs
 
-Logs taken from the running API (`GET /sagas/{id}`), quoted as the application writes them (in French).
+Logs taken from the running API (`GET /sagas/{id}`), quoted as the application writes them.
 
 **Transient failure of the exchange service** (2 failures, then success):
 

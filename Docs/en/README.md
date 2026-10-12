@@ -8,8 +8,7 @@ a complete, tested and runnable .NET 10 solution in this repository. They all im
 bank: open an account, look it up, withdraw, transfer — so that the *shape* of the code can be compared with equal
 features.
 
-> The demos' code (folders, projects, classes, routes, comments) is written in French. Identifiers such as
-> `AccountsService` (accounts service) or `IWithdrawMoney` (withdraw money) are quoted as they are.
+> The demos' code (folders, projects, classes, routes, comments) is written in English, and quoted as it is.
 
 > 📗 **Not a developer?** A no-code version, with simple words and everyday images:
 > [architectures explained to everyone](pour-tous/README.md).

@@ -45,7 +45,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Vertical Slice**: the complete slice, from the route to the database
 ([WithdrawMoney.cs](../../../05-VerticalSlice/Vertical.Api/Features/Accounts/WithdrawMoney.cs)):

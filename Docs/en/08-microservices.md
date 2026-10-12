@@ -56,7 +56,7 @@ deliberately duplicated in Accounts and Transfers.
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 ### 1. Calling another service: preparing for failure
 

@@ -57,7 +57,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 **Onion**: a correct entity, but made of primitive types
 ([Account.cs](../../../02-Onion/Onion.Domain/Model/Account.cs)):

@@ -53,7 +53,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 **Actors**: a single reader per mailbox, which waits for the end of each message before the next one
 ([ActorSystem.cs](../../../18-ActorModel/Actors.Runtime/ActorSystem.cs)):

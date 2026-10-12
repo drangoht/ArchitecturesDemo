@@ -53,7 +53,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Multi-tenant**: isolation is a matter of **code**, concentrated in the `DbContext`
 ([BankDbContext.cs](../../../15-MultiTenant/Mt.Bank/BankDbContext.cs)):

@@ -49,7 +49,7 @@ The arrow between the business and the data **changes direction**: that is depen
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Who defines the data-access contract.** In layers, it is the data layer, with its own types (the comment: the
 interface is defined BY the data layer, in ITS vocabulary)

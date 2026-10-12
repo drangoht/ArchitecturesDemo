@@ -94,7 +94,7 @@ several machines**: the address `account/alice` stays the same, whether the acto
 
 ---
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 ## 1. One message at a time: concurrency without locks
 
@@ -230,7 +230,7 @@ if (!await Incarnate(activation))
 ```
 
 The most telling case: a failure **at the worst moment**, after the balance was changed in memory but before it was
-written (`Step.BeforeSave`, armed with `POST /system/failures`). Real run (the API's messages, in French):
+written (`Step.BeforeSave`, armed with `POST /system/failures`). Real run (the API's messages):
 
 ```text
 POST /accounts/1111…/withdrawal { "amount": 1 }  → 500 "account/1111… crashed while handling this message: simulated failure (BeforeSave)"

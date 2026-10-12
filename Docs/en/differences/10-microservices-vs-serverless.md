@@ -54,7 +54,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 **Microservices**: the Transfers service makes the transfer **within the request**, calling Accounts over HTTP, and
 answers with the final status ([Micro.Transfers/Endpoints.cs](../../../08-Microservices/Micro.Transfers/Endpoints.cs)).

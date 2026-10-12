@@ -61,7 +61,7 @@ deliberate copy, not a project shared with the web BFF, because each BFF belongs
 // and evolves at its own pace. Only the fields useful to the mobile application are read.
 ```
 
-The code is quoted exactly as it is, French comments included.
+The code is quoted exactly as it is.
 
 ---
 

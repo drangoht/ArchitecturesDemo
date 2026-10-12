@@ -52,7 +52,7 @@ flowchart LR
 
 ## In the demos' code
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 **CQRS**: the write side saves the **state** (the entities tracked by EF Core) **and** appends the events to the log,
 in the same transaction ([WriteDb.cs](../../../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs)):

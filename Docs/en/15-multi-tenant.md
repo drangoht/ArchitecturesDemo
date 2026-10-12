@@ -101,7 +101,7 @@ sequenceDiagram
     S-->>Client: 200 (X-Tenant: beta)
 ```
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 ### 1. Identifying the tenant, once, before anything else
 

@@ -52,7 +52,7 @@ flowchart LR
 
 ## In the demos' code: the same transfer
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 **Hexagonal**: the use case carries the "same account" rule and saves each account separately
 ([UseCases.cs](../../../01-Hexagonal/Hexa.Hexagon/Application/UseCases.cs)):

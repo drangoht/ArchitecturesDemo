@@ -55,7 +55,7 @@ The two sides **don't reference each other**: their only link is `Cqrs.Events`.
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 ### 1. A command: intent + validation + handler, in one file
 

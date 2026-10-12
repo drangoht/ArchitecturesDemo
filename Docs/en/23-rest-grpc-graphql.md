@@ -226,8 +226,7 @@ the server side. Tests `Behind_the_single_GraphQL_request_the_database_is_read_o
 
 ## 4. One error, three languages
 
-A transfer refused for insufficient balance, **real run** (the message, in French: "insufficient balance: €1,160.01
-available (authorized overdraft: €300.00)"):
+A transfer refused for insufficient balance, **real run**:
 
 ```text
   REST     422 INSUFFICIENT_BALANCE "Insufficient balance: 1160,01 € available (authorized overdraft: 300,00 €)."

@@ -17,7 +17,7 @@ business, the same transfer, written in both architectures.
 | **What they share** | why they get confused |
 | **The differences point by point** | a table, criterion by criterion |
 | **Side by side** | a diagram of both |
-| **In the demos' code** | real excerpts (in French, like the code), with the link to each file |
+| **In the demos' code** | real excerpts, with the link to each file |
 | **How to choose · Combining them · Misconceptions** | decision signals, common combinations, misunderstandings |
 
 ---

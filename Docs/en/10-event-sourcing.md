@@ -60,7 +60,7 @@ flowchart TB
 
 ## The code, step by step
 
-The code is quoted exactly as it is, French comments and messages included.
+The code is quoted exactly as it is.
 
 ### 1. Decide / apply: two kinds of methods, never to be mixed
 

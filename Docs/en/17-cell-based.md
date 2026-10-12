@@ -79,7 +79,7 @@ if (placement.CellOf(customer) is not { } id || registry.Find(id) is not { } cel
     return Results.NotFound(new { error = $"Unknown customer \"{customer}\"." });
 ```
 
-(The code is quoted exactly as it is, French comments and messages included.)
+(The code is quoted exactly as it is.)
 
 ---
 
