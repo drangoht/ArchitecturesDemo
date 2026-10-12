@@ -32,7 +32,7 @@ flowchart LR
 Sans BFF, deux mauvaises options :
 - chaque application **enchaîne les appels** et assemble elle-même : lent sur mobile (chaque aller-retour coûte), du code
   d'assemblage dupliqué dans chaque client, et un jeton d'accès à manipuler dans le navigateur ;
-- les services ajoutent des routes **pour chaque écran** (`/accounts/resume-pour-mobile`…) : ils deviennent l'otage de toutes
+- les services ajoutent des routes **pour chaque écran** (`/accounts/mobile-summary`…) : ils deviennent l'otage de toutes
   les interfaces, et chaque changement d'écran impose de modifier, tester et déployer un service partagé.
 
 Le BFF (né chez SoundCloud, popularisé par Sam Newman) déplace cette adaptation dans un composant **qui appartient à l'équipe de l'écran** :

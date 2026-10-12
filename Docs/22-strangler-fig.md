@@ -70,7 +70,7 @@ compile contre lui.
 
 ## 1. La façade : une table de routage
 
-Chaque route a un **mode** : qui répond. On le change à chaud (`PUT /facade/routes/{nom}`), sans redéployer ni redémarrer.
+Chaque route a un **mode** : qui répond. On le change à chaud (`PUT /facade/routes/{name}`), sans redéployer ni redémarrer.
 
 | Mode | Qui répond | Le nouveau service… |
 |---|---|---|

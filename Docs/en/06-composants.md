@@ -64,7 +64,7 @@ flowchart TB
 ```
 
 In green: `public`. Dashed: `internal`, invisible outside the project. **Each component owns its database**:
-Transfers (*Virements*) never reads the Accounts (*Comptes*) tables.
+Transfers never reads the Accounts tables.
 
 ---
 

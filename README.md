@@ -145,7 +145,7 @@ Clean.Web                ASP.NET Core : simple tuyauterie                       
 
 **À observer**
 - L'interacteur **ne renvoie rien** : il appelle `output.Success(...)`, `output.Refused(...)` ou `output.AccountNotFound(...)`.
-- **Deux presenters pour le même interacteur** : `GET /accounts/{id}` donne du JSON, `GET /accounts/{id}?format=texte` un relevé texte. L'interacteur n'a pas été modifié pour cela.
+- **Deux presenters pour le même interacteur** : `GET /accounts/{id}` donne du JSON, `GET /accounts/{id}?format=text` un relevé texte. L'interacteur n'a pas été modifié pour cela.
 - Les adaptateurs ne dépendent pas d'ASP.NET Core (vérifié par `ArchitectureTests`) : les presenters produisent un `HttpView`, que `Clean.Web` écrit dans la réponse.
 - C'est la variante la plus « cérémonieuse » : comparez le nombre de types avec la démo 5 pour le même service rendu.
 
@@ -426,7 +426,7 @@ La plateforme est simulée (aucun téléchargement), mais elle reproduit les com
 
 **À observer** (requêtes prêtes dans `Sls.Host\Bank.http`, en-têtes `X-Instance`, `X-Cold-Start`, `X-Duration-Ms`)
 - **Pas de serveur à écrire** : `Deployment.cs` déclare les fonctions et leurs déclencheurs (HTTP, file, stockage, minuterie),
-  avec la mémoire allouée. Chaque fonction est une méthode statique `(déclencheur, context) → réponse`.
+  avec la mémoire allouée. Chaque fonction est une méthode statique `(trigger, context) → response`.
 - **Démarrage à froid** : le premier appel d'une fonction crée une instance (≈ 600 ms ici) ; les suivants réutilisent
   l'instance « chaude » (quelques ms). Après 20 s sans appel, l'instance est recyclée : **mise à zéro**, plus rien ne tourne.
 - **Mise à l'échelle automatique** : une instance ne traite qu'un appel à la fois. Déposer un fichier de 8 virements
@@ -459,7 +459,7 @@ La plateforme est simulée (aucun téléchargement), mais elle reproduit les com
 Mk.Contracts     le SDK des plugins : IPlugin, IOperationCheck, IFeeRule, IStatementFormat
 Mk.Kernel        BankingKernel (comptes, débit, crédit), PluginRegistry, PluginLoader (AssemblyLoadContext)
 Mk.Host          API + surveillance du dossier plugins/ (rechargement automatique)
-Mk.Plugins.*     NightLimit, Blocklist, TransferFees, Exports (CSV + QIF) → compilés dans plugins/{Nom}/
+Mk.Plugins.*     NightLimit, Blocklist, TransferFees, Exports (CSV + QIF) → compilés dans plugins/{Name}/
 ```
 
 Un noyau minimal qui ne référence **aucun** plugin ; tout ce qui varie est branché à des points d'extension.
@@ -469,7 +469,7 @@ Un noyau minimal qui ne référence **aucun** plugin ; tout ce qui varie est bra
 - **Rechargement à chaud** : modifier `plugins\Mk.Plugins.Blocklist\plugin.json`, ou recompiler un plugin **pendant que
   l'API tourne** (`dotnet build Mk.Plugins.Blocklist`) : il est rechargé automatiquement. Les DLL sont lues en mémoire,
   donc jamais verrouillées ; les anciens contextes de chargement sont déchargés.
-- `POST /admin/plugins/{nom}/disable` / `activer` : changer le comportement sans redémarrer.
+- `POST /admin/plugins/{name}/disable` / `enable` : changer le comportement sans redémarrer.
 - **Le piège classique**, évité : `Mk.Contracts` n'est **pas** copié dans le dossier des plugins (`Private="false"`) ; sinon
   l'`IPlugin` du plugin serait un autre type que celui du noyau. Un test vérifie qu'il n'y en a qu'un exemplaire.
 - Un plugin qui plante est mis « en erreur » et écarté (l'opération en cours est refusée par sécurité) ; un plugin qui
@@ -489,13 +489,13 @@ explicite conduit le processus : ① réserver les fonds, ② contrôle de confo
 
 **À observer** (détails : [Docs/14-saga-orchestree.md](Docs/14-saga-orchestree.md), requêtes dans `Saga.Api\Bank.http`)
 - `GET /sagas/{id}` : l'état de chaque étape et le journal complet de la saga.
-- **Panne passagère** : `PUT /chaos {"echecsChangeRestants":2}` puis un virement Alice → Carla (USD) : 2 nouveaux essais, puis succès.
-- **Panne durable** : `{"changeHorsService":true}` : abandon au 4e échec, puis compensation en ordre inverse (fonds libérés).
+- **Panne passagère** : `PUT /chaos {"exchangeFailuresLeft":2}` puis un virement Alice → Carla (USD) : 2 nouveaux essais, puis succès.
+- **Panne durable** : `{"exchangeDown":true}` : abandon au 4e échec, puis compensation en ordre inverse (fonds libérés).
 - **Attente d'un événement extérieur** : un virement ≥ 10 000 € attend la décision d'un analyste
   (`POST /sagas/{id}/compliance`) ; sans décision avant l'échéance (60 s), il est compensé.
-- **Point de non-retour** : `{"notificationsHorsService":true}` : après le débit définitif on ne compense plus, la saga
+- **Point de non-retour** : `{"notificationsDown":true}` : après le débit définitif on ne compense plus, la saga
   passe en `ManualInterventionRequired`.
-- **Reprise** : `POST /admin/orchestrator/stop` pendant une saga, puis `relancer` : elle reprend exactement où elle était,
+- **Reprise** : `POST /admin/orchestrator/stop` pendant une saga, puis `restart` : elle reprend exactement où elle était,
   car tout son état est dans le magasin.
 - En production : Temporal, Azure Durable Functions, AWS Step Functions, ou les sagas de MassTransit / NServiceBus.
 
@@ -698,7 +698,7 @@ chose, et tous travaillent en même temps, chacun sur une ligne différente.
   concerne (ligne mal formée, IBAN invalide, doublon, devise inconnue, liste noire, plafond, solde insuffisant).
 - **Recomposition** : `POST /imports?dryRun=true` est le même pipeline sans le dernier filtre : il dit ce qui passerait.
 - **Contre-pression** : `POST /demo/bulk-import` importe 100 000 lignes générées à la volée ; jamais plus de quelques
-  centaines en mémoire (`maxEnTransit`).
+  centaines en mémoire (`maxInFlight`).
 - **Le goulot** : le bilan mesure chaque étage ; avec 1 copie, le contrôle de fraude est occupé à 94 % et les autres
   attendent. Avec 8 copies (`fraudParallelism`), l'import va 5 fois plus vite, et les lignes ressortent dans l'ordre du
   fichier (l'ordre compte : un virement peut dépendre du précédent).

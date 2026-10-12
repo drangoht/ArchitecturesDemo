@@ -71,7 +71,7 @@ against it.
 
 ## 1. The façade: a routing table
 
-Each route has a **mode**: who answers. It is changed live (`PUT /facade/routes/{nom}`), without redeploying or restarting.
+Each route has a **mode**: who answers. It is changed live (`PUT /facade/routes/{name}`), without redeploying or restarting.
 
 | Mode | Who answers | The new service… |
 |---|---|---|

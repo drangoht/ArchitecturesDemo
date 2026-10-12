@@ -44,20 +44,17 @@ flowchart TB
 
 ## Solution layout
 
-(*OuvrirCompte* = open account, *ConsulterCompte* = look up account, *RetirerArgent* = withdraw money,
-*EffectuerVirement* = make a transfer.)
-
 ```
 Vertical.Api/
 ├── Features/
 │   ├── Accounts/
-│   │   ├── OpenAccount.cs       ← transaction script: everything is in the file
-│   │   ├── GetAccount.cs    ← read: direct LINQ projection
-│   │   └── WithdrawMoney.cs      ← write: validation + rule + persistence
+│   │   ├── OpenAccount.cs     ← transaction script: everything is in the file
+│   │   ├── GetAccount.cs      ← read: direct LINQ projection
+│   │   └── WithdrawMoney.cs   ← write: validation + rule + persistence
 │   └── Transfers/
 │       └── MakeTransfer.cs
-├── Domain/Account.cs              ← only the SHARED rule
-├── Data/BankDbContext.cs       ← no repository on top
+├── Domain/Account.cs          ← only the SHARED rule
+├── Data/BankDbContext.cs      ← no repository on top
 └── Program.cs
 ```
 

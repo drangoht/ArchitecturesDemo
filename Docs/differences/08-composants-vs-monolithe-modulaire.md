@@ -29,7 +29,7 @@ transaction commune**, avec une compensation si le crédit échoue.
 | Communication | appels d'interface, synchrones | appels de contrat **et événements** publiés sur un bus |
 | Ajouter une réaction (notifier…) | modifier l'appelant | ajouter un module abonné, sans toucher aux autres |
 | Ajouter / retirer une fonctionnalité | modifier l'API et l'injection | une ligne dans `IModule[] modules = [...]` |
-| Qui référence qui | Virements référence le **projet** Comptes (pour l'interface) | Virements ne référence que **Comptes.Contrats** |
+| Qui référence qui | Virements référence le **projet** Comptes (pour l'interface) | Virements ne référence que **Accounts.Contracts** |
 | Garde-fou | `internal` + un test qui fige la liste des types publics | `internal` + projet Contrats + tests d'architecture (aucun module ne référence l'implémentation d'un autre) |
 | Pas suivant | regrouper un composant avec son API et ses événements | un module devient un service |
 

@@ -57,13 +57,13 @@ meet at runtime.
 13-Microkernel/
 ├── Mk.Contracts/               the SDK: interfaces and exchanged data
 ├── Mk.Kernel/                  BankingKernel, PluginRegistry, PluginLoader
-├── Mk.Host/                   HTTP API + watching of the plug-in folder
-├── Mk.Plugins.TransferFees/  ┐
-├── Mk.Plugins.NightLimit/│  plug-in projects: built into plugins/{Name}/,
-├── Mk.Plugins.Blocklist/     │  each with its plugin.json settings
-├── Mk.Plugins.Exports/        ┘
-├── Plugins.props              settings shared by the plug-ins
-└── plugins/                   ← build output (not versioned), read by the core
+├── Mk.Host/                    HTTP API + watching of the plug-in folder
+├── Mk.Plugins.TransferFees/    ┐
+├── Mk.Plugins.NightLimit/      │  plug-in projects: built into plugins/{Name}/,
+├── Mk.Plugins.Blocklist/       │  each with its plugin.json settings
+├── Mk.Plugins.Exports/         ┘
+├── Plugins.props               settings shared by the plug-ins
+└── plugins/                    ← build output (not versioned), read by the core
 ```
 
 ---
@@ -214,8 +214,8 @@ stateDiagram-v2
     [*] --> Incompatible : MinimumKernelVersion > core version
     [*] --> Faulted : exception in Initialize
     [*] --> Active : loaded and initialized
-    Active --> Disabled : POST /admin/plugins/{nom}/disable
-    Disabled --> Active : POST /admin/plugins/{nom}/enable
+    Active --> Disabled : POST /admin/plugins/{name}/disable
+    Disabled --> Active : POST /admin/plugins/{name}/enable
     Active --> Faulted : exception during a call
     Faulted --> Active : reactivation or reload
 ```

@@ -80,8 +80,8 @@ Each API contains a **`Bank.http`** file with requests ready to send (Visual Stu
 
 ```
 Layered.Presentation   MVC controllers                                  (→ Business only)
-Layered.Business         AccountsService: all the rules, AccountDto         (→ Data)
-Layered.Data        AccountEntity (anemic), BankDbContext, IAccountsDao + AccountsDao
+Layered.Business       AccountsService: all the rules, AccountDto         (→ Data)
+Layered.Data           AccountEntity (anemic), BankDbContext, IAccountsDao + AccountsDao
 ```
 
 **What to look at**
@@ -103,11 +103,11 @@ Layered.Data        AccountEntity (anemic), BankDbContext, IAccountsDao + Accoun
 ## 1. Hexagonal — `01-Hexagonal`
 
 ```
-Hexa.Hexagon                 ← NO dependencies
-  Domain/                        Account, business exceptions
-  Ports/Inbound/                 IGetAccount, IWithdrawMoney, IMakeTransfer   (inbound ports)
-  Ports/Outbound/                IAccounts, INotifications                               (outbound ports)
-  Application/                   implementations of the inbound ports
+Hexa.Hexagon                  ← NO dependencies
+  Domain/                       Account, business exceptions
+  Ports/Inbound/                IGetAccount, IWithdrawMoney, IMakeTransfer   (inbound ports)
+  Ports/Outbound/               IAccounts, INotifications                               (outbound ports)
+  Application/                  implementations of the inbound ports
 Hexa.Adapters.Persistence     ← 2 adapters of the SAME port: InMemoryAccounts, JsonFileAccounts
 Hexa.Adapters.Notifications   ← LogNotifications
 Hexa.Adapters.Web             ← inbound HTTP adapter + composition root
@@ -147,16 +147,16 @@ Onion.Api             composition root, error middleware                    (→
 ## 3. Clean Architecture — `03-Clean`
 
 ```
-Clean.Entities               Account                                                         (circle 1)
-Clean.UseCases        per use case: Request/Response, IxxxInput, IxxxOutput, Interactor  (circle 2)
+Clean.Entities           Account                                                         (circle 1)
+Clean.UseCases           per use case: Request/Response, IxxxInput, IxxxOutput, Interactor  (circle 2)
 Clean.InterfaceAdapters  Controllers/, Presenters/, Gateways/                         (circle 3)
-Clean.Web                   ASP.NET Core: just plumbing                                     (circle 4)
+Clean.Web                ASP.NET Core: just plumbing                                     (circle 4)
 ```
 
 **What to look at**
 - The interactor **returns nothing**: it calls `output.Success(...)`, `output.Refused(...)` or `output.AccountNotFound(...)`
   (success, refusal, account not found).
-- **Two presenters for the same interactor**: `GET /accounts/{id}` returns JSON, `GET /accounts/{id}?format=texte` a text
+- **Two presenters for the same interactor**: `GET /accounts/{id}` returns JSON, `GET /accounts/{id}?format=text` a text
   statement. The interactor was not changed for that.
 - The adapters don't depend on ASP.NET Core (checked by `ArchitectureTests`): the presenters produce a `HttpView`, which
   `Clean.Web` writes into the response.
@@ -165,8 +165,8 @@ Clean.Web                   ASP.NET Core: just plumbing                         
 ## 4. Functional Core / Imperative Shell — `04-FunctionalCore`
 
 ```
-Functional.Core     Account (immutable record), WithdrawalDecision/TransferDecision, Rules (pure functions)
-Functional.Shell  API + EF Core + clock + log: READ → DECIDE → APPLY
+Functional.Core    Account (immutable record), WithdrawalDecision/TransferDecision, Rules (pure functions)
+Functional.Shell   API + EF Core + clock + log: READ → DECIDE → APPLY
 ```
 
 **What to look at**
@@ -181,11 +181,11 @@ Functional.Shell  API + EF Core + clock + log: READ → DECIDE → APPLY
 ```
 Vertical.Api
   Features/Accounts/OpenAccount.cs       ← transaction script: everything is in the file
-  Features/Accounts/GetAccount.cs    ← read: direct LINQ projection, AsNoTracking
-  Features/Accounts/WithdrawMoney.cs      ← write: validation + rule + persistence
+  Features/Accounts/GetAccount.cs        ← read: direct LINQ projection, AsNoTracking
+  Features/Accounts/WithdrawMoney.cs     ← write: validation + rule + persistence
   Features/Transfers/MakeTransfer.cs
-  Domain/Account.cs                       ← only the SHARED rule (sufficient balance)
-  Data/BankDbContext.cs                ← no repository on top
+  Domain/Account.cs                      ← only the SHARED rule (sufficient balance)
+  Data/BankDbContext.cs                  ← no repository on top
 ```
 
 **What to look at**
@@ -197,7 +197,7 @@ Vertical.Api
 ## 6. Package by Component — `06-Components`
 
 ```
-Components.Accounts     public: IAccountsComponent, AccountDto, Result, AddAccountsComponent()
+Components.Accounts    public: IAccountsComponent, AccountDto, Result, AddAccountsComponent()
                        internal: Account, AccountsDbContext, AccountsComponent
 Components.Transfers   public: ITransfersComponent, TransferDto, AddTransfersComponent()
                        internal: Transfer, TransfersDbContext, TransfersComponent   (→ IAccountsComponent)
@@ -217,10 +217,10 @@ Components.Api         only sees the public interfaces
 ## 7. Modular Monolith — `07-ModularMonolith`
 
 ```
-Modular.Shared               IModule, in-memory event bus                 (no business logic)
-Modular.Accounts.Contracts      IAccountsApi, AccountInfo, WithdrawalMade event
-Modular.Accounts               AccountsModule (only public type) + database, HTTP API, domain   (→ its Contracts)
-Modular.Transfers.Contracts    TransferMade event
+Modular.Shared                IModule, in-memory event bus                 (no business logic)
+Modular.Accounts.Contracts    IAccountsApi, AccountInfo, WithdrawalMade event
+Modular.Accounts              AccountsModule (only public type) + database, HTTP API, domain   (→ its Contracts)
+Modular.Transfers.Contracts   TransferMade event
 Modular.Transfers             TransfersModule + database, HTTP API          (→ Accounts.Contracts, Transfers.Contracts)
 Modular.Notifications         NotificationsModule: only listens to events  (→ Contracts only)
 Modular.Host                  assembles the modules: a single process, a single deployment
@@ -253,12 +253,12 @@ This is the step after components (demo 6). A module is no longer just "business
 ## 8. Microservices — `08-Microservices`
 
 ```
-Micro.Gateway     :5200  single entry point for clients (reverse proxy); doesn't expose the internal APIs
-Micro.Accounts        :5201  its database; public API + idempotent internal API (/internal/…); outbox
+Micro.Gateway        :5200  single entry point for clients (reverse proxy); doesn't expose the internal APIs
+Micro.Accounts       :5201  its database; public API + idempotent internal API (/internal/…); outbox
 Micro.Transfers      :5202  its database; calls Accounts over HTTP (retry, timeout, circuit breaker); saga + compensation; outbox
 Micro.Notifications  :5203  its database; receives messages, ignores duplicates
-Micro.Broker       :5209  mini message broker: "at least once" delivery, retries, dead letters
-Micro.Launcher               demo tool: starts the services the way an orchestrator would
+Micro.Broker         :5209  mini message broker: "at least once" delivery, retries, dead letters
+Micro.Launcher              demo tool: starts the services the way an orchestrator would
 ```
 
 ```powershell
@@ -298,11 +298,11 @@ in-memory event) now goes through the **network**, which can fail. Most of the c
 
 ```
 Cqrs.Events   AccountOpened, MoneyWithdrawn, TransferMade: the ONLY link between the two sides
-Cqrs.Write     Commands/ (command + validator + handler), CommandBus (pipeline), Domain/Account (aggregate),
-                  WriteDb: account state + event log, in the same transaction
-Cqrs.Read      Model/ (AccountStatement, OperationLine, Statistics: denormalized tables), Projections/Projector,
-                  Queries/ (query + handler), QueryBus; ReadDb: separate database
-Cqrs.Api          POST → commands, GET → queries; ProjectionSynchronizer (background task)
+Cqrs.Write    Commands/ (command + validator + handler), CommandBus (pipeline), Domain/Account (aggregate),
+              WriteDb: account state + event log, in the same transaction
+Cqrs.Read     Model/ (AccountStatement, OperationLine, Statistics: denormalized tables), Projections/Projector,
+              Queries/ (query + handler), QueryBus; ReadDb: separate database
+Cqrs.Api      POST → commands, GET → queries; ProjectionSynchronizer (background task)
 ```
 
 **CQRS** (*Command Query Responsibility Segregation*) starts from an observation: writing and reading don't have the same
@@ -335,9 +335,9 @@ models are separated.
 ## 10. Event Sourcing — `10-EventSourcing`
 
 ```
-Es.Domain       Events (AccountOpened, MoneyDeposited, MoneyWithdrawn v2, TransferSent/Received, AccountClosed),
+Es.Domain        Events (AccountOpened, MoneyDeposited, MoneyWithdrawn v2, TransferSent/Received, AccountClosed),
                  Account: aggregate rebuilt by replaying its events
-Es.Storage      EventStore (append only, optimistic concurrency, .jsonl file), EventSerializer (+ upcasting),
+Es.Storage       EventStore (append only, optimistic concurrency, .jsonl file), EventSerializer (+ upcasting),
                  AccountRepository (loading, snapshots, time travel)
 Es.Projections   StatementsProjection, LargestWithdrawalsProjection, ProjectionEngine (global stream tracking, rebuild)
 Es.Api           commands, audit, time travel, projection administration
@@ -374,18 +374,18 @@ In every other demo, you store the **state** (the balance) and forget how you go
 ## 11. Domain-Driven Design — `11-DDD`
 
 ```
-Ddd.AccountKeeping.Domain          LANGUAGE.md (glossary), ValueObjects/ (Money, Currency, Iban, OwnerName, AccountId),
-                                   Accounts/ (Account aggregate + Movement entity, AccountFactory, IAccounts, TransferService)
+Ddd.AccountKeeping.Domain           LANGUAGE.md (glossary), ValueObjects/ (Money, Currency, Iban, OwnerName, AccountId),
+                                    Accounts/ (Account aggregate + Movement entity, AccountFactory, IAccounts, TransferService)
 Ddd.AccountKeeping.Application      AccountsService (use cases), EventPublisher (domain → published language)
 Ddd.AccountKeeping.Infrastructure   EF Core (value object mapping), anti-corruption layer toward the legacy exchange system
-Ddd.AccountKeeping.Contracts         PUBLISHED LANGUAGE: TransferSent, IAccountKeepingSubscriber, IAccountKeepingApi (open host service)
-Ddd.Compliance                     2nd bounded context: LANGUAGE.md, VigilanceFile, Alert, TransferMonitoring
-Ddd.Api                            hosts both contexts
+Ddd.AccountKeeping.Contracts        PUBLISHED LANGUAGE: TransferSent, IAccountKeepingSubscriber, IAccountKeepingApi (open host service)
+Ddd.Compliance                      2nd bounded context: LANGUAGE.md, VigilanceFile, Alert, TransferMonitoring
+Ddd.Api                             hosts both contexts
 ```
 
 DDD is not a folder layout like the previous demos. It is a **way of designing**: start from the business, speak its
 language, and let the model drive the code. It can be applied with a hexagonal, Onion or Clean architecture (here, the
-Onion of demo 2). It has two sides. (*Tenue de compte* = Account Keeping, *Conformité* = Compliance.)
+Onion of demo 2). It has two sides.
 
 **The tactical side: modeling well inside a context**
 - **Ubiquitous language**: `LANGUAGE.md` lists the business terms; each one is found as is in the code
@@ -429,11 +429,11 @@ Onion of demo 2). It has two sides. (*Tenue de compte* = Account Keeping, *Confo
 ## 12. Serverless — `12-Serverless`
 
 ```
-Sls.Platform   THE SIMULATED CLOUD PROVIDER (never written for real): ExecutionEngine (instances, cold start, scaling,
-                 recycling, throttling, timeout, billing), managed services (ManagedTable with ETag, QueueService with
-                 retries and a poison queue, StorageService, settings, log), /platform console
-Sls.Functions    THE CODE YOU WRITE: Deployment.cs (manifest) + stateless static functions
-Sls.Host         runs the platform locally (the equivalent of "func start" or "sam local")
+Sls.Platform    THE SIMULATED CLOUD PROVIDER (never written for real): ExecutionEngine (instances, cold start, scaling,
+                recycling, throttling, timeout, billing), managed services (ManagedTable with ETag, QueueService with
+                retries and a poison queue, StorageService, settings, log), /platform console
+Sls.Functions   THE CODE YOU WRITE: Deployment.cs (manifest) + stateless static functions
+Sls.Host        runs the platform locally (the equivalent of "func start" or "sam local")
 ```
 
 In serverless (*Function as a Service*: AWS Lambda, Azure Functions…), you no longer deploy an application that runs
@@ -477,8 +477,8 @@ The platform is simulated (nothing to download), but it reproduces the behaviors
 ## 13. Microkernel — `13-Microkernel`
 
 ```
-Mk.Contracts      the plug-in SDK: IPlugin, IOperationCheck, IFeeRule, IStatementFormat
-Mk.Kernel         BankingKernel (accounts, debit, credit), PluginRegistry, PluginLoader (AssemblyLoadContext)
+Mk.Contracts     the plug-in SDK: IPlugin, IOperationCheck, IFeeRule, IStatementFormat
+Mk.Kernel        BankingKernel (accounts, debit, credit), PluginRegistry, PluginLoader (AssemblyLoadContext)
 Mk.Host          API + watching of the plugins/ folder (automatic reload)
 Mk.Plugins.*     NightLimit, Blocklist, TransferFees, Exports (CSV + QIF) → built into plugins/{Name}/
 ```
@@ -491,7 +491,7 @@ limit, blacklist, transfer fees, statement exports).
 - **Hot reload**: edit `plugins\Mk.Plugins.Blocklist\plugin.json`, or rebuild a plug-in **while the API is running**
   (`dotnet build Mk.Plugins.Blocklist`): it is reloaded automatically. The DLLs are read into memory, so never locked;
   the old load contexts are unloaded.
-- `POST /admin/plugins/{nom}/disable` / `activer`: change behavior without restarting.
+- `POST /admin/plugins/{name}/disable` / `enable`: change behavior without restarting.
 - **The classic trap**, avoided: `Mk.Contracts` is **not** copied into the plug-in folder (`Private="false"`); otherwise
   the plug-in's `IPlugin` would be a different type from the core's. A test checks there is only one copy.
 - A crashing plug-in is put "in error" and set aside (the current operation is refused for safety); a plug-in that
@@ -501,7 +501,7 @@ limit, blacklist, transfer fees, statement exports).
 
 ```
 Saga.Participants   simulated, idempotent services: AccountsService (reserve / capture), ComplianceService, ExchangeService, NotificationsService
-Saga.Orchestrator  TransferDefinition (the 6 steps and their compensations), SagaEngine, SagaState, SagaStore
+Saga.Orchestrator   TransferDefinition (the 6 steps and their compensations), SagaEngine, SagaState, SagaStore
 Saga.Api            start / follow a saga, analyst decision, simulated failures (PUT /chaos), stop / restart
 ```
 
@@ -511,13 +511,13 @@ Demos 7 and 8 coordinate through **choreography** (each one reacts to the others
 
 **What to look at** (details: [Docs/en/14-saga-orchestree.md](Docs/en/14-saga-orchestree.md); requests in `Saga.Api\Bank.http`)
 - `GET /sagas/{id}`: the state of each step and the saga's full log.
-- **Transient failure**: `PUT /chaos {"echecsChangeRestants":2}` then a transfer Alice → Carla (USD): 2 retries, then success.
-- **Lasting failure**: `{"changeHorsService":true}`: abandoned at the 4th failure, then compensation in reverse order (funds released).
+- **Transient failure**: `PUT /chaos {"exchangeFailuresLeft":2}` then a transfer Alice → Carla (USD): 2 retries, then success.
+- **Lasting failure**: `{"exchangeDown":true}`: abandoned at the 4th failure, then compensation in reverse order (funds released).
 - **Waiting for an external event**: a transfer ≥ €10,000 waits for an analyst's decision
   (`POST /sagas/{id}/compliance`); without a decision before the deadline (60 s), it is compensated.
-- **Point of no return**: `{"notificationsHorsService":true}`: after the final debit there is no more compensation, the
+- **Point of no return**: `{"notificationsDown":true}`: after the final debit there is no more compensation, the
   saga goes to `ManualInterventionRequired` (to handle manually).
-- **Recovery**: `POST /admin/orchestrator/stop` during a saga, then `relancer`: it resumes exactly where it was,
+- **Recovery**: `POST /admin/orchestrator/stop` during a saga, then `restart`: it resumes exactly where it was,
   because its whole state is in the store.
 - In production: Temporal, Azure Durable Functions, AWS Step Functions, or MassTransit / NServiceBus sagas.
 
@@ -525,10 +525,10 @@ Demos 7 and 8 coordinate through **choreography** (each one reacts to the others
 
 ```
 Mt.Tenants   TENANCY, without business logic: Tenant (plan, isolation, rules, quotas), TenantCatalog,
-                TenantContext, resolvers (subdomain, header), TenantMiddleware, per-tenant rate limiting
-Mt.Bank       the business, written as if for a single bank: BankingService;
-                BankDbContext (global filter, stamping, cross-tenant writes refused), BankFactory (shared or dedicated database)
-Mt.Api          customer API + platform back office (/platform: sign-up, plan, suspension, departure, jobs)
+             TenantContext, resolvers (subdomain, header), TenantMiddleware, per-tenant rate limiting
+Mt.Bank      the business, written as if for a single bank: BankingService;
+             BankDbContext (global filter, stamping, cross-tenant writes refused), BankFactory (shared or dedicated database)
+Mt.Api       customer API + platform back office (/platform: sign-up, plan, suspension, departure, jobs)
 ```
 
 A **single application, a single deployment**, for several customers (the *tenants* — *locataires* in the code —, here
@@ -603,11 +603,11 @@ app on a small screen and a slow network. Rather than make the services choose b
 ## 17. Cell-Based Architecture — `17-CellBased`
 
 ```
-Cell.App   THE COMPLETE APPLICATION (API, data, rules), identical in every cell; each instance only serves its own
-               customers. Run as c1 :5231, c2 :5232, c3 :5233 (+ c4 :5234 in reserve)
-Cell.Router   :5117  DATA plane: partition key (the customer) → cell → forward, nothing else
-                      CONTROL plane (/platform): placement, adding cells, migration, deployment in waves
-Cell.Launcher          starts the router and the cells (the same program, run three times)
+Cell.App        THE COMPLETE APPLICATION (API, data, rules), identical in every cell; each instance only serves its own
+                customers. Run as c1 :5231, c2 :5232, c3 :5233 (+ c4 :5234 in reserve)
+Cell.Router     :5117  DATA plane: partition key (the customer) → cell → forward, nothing else
+                       CONTROL plane (/platform): placement, adding cells, migration, deployment in waves
+Cell.Launcher   starts the router and the cells (the same program, run three times)
 ```
 
 ```powershell
@@ -645,11 +645,11 @@ and close to Salesforce's "pods".
 ## 18. Actor Model — `18-ActorModel`
 
 ```
-Actors.Runtime    the RUNTIME, written for the demo (≈ 300 lines, no package): Actor, ActorRef (an address),
+Actors.Runtime   the RUNTIME, written for the demo (≈ 300 lines, no package): Actor, ActorRef (an address),
                  ActorSystem (one mailbox per actor, activation, supervision, passivation)
-Actors.Bank   AccountActor (one per account), TransferActor (one per transfer), immutable messages,
+Actors.Bank      AccountActor (one per account), TransferActor (one per transfer), immutable messages,
                  StateStore (durable storage, one row per actor), Traps (failures and slowdowns on demand)
-Actors.Api      :5118  one route = one message to an actor; /system to observe and trigger failures; /demo
+Actors.Api       :5118  one route = one message to an actor; /system to observe and trigger failures; /demo
 ```
 
 Each account is an **actor**: an object that has its own state, shares it with no one, and only receives **messages**,
@@ -679,10 +679,10 @@ message and put to sleep after 30 s of inactivity.
 
 ```
 Space.Grid    the VIRTUALIZED MIDDLEWARE, simulated (no package): data grid (one replica per unit, asynchronous
-                 replication, versions, collision detection), messaging grid (affinity / round robin), data pump and
-                 writer, data reader, deployment manager (elasticity)
+              replication, versions, collision detection), messaging grid (affinity / round robin), data pump and
+              writer, data reader, deployment manager (elasticity)
 Space.Bank    a unit's business logic: it only reads and writes its own unit's replica
-Space.Api       :5119  /accounts, /transfers; /grid to observe and trigger failures; /demo
+Space.Api     :5119  /accounts, /transfers; /grid to observe and trigger failures; /demo
 ```
 
 The database is the bottleneck of every other demo. Here, it leaves the request path: each **processing unit** has
@@ -707,10 +707,10 @@ Units are added when the load rises and removed when it drops. The model of Giga
 
 ```
 Pipeline.Core   the ENGINE, generic (no package): IFilter, stages connected by bounded pipes (Channels),
-                 ordered or unordered parallel stages, rejects by reason, metrics per stage, stop on failure
-Pipeline.Bank  the filters for importing a file of transfers: Parse, Validate (IBAN), Deduplicate, Convert,
-                 Check for fraud, Execute; and their assembly into two pipelines (import, dry-run import)
-Pipeline.Api     :5120  POST /imports (the body is the CSV file, read as a stream); /demo/bulk-import
+                ordered or unordered parallel stages, rejects by reason, metrics per stage, stop on failure
+Pipeline.Bank   the filters for importing a file of transfers: Parse, Validate (IBAN), Deduplicate, Convert,
+                Check for fraud, Execute; and their assembly into two pipelines (import, dry-run import)
+Pipeline.Api    :5120  POST /imports (the body is the CSV file, read as a stream); /demo/bulk-import
 ```
 
 Data processing split into independent **filters**, connected by **pipes**: the model of the Unix shell, compilers and
@@ -722,7 +722,7 @@ time, each on a different line.
   (malformed line, invalid IBAN, duplicate, unknown currency, blacklist, limit, insufficient balance).
 - **Recomposition**: `POST /imports?dryRun=true` is the same pipeline without the last filter: it tells what would go through.
 - **Back-pressure**: `POST /demo/bulk-import` imports 100,000 lines generated on the fly; never more than a few hundred
-  in memory (`maxEnTransit`).
+  in memory (`maxInFlight`).
 - **The bottleneck**: the report measures each stage; with 1 copy, the fraud check is 94% busy and the others wait.
   With 8 copies (`fraudParallelism`), the import goes 5 times faster, and the lines come out in file order (order
   matters: a transfer can depend on the previous one).
@@ -760,7 +760,7 @@ Demos 7 and 8 used choreography to notify; here, it drives a whole business proc
 ```
 Fig.Legacy   :5240  the system to REPLACE, written the old way (cents, dates without time zone, truncated labels); two
                     internal routes added for the migration: its change log and the import of the new system's operations
-Fig.Modern  :5241  the REPLACEMENT: its own model, its own database, an anti-corruption layer, two-way synchronization,
+Fig.Modern   :5241  the REPLACEMENT: its own model, its own database, an anti-corruption layer, two-way synchronization,
                     and the legacy's historical contract reproduced exactly
 Fig.Facade   :5122  the clients' only entry point: routing table (Legacy / Shadow / Modern) changeable live,
                     shadow-mode comparisons, migration tracking (/facade, header X-Admin-Key: demo)
@@ -798,14 +798,14 @@ new service, until the day nothing calls it anymore.
 ## 23. REST, gRPC, GraphQL (API styles) — `23-RestGrpcGraphQL`
 
 ```
-Styles.Bank     the BUSINESS, shared by the three APIs, which knows nothing about HTTP (architecture test): single AND
-                  batched reads, transfer, subscription to new operations, counter of "database" reads
-Styles.Tooling  what Google.Protobuf, Grpc.AspNetCore and HotChocolate would provide, written by hand (no package):
-                  Protobuf encoder, gRPC frames and trailers, gRPC client and hosting, mini GraphQL engine
+Styles.Bank        the BUSINESS, shared by the three APIs, which knows nothing about HTTP (architecture test): single AND
+                   batched reads, transfer, subscription to new operations, counter of "database" reads
+Styles.Tooling     what Google.Protobuf, Grpc.AspNetCore and HotChocolate would provide, written by hand (no package):
+                   Protobuf encoder, gRPC frames and trailers, gRPC client and hosting, mini GraphQL engine
 Styles.Contracts   bank.proto and its classes (a test checks they match field by field)
-Styles.Server    :5123  REST (/customers, /accounts, /transfers) and GraphQL (POST /graphql), over HTTP/1.1
-                  :5250  gRPC (bank.Bank/…), over HTTP/2 only
-Styles.Client     the same application written three times; plays the same scenarios, counting requests and bytes
+Styles.Server      :5123  REST (/customers, /accounts, /transfers) and GraphQL (POST /graphql), over HTTP/1.1
+                   :5250  gRPC (bank.Bank/…), over HTTP/2 only
+Styles.Client      the same application written three times; plays the same scenarios, counting requests and bytes
 ```
 
 ```powershell
@@ -833,7 +833,7 @@ varies: who decides the shape of the responses, what travels over the network, a
 ## 24. MVC and MVVM (presentation patterns) — `24-MvcMvvm`
 
 ```
-Ui.Bank        the MODEL, shared by both: asynchronous IBank (adjustable latency), transfer rules; knows nothing about screens
+Ui.Bank          the MODEL, shared by both: asynchronous IBank (adjustable latency), transfer rules; knows nothing about screens
 Ui.Mvc           :5124  web MVC (ASP.NET Core MVC): Controllers/, Views/ (Razor), Models/ (data prepared for each view)
 Ui.Presentation  MVVM: the ViewModels in pure .NET (no WPF, architecture test) + ObservableObject, Command, AsyncCommand
 Ui.Wpf           the WPF view: only bindings, code-behind reduced to InitializeComponent (Windows)

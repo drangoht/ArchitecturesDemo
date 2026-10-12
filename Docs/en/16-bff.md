@@ -33,7 +33,7 @@ flowchart LR
 Without a BFF, two bad options:
 - each application **chains the calls** and assembles everything itself: slow on mobile (every round trip costs),
   assembly code duplicated in each client, and an access token to handle in the browser;
-- the services add routes **for each screen** (`/accounts/resume-pour-mobile`…): they become hostage to every interface,
+- the services add routes **for each screen** (`/accounts/mobile-summary`…): they become hostage to every interface,
   and each screen change requires modifying, testing and deploying a shared service.
 
 The BFF (born at SoundCloud, popularized by Sam Newman) moves this adaptation into a component **owned by the screen's

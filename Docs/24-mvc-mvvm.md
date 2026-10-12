@@ -76,7 +76,7 @@ Données : **Alice** a un compte courant `11111111-…` (1 000 €) et un Livret
 courant `22222222-…` (500 €). Au-delà de 1 000 €, les deux interfaces demandent une confirmation.
 
 Le vocabulaire piège : ASP.NET Core appelle souvent « view models » les classes que le contrôleur passe à la vue
-([Models/Modeles.cs](../24-MvcMvvm/Ui.Mvc/Models/PageModels.cs)). Ce ne sont **pas** des ViewModels au sens de MVVM : de
+([Models/PageModels.cs](../24-MvcMvvm/Ui.Mvc/Models/PageModels.cs)). Ce ne sont **pas** des ViewModels au sens de MVVM : de
 simples sacs de données, préparés pour un rendu puis jetés, sans état ni commande.
 
 ---
@@ -107,7 +107,7 @@ sequenceDiagram
 Le contrôleur ne produit pas de HTML et la vue ne lit pas la banque : il **décide**, elle **met en forme**
 ([AccountsController.cs](../24-MvcMvvm/Ui.Mvc/Controllers/AccountsController.cs),
 [Index.cshtml](../24-MvcMvvm/Ui.Mvc/Views/Accounts/Index.cshtml)). La vue est désignée par convention
-(`Views/{contrôleur}/{action}.cshtml`) ou par son nom. C'est ce qu'on teste en appelant le contrôleur comme une simple
+(`Views/{controller}/{action}.cshtml`) ou par son nom. C'est ce qu'on teste en appelant le contrôleur comme une simple
 méthode (`The_list_chooses_its_view_and_passes_it_data_ready_to_display`) : le résultat est une **décision**
 (`ViewResult`, `RedirectToActionResult`, `NotFoundResult`), pas du HTML.
 
@@ -331,7 +331,7 @@ Les lignes `⚠`, `»` et `[Transfer]` apparaissent d'elles-mêmes, poussées pa
 
 ## 8. Les liaisons ne sont pas vérifiées par le compilateur
 
-`{Binding MontantSaisie}` (avec une faute) compile, et la fenêtre s'ouvre : la zone reste vide, et l'erreur part dans
+`{Binding AmountText}` (avec une faute) compile, et la fenêtre s'ouvre : la zone reste vide, et l'erreur part dans
 la fenêtre de sortie du débogueur. C'est la faiblesse classique de MVVM en WPF (MAUI, Avalonia et UWP ont des liaisons
 **compilées**, `x:DataType` / `x:Bind`, qui la corrigent).
 
@@ -352,7 +352,7 @@ Tous séparent le **modèle** de sa **présentation** ; ils diffèrent par l'obj
 - **MVC** (Smalltalk, 1979) : à l'origine, la vue observait le modèle et le contrôleur traitait le clavier et la
   souris. Sur le web (Rails, ASP.NET MVC, Spring MVC), il est devenu le cycle requête → contrôleur → vue de cette démo.
 - **MVP** (Model-View-Presenter) : le présentateur pilote une vue **passive** à travers une interface
-  (`IVueVirement.AfficherErreur(…)`). Testable aussi, mais le présentateur pousse chaque changement à la main, faute de
+  (`ITransferView.ShowError(…)`). Testable aussi, mais le présentateur pousse chaque changement à la main, faute de
   moteur de liaisons. Courant en Windows Forms et sur Android avant ses outils de liaison.
 - **MVVM** (WPF, 2005) : le présentateur devient un modèle de la vue, et le moteur de liaisons fait le travail de
   synchronisation. WPF, MAUI, Avalonia, WinUI ; côté web, Knockout, et les composants de Vue ou d'Angular en reprennent

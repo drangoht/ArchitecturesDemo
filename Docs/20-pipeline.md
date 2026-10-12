@@ -141,7 +141,7 @@ private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput
 ```
 
 Résultat : le fichier n'est jamais chargé en entier. **Essai réel**, 100 000 lignes générées à la volée : au plus
-**330 à 375 lignes en mémoire** à la fois selon le parallélisme (`maxEnTransit`), et ce serait pareil pour 10 millions.
+**330 à 375 lignes en mémoire** à la fois selon le parallélisme (`maxInFlight`), et ce serait pareil pour 10 millions.
 
 ---
 

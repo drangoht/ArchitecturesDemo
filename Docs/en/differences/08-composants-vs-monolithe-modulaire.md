@@ -26,7 +26,7 @@ transaction**, with compensation if the credit fails.
 | Communication | interface calls, synchronous | contract calls **and events** published on a bus |
 | Adding a reaction (notify…) | modify the caller | add a subscribing module, without touching the others |
 | Adding / removing a feature | modify the API and the injection | one line in `IModule[] modules = [...]` |
-| Who references whom | Transfers references the Accounts **project** (for the interface) | Transfers only references **Comptes.Contrats** |
+| Who references whom | Transfers references the Accounts **project** (for the interface) | Transfers only references **Accounts.Contracts** |
 | Safeguard | `internal` + a test that freezes the list of public types | `internal` + Contracts project + architecture tests (no module references another's implementation) |
 | Next step | group a component with its API and its events | a module becomes a service |
 

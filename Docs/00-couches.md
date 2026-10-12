@@ -136,7 +136,7 @@ Les **couches strictes** sont imposées par le compilateur : sans ce réglage, l
 <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
 ```
 
-Essayer d'injecter `BankDbContext` dans un contrôleur donne alors `CS0234 : le name 'Data' n'existe pas`.
+Essayer d'injecter `BankDbContext` dans un contrôleur donne alors `CS0234 : le nom 'Data' n'existe pas`.
 C'est la couche métier qui branche elle-même la couche du dessous
 ([BusinessExtensions.cs](../00-Layered/Layered.Business/BusinessExtensions.cs)) :
 

@@ -148,7 +148,7 @@ private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput
 ```
 
 Result: the file is never loaded in full. **Real run**, 100,000 lines generated on the fly: at most **330 to 375 lines
-in memory** at a time depending on parallelism (`maxEnTransit`), and it would be the same for 10 million.
+in memory** at a time depending on parallelism (`maxInFlight`), and it would be the same for 10 million.
 
 ---
 

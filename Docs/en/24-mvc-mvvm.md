@@ -59,7 +59,7 @@ flowchart LR
 ## The projects
 
 ```
-Ui.Bank        the MODEL, shared: IBank (asynchronous), InMemoryBank (adjustable latency), transfer rules
+Ui.Bank          the MODEL, shared: IBank (asynchronous), InMemoryBank (adjustable latency), transfer rules
 Ui.Mvc           :5124  web MVC: Controllers/ (one action per page), Views/ (Razor), Models/ (view data)
 Ui.Presentation  MVVM: the ViewModels, in pure .NET (no WPF, checked by a test) + ObservableObject, commands
 Ui.Wpf           the WPF view: MainWindow.xaml, only bindings; code-behind reduced to InitializeComponent
@@ -80,7 +80,7 @@ Data: **Alice** has a current account `11111111-…` (€1,000) and a Livret A `
 account `22222222-…` (€500). Above €1,000, both interfaces ask for a confirmation.
 
 The vocabulary trap: ASP.NET Core often calls "view models" the classes the controller passes to the view
-([Models/Modeles.cs](../../24-MvcMvvm/Ui.Mvc/Models/PageModels.cs)). They are **not** ViewModels in the MVVM sense: just
+([Models/PageModels.cs](../../24-MvcMvvm/Ui.Mvc/Models/PageModels.cs)). They are **not** ViewModels in the MVVM sense: just
 data bags, prepared for one rendering then discarded, with no state and no commands.
 
 ---
@@ -338,7 +338,7 @@ transfer in progress, done):
 
 ## 8. Bindings are not checked by the compiler
 
-`{Binding MontantSaisie}` (with a typo) compiles, and the window opens: the field stays empty, and the error goes to the
+`{Binding AmountText}` (with a typo) compiles, and the window opens: the field stays empty, and the error goes to the
 debugger's output window. It is MVVM's classic weakness in WPF (MAUI, Avalonia and UWP have **compiled** bindings,
 `x:DataType` / `x:Bind`, which fix it).
 
@@ -359,7 +359,7 @@ direction of the arrows.
 - **MVC** (Smalltalk, 1979): originally, the view observed the model and the controller handled the keyboard and
   mouse. On the web (Rails, ASP.NET MVC, Spring MVC), it became this demo's request → controller → view cycle.
 - **MVP** (Model-View-Presenter): the presenter drives a **passive** view through an interface
-  (`IVueVirement.AfficherErreur(…)`). Testable too, but the presenter pushes every change by hand, for lack of a binding
+  (`ITransferView.ShowError(…)`). Testable too, but the presenter pushes every change by hand, for lack of a binding
   engine. Common in Windows Forms and on Android before its binding tools.
 - **MVVM** (WPF, 2005): the presenter becomes a model of the view, and the binding engine does the synchronization
   work. WPF, MAUI, Avalonia, WinUI; on the web, Knockout, and Vue or Angular components take up the idea.

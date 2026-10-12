@@ -64,7 +64,7 @@ flowchart LR
   [Schema.cs](../../23-RestGrpcGraphQL/Styles.Tooling/GraphQL/Schema.cs),
   [Engine.cs](../../23-RestGrpcGraphQL/Styles.Tooling/GraphQL/Engine.cs)). Writing these pieces shows what these
   protocols really are: a few hundred lines each.
-- **The gRPC contracts** ([banque.proto](../../23-RestGrpcGraphQL/Styles.Contracts/bank.proto) and
+- **The gRPC contracts** ([bank.proto](../../23-RestGrpcGraphQL/Styles.Contracts/bank.proto) and
   [Messages.cs](../../23-RestGrpcGraphQL/Styles.Contracts/Messages.cs)): without `protoc`, the classes are hand-written
   and a test checks that they match the `.proto` field by field.
 - **The server** ([RestApi.cs](../../23-RestGrpcGraphQL/Styles.Server/RestApi.cs),

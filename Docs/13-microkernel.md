@@ -58,7 +58,7 @@ ne se rencontrent qu'à l'exécution.
 ├── Mk.Kernel/                  BankingKernel, PluginRegistry, PluginLoader
 ├── Mk.Host/                    API HTTP + surveillance du dossier des plugins
 ├── Mk.Plugins.TransferFees/    ┐
-├── Mk.Plugins.NightLimit/      │  projets de plugins : compilés dans plugins/{Nom}/,
+├── Mk.Plugins.NightLimit/      │  projets de plugins : compilés dans plugins/{Name}/,
 ├── Mk.Plugins.Blocklist/       │  chacun avec son plugin.json de réglages
 ├── Mk.Plugins.Exports/         ┘
 ├── Plugins.props               réglages communs aux plugins
@@ -205,8 +205,8 @@ stateDiagram-v2
     [*] --> Incompatible : MinimumKernelVersion > version du noyau
     [*] --> Faulted : exception dans Initialize
     [*] --> Active : chargé et initialisé
-    Active --> Disabled : POST /admin/plugins/{nom}/disable
-    Disabled --> Active : POST /admin/plugins/{nom}/enable
+    Active --> Disabled : POST /admin/plugins/{name}/disable
+    Disabled --> Active : POST /admin/plugins/{name}/enable
     Active --> Faulted : exception pendant un appel
     Faulted --> Active : réactivation ou rechargement
 ```
