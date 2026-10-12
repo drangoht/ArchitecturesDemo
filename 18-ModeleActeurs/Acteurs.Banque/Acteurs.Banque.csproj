@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!-- LE MÉTIER, écrit sous forme d'acteurs : un acteur par compte, un acteur par virement. Aucun verrou. -->
-
-  <ItemGroup>
-    <ProjectReference Include="..\Acteurs.Noyau\Acteurs.Noyau.csproj" />
-  </ItemGroup>
-
-</Project>

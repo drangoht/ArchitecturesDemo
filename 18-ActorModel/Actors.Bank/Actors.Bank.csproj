@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- THE BUSINESS CODE, written as actors: one actor per account, one actor per transfer. No lock. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Actors.Runtime\Actors.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

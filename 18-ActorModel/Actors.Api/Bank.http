@@ -1,0 +1,122 @@
+@base = http://localhost:5118
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Each request becomes ONE message for ONE actor (account/1111…)
+GET {{base}}/accounts/{{alice}}
+
+### The actors in memory: Alice and Bob, activated by their opening at startup
+GET {{base}}/system
+
+### Withdrawal refused: a business refusal is a normal response (400), not a failure
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 5000 }
+
+### ─── Concurrency without locks ───
+
+### 1,000 withdrawals of 3 € fired AT THE SAME TIME on Alice's account: exactly 333 accepted, final balance 1 €, never negative
+POST {{base}}/demo/simultaneous-withdrawals
+Content-Type: application/json
+
+{ "account": "{{alice}}", "count": 1000, "amount": 3 }
+
+### 500 transfers Alice → Bob and 500 Bob → Alice at the same time: no deadlock, total preserved
+POST {{base}}/demo/crossed-transfers
+Content-Type: application/json
+
+{ "count": 500, "amount": 1 }
+
+### ─── Let it crash: failures and supervision ───
+
+### Trap Alice's account: its next withdrawal will crash AFTER changing the balance in memory, BEFORE writing it
+POST {{base}}/system/failures
+Content-Type: application/json
+
+{ "actor": "account/{{alice}}", "step": "BeforeSave" }
+
+### → 500: the actor crashed, its supervisor replaced it with a fresh incarnation
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 1 }
+
+### The withdrawal did not happen: the new incarnation read the storage again (the balance did not move)
+GET {{base}}/accounts/{{alice}}
+
+### The supervisor's log
+GET {{base}}/system/log
+
+### Trap Bob's account 4 times: 3 restarts per minute, then stop (quarantine)
+POST {{base}}/system/failures
+Content-Type: application/json
+
+{ "actor": "account/{{bob}}", "step": "Reception", "times": 4 }
+
+### Run 5 times: 500, 500, 500, 500, then 503 until the end of the minute (Alice, however, still answers)
+GET {{base}}/accounts/{{bob}}
+
+### A slowness of 8 s: the request answers 504 after 5 s; the message, however, will be processed
+POST {{base}}/system/failures
+Content-Type: application/json
+
+{ "actor": "account/{{alice}}", "step": "Reception", "kind": "Slowness", "latencyMs": 8000 }
+
+###
+GET {{base}}/accounts/{{alice}}
+
+### ─── Transfers: one actor per transfer ───
+
+### A transfer identified by the client (replayable without risk)
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "id": "invoice-42", "source": "{{alice}}", "target": "{{bob}}", "amount": 10 }
+
+### Replayed: same response, no new debit (the actor transfer/invoice-42 remembers)
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "id": "invoice-42", "source": "{{alice}}", "target": "{{bob}}", "amount": 10 }
+
+### Failure in the middle of a transfer, after the debit: 500, the money is "in flight"…
+POST {{base}}/system/failures
+Content-Type: application/json
+
+{ "actor": "transfer/invoice-43", "step": "AfterDebit" }
+
+###
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "id": "invoice-43", "source": "{{alice}}", "target": "{{bob}}", "amount": 10 }
+
+### … status DebitDone
+GET {{base}}/transfers/invoice-43
+
+### … replaying completes it, without debiting a second time
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "id": "invoice-43", "source": "{{alice}}", "target": "{{bob}}", "amount": 10 }
+
+### To an account that does not exist: debit, refusal from the target, compensation (status Cancelled)
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "99999999-9999-9999-9999-999999999999", "amount": 10 }
+
+### ─── Activation and passivation ───
+
+### Put all the idle actors to sleep (automatic after 30 s without a message)
+POST {{base}}/system/passivation
+
+### No actor left in memory…
+GET {{base}}/system
+
+### … but their state is still stored
+GET {{base}}/system/storage?type=account
+
+### The next message wakes up Alice, and her alone
+GET {{base}}/accounts/{{alice}}/operations

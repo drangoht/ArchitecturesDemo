@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE ACTOR RUNTIME, written by hand (≈ 300 lines, no package) so that all its workings can be seen:
+    mailbox, on-demand activation, supervision, passivation. It knows nothing about the bank.
+    In production: Orleans, Akka.NET or Proto.Actor do the same thing, distributed.
+  -->
+
+</Project>

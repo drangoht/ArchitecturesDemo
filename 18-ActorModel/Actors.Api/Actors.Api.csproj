@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\Acteurs.Banque\Acteurs.Banque.csproj" />
+    <ProjectReference Include="..\Actors.Bank\Actors.Bank.csproj" />
   </ItemGroup>
 
 </Project>

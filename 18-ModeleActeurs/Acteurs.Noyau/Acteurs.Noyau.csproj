@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    LE RUNTIME D'ACTEURS, écrit à la main (≈ 300 lignes, sans package) pour qu'on en voie tous les rouages :
-    boîte aux lettres, activation à la demande, supervision, passivation. Il ne connaît rien de la banque.
-    En production : Orleans, Akka.NET ou Proto.Actor font la même chose, en distribué.
-  -->
-
-</Project>
