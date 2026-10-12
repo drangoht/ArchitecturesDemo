@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    LE COURTIER D'ÉVÉNEMENTS, simulé dans le processus (sans package) : abonnements par type d'événement, une file par
-    abonné, livraison « au moins une fois », nouveaux essais, lettres mortes, journal de tous les événements.
-    En production : RabbitMQ, Azure Service Bus, Kafka, avec MassTransit, NServiceBus, Wolverine ou Dapr.
-  -->
-
-</Project>

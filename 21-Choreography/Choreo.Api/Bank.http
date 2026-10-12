@@ -1,0 +1,109 @@
+@base = http://localhost:5121
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+@carla = 33333333-3333-3333-3333-333333333333
+@yuki = 55555555-5555-5555-5555-555555555555
+@mallory = 66666666-6666-6666-6666-666666666666
+
+### Requesting a transfer = publishing ONE event. Response 202: the rest happens without the caller, and without anyone to drive it.
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{carla}}", "amount": 100 }
+
+### The state (rebuilt by the Tracking service) and the history: each event, who published it, in reaction to what
+### (replace the identifier with the one from the previous response)
+GET {{base}}/transfers/v-00000000
+
+### ?wait=true: wait for the end, for the convenience of the demo
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{carla}}", "amount": 100 }
+
+### Compliance refusal (blocklist): it is the Accounts service which, listening to this refusal, releases the reservation
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{mallory}}", "amount": 50 }
+
+### Exchange failure (currency not quoted): same compensation, triggered by another event
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{yuki}}", "amount": 100 }
+
+### Insufficient balance: the process stops from the first reaction
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{bob}}", "target": "{{alice}}", "amount": 900 }
+
+### ─── A human wait ───
+
+### Beyond 10,000 €: waiting for an analyst; 15,000 € stay reserved
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 15000 }
+
+###
+GET {{base}}/compliance/pending
+
+### The decision (replace the identifier): an event coming from a human
+POST {{base}}/compliance/v-00000000/decision
+Content-Type: application/json
+
+{ "approved": true }
+
+### ─── When a service goes down ───
+
+### The exchange breaks down…
+POST {{base}}/chaos
+Content-Type: application/json
+
+{ "exchangeDown": true }
+
+### … the transfer is left hanging (status InProgress), nobody is told
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 200 }
+
+### The only clues: the dead letters, and the transfers without recent activity
+GET {{base}}/bus/dead-letters
+
+###
+GET {{base}}/transfers/stuck?delaySeconds=5
+
+### 30 s later, the Accounts service releases the reservation by itself (status Abandoned)
+GET {{base}}/accounts/{{alice}}
+
+###
+POST {{base}}/chaos
+Content-Type: application/json
+
+{ "exchangeDown": false }
+
+### The email server fails 3 times: the bus retries (after the point of no return, nothing is undone)
+POST {{base}}/chaos
+Content-Type: application/json
+
+{ "notificationFailures": 3 }
+
+###
+POST {{base}}/transfers?wait=true
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 10 }
+
+### ─── The map of the system ───
+
+### Who listens to what: the only overview of the process, and it only exists at run time
+GET {{base}}/bus
+
+### The service added afterwards, without touching the others
+GET {{base}}/loyalty/{{alice}}
+
+###
+GET {{base}}/bus/log?last=30

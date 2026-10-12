@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE SERVICES, each in its own namespace, with its own data: none knows the others.
+    They only share the CONTRACTS of the events (Contracts.cs). The process is written nowhere:
+    it emerges from their reactions.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Choreo.Bus\Choreo.Bus.csproj" />
+  </ItemGroup>
+
+</Project>

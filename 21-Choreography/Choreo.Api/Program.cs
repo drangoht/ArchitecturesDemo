@@ -8,19 +8,19 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-var configuration = builder.Configuration.GetSection("Banque").Get<OptionsApi>() ?? new OptionsApi();
+var configuration = builder.Configuration.GetSection("Bank").Get<ApiOptions>() ?? new ApiOptions();
 builder.Services.AddSingleton(configuration);
-builder.Services.AddSingleton(_ => Banque.Demarrer(new OptionsBanque
+builder.Services.AddSingleton(_ => Bank.Start(new BankOptions
 {
-    DureeReservation = TimeSpan.FromSeconds(configuration.DureeReservationSecondes),
-    Fidelite = configuration.Fidelite,
-    Bus = new OptionsBus { ProbabiliteDoublon = configuration.ProbabiliteDoublon }
+    ReservationDuration = TimeSpan.FromSeconds(configuration.ReservationDurationSeconds),
+    Loyalty = configuration.Loyalty,
+    Bus = new BusOptions { DuplicateProbability = configuration.DuplicateProbability }
 }));
-builder.Services.AddHostedService<ExpirationDesReservations>();
+builder.Services.AddHostedService<ReservationExpiry>();
 
 var app = builder.Build();
 
-app.MapVirements();
+app.MapTransfers();
 app.MapServices();
 app.MapBus();
 

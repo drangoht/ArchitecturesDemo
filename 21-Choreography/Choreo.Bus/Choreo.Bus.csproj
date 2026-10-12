@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE EVENT BROKER, simulated in the process (no package): subscriptions by event type, one queue per
+    subscriber, "at least once" delivery, retries, dead letters, log of all the events.
+    In production: RabbitMQ, Azure Service Bus, Kafka, with MassTransit, NServiceBus, Wolverine or Dapr.
+  -->
+
+</Project>
