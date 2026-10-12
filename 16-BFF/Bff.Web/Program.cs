@@ -8,82 +8,82 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSessionBff();
-builder.Services.AddScoped<MesureAval>();
-builder.Services.AddScoped<TableauDeBord>();
-builder.Services.AddHttpClient<ClientServices>(c => c.BaseAddress = new Uri(builder.Configuration["Services:Url"]!));
+builder.Services.AddBffSession();
+builder.Services.AddScoped<DownstreamMetrics>();
+builder.Services.AddScoped<Dashboard>();
+builder.Services.AddHttpClient<ServicesClient>(c => c.BaseAddress = new Uri(builder.Configuration["Services:Url"]!));
 
 var app = builder.Build();
 
-// En-têtes de mesure : combien d'appels aux services cette réponse a coûté, et combien de temps.
-app.Use(async (http, suite) =>
+// Measurement headers: how many calls to the services this response cost, and how much time.
+app.Use(async (http, next) =>
 {
-    var mesure = http.RequestServices.GetRequiredService<MesureAval>();
-    var debut = Stopwatch.GetTimestamp();
+    var metrics = http.RequestServices.GetRequiredService<DownstreamMetrics>();
+    var start = Stopwatch.GetTimestamp();
     http.Response.OnStarting(() =>
     {
-        http.Response.Headers["X-Appels-Aval"] = mesure.Appels.ToString();
-        http.Response.Headers["X-Duree-Aval-Cumulee-Ms"] = ((int)mesure.DureeCumulee.TotalMilliseconds).ToString();
-        http.Response.Headers["X-Duree-Totale-Ms"] = ((int)Stopwatch.GetElapsedTime(debut).TotalMilliseconds).ToString();
+        http.Response.Headers["X-Downstream-Calls"] = metrics.Calls.ToString();
+        http.Response.Headers["X-Downstream-Cumulative-Ms"] = ((int)metrics.CumulativeDuration.TotalMilliseconds).ToString();
+        http.Response.Headers["X-Total-Duration-Ms"] = ((int)Stopwatch.GetElapsedTime(start).TotalMilliseconds).ToString();
         return Task.CompletedTask;
     });
-    await suite(http);
+    await next(http);
 });
 
-// Les erreurs des services, traduites pour le navigateur.
-app.Use(async (http, suite) =>
+// The errors of the services, translated for the browser.
+app.Use(async (http, next) =>
 {
     try
     {
-        await suite(http);
+        await next(http);
     }
-    catch (ServiceAvalException e)
+    catch (DownstreamServiceException e)
     {
-        http.Response.StatusCode = e.Statut is 400 or 401 or 403 or 404 ? e.Statut : StatusCodes.Status502BadGateway;
+        http.Response.StatusCode = e.Status is 400 or 401 or 403 or 404 ? e.Status : StatusCodes.Status502BadGateway;
         http.Response.ContentType = "application/json; charset=utf-8";
-        await http.Response.WriteAsync(e.Corps.StartsWith('{') ? e.Corps : """{"erreur":"Service indisponible."}""");
+        await http.Response.WriteAsync(e.Body.StartsWith('{') ? e.Body : """{"error":"Service unavailable."}""");
     }
 });
 
 app.UseDefaultFiles();
-app.UseStaticFiles();   // l'application web (wwwroot) est servie par SON BFF : même origine, donc pas de CORS
+app.UseStaticFiles();   // the web application (wwwroot) is served by ITS BFF: same origin, hence no CORS
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ─── Session : connexion, déconnexion, utilisateur courant ───
-var bff = app.MapGroup("/bff").AddEndpointFilter<ExigerEnTeteAntiCsrf>();
+// ─── Session: login, logout, current user ───
+var bff = app.MapGroup("/bff").AddEndpointFilter<RequireAntiCsrfHeader>();
 
-bff.MapPost("/connexion", async (Connexion c, ClientServices services, HttpContext http) =>
+bff.MapPost("/login", async (Login l, ServicesClient services, HttpContext http) =>
 {
-    var jeton = await services.ObtenirJeton(c.Utilisateur, c.MotDePasse);
-    var proprietes = new AuthenticationProperties { ExpiresUtc = DateTimeOffset.UtcNow.AddSeconds(jeton.ExpireDans) };
-    proprietes.StoreTokens([new AuthenticationToken { Name = "access_token", Value = jeton.Jeton }]);
-    var identite = new ClaimsIdentity([new Claim(ClaimTypes.Name, c.Utilisateur)], CookieAuthenticationDefaults.AuthenticationScheme);
-    await http.SignInAsync(new ClaimsPrincipal(identite), proprietes);
-    // La réponse ne contient AUCUN jeton : le navigateur ne reçoit qu'un cookie de session HttpOnly.
-    return Results.Ok(new { utilisateur = c.Utilisateur });
+    var token = await services.GetToken(l.User, l.Password);
+    var properties = new AuthenticationProperties { ExpiresUtc = DateTimeOffset.UtcNow.AddSeconds(token.ExpiresIn) };
+    properties.StoreTokens([new AuthenticationToken { Name = "access_token", Value = token.Token }]);
+    var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, l.User)], CookieAuthenticationDefaults.AuthenticationScheme);
+    await http.SignInAsync(new ClaimsPrincipal(identity), properties);
+    // The response contains NO token: the browser only receives an HttpOnly session cookie.
+    return Results.Ok(new { user = l.User });
 });
 
-bff.MapPost("/deconnexion", async (HttpContext http) =>
+bff.MapPost("/logout", async (HttpContext http) =>
 {
-    await http.SignOutAsync();   // supprime aussi la session côté serveur
+    await http.SignOutAsync();   // also deletes the session on the server side
     return Results.NoContent();
 }).RequireAuthorization();
 
-bff.MapGet("/utilisateur", (ClaimsPrincipal utilisateur) => Results.Ok(new { nom = utilisateur.Identity!.Name }))
+bff.MapGet("/user", (ClaimsPrincipal user) => Results.Ok(new { name = user.Identity!.Name }))
     .RequireAuthorization();
 
-// ─── L'API taillée pour l'écran du site ───
-var api = app.MapGroup("/api").RequireAuthorization().AddEndpointFilter<ExigerEnTeteAntiCsrf>();
+// ─── The API cut out for the site's screen ───
+var api = app.MapGroup("/api").RequireAuthorization().AddEndpointFilter<RequireAntiCsrfHeader>();
 
-api.MapGet("/tableau-de-bord", async (HttpContext http, TableauDeBord tableau) =>
-    Results.Ok(await tableau.Construire(await Jeton(http))));
+api.MapGet("/dashboard", async (HttpContext http, Dashboard dashboard) =>
+    Results.Ok(await dashboard.Build(await Token(http))));
 
-api.MapPost("/virements", async (VirementRequete r, HttpContext http, ClientServices services) =>
-    Results.Ok(await services.Virer(r.Source, r.Cible, r.Montant, await Jeton(http))));
+api.MapPost("/transfers", async (TransferRequest r, HttpContext http, ServicesClient services) =>
+    Results.Ok(await services.Transfer(r.Source, r.Target, r.Amount, await Token(http))));
 
 app.Run();
 
-// Le jeton est lu dans la session du serveur, jamais dans la requête du navigateur.
-static async Task<string> Jeton(HttpContext http) =>
-    await http.GetTokenAsync("access_token") ?? throw new ServiceAvalException(401, """{"erreur":"Session sans jeton."}""");
+// The token is read from the server's session, never from the browser's request.
+static async Task<string> Token(HttpContext http) =>
+    await http.GetTokenAsync("access_token") ?? throw new DownstreamServiceException(401, """{"error":"Session without a token."}""");

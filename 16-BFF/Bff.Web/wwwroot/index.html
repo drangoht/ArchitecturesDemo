@@ -1,22 +1,22 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Banque — site web</title>
+  <title>Bank — website</title>
   <style>
     body { font-family: system-ui, sans-serif; margin: 0; background: #f4f6f8; color: #1f2328; }
     header { background: #0b3d91; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
     main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
     section { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 16px; }
-    .grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     td { padding: 4px 6px; border-bottom: 1px solid #eaeef2; }
-    td.montant { text-align: right; font-variant-numeric: tabular-nums; }
-    .negatif { color: #cf222e; } .positif { color: #1a7f37; }
-    .barre { background: #0b3d91; height: 10px; border-radius: 4px; }
-    .alerte { background: #fff8c5; border-color: #d4a72c; }
-    .technique { font-family: ui-monospace, monospace; font-size: 13px; background: #f6f8fa; }
+    td.amount { text-align: right; font-variant-numeric: tabular-nums; }
+    .negative { color: #cf222e; } .positive { color: #1a7f37; }
+    .bar { background: #0b3d91; height: 10px; border-radius: 4px; }
+    .warning { background: #fff8c5; border-color: #d4a72c; }
+    .technical { font-family: ui-monospace, monospace; font-size: 13px; background: #f6f8fa; }
     button { background: #0b3d91; color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
     input, select { padding: 6px; margin: 4px 0; }
     [hidden] { display: none !important; }
@@ -24,112 +24,112 @@
 </head>
 <body>
 <header>
-  <strong>Banque — votre espace</strong>
-  <span id="entete-utilisateur"></span>
+  <strong>Bank — your space</strong>
+  <span id="header-user"></span>
 </header>
 <main>
-  <section id="connexion">
-    <h2>Connexion</h2>
-    <p>Comptes de démonstration : <code>alice</code> ou <code>bob</code>, mot de passe <code>demo</code>.</p>
-    <form id="form-connexion">
-      <input name="utilisateur" placeholder="utilisateur" value="alice" autocomplete="username">
-      <input name="motDePasse" type="password" placeholder="mot de passe" autocomplete="current-password">
-      <button>Se connecter</button>
+  <section id="login">
+    <h2>Login</h2>
+    <p>Demo accounts: <code>alice</code> or <code>bob</code>, password <code>demo</code>.</p>
+    <form id="form-login">
+      <input name="user" placeholder="user" value="alice" autocomplete="username">
+      <input name="password" type="password" placeholder="password" autocomplete="current-password">
+      <button>Log in</button>
     </form>
-    <p id="erreur-connexion" class="negatif"></p>
+    <p id="login-error" class="negative"></p>
   </section>
 
-  <div id="espace" hidden>
-    <section class="technique" id="technique"></section>
-    <section id="degrade" class="alerte" hidden></section>
-    <div class="grille" id="comptes"></div>
-    <div class="grille">
-      <section><h3>Dépenses récentes par catégorie</h3><div id="depenses"></div></section>
-      <section><h3>Votre conseiller</h3><div id="conseiller"></div></section>
+  <div id="space" hidden>
+    <section class="technical" id="technical"></section>
+    <section id="degraded" class="warning" hidden></section>
+    <div class="grid" id="accounts"></div>
+    <div class="grid">
+      <section><h3>Recent spending by category</h3><div id="spending"></div></section>
+      <section><h3>Your advisor</h3><div id="advisor"></div></section>
     </div>
     <section>
-      <h3>Virement</h3>
-      <form id="form-virement">
+      <h3>Transfer</h3>
+      <form id="form-transfer">
         <select name="source" id="source"></select>
-        <input name="cible" placeholder="compte bénéficiaire" value="22222222-2222-2222-2222-222222222222" size="40">
-        <input name="montant" type="number" step="0.01" min="0.01" value="25">
-        <button>Virer</button>
+        <input name="target" placeholder="beneficiary account" value="22222222-2222-2222-2222-222222222222" size="40">
+        <input name="amount" type="number" step="0.01" min="0.01" value="25">
+        <button>Transfer</button>
       </form>
-      <p id="resultat-virement"></p>
+      <p id="transfer-result"></p>
     </section>
-    <section id="offres"></section>
+    <section id="offers"></section>
   </div>
 </main>
 <script>
-  // Toutes les requêtes vers le BFF portent l'en-tête anti-CSRF. Aucun jeton : le cookie de session part tout seul.
-  async function bff(methode, url, corps) {
-    const reponse = await fetch(url, {
-      method: methode,
-      headers: { 'X-CSRF': '1', ...(corps ? { 'Content-Type': 'application/json' } : {}) },
-      body: corps ? JSON.stringify(corps) : undefined
+  // All the requests to the BFF carry the anti-CSRF header. No token: the session cookie goes along by itself.
+  async function bff(method, url, body) {
+    const response = await fetch(url, {
+      method: method,
+      headers: { 'X-CSRF': '1', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined
     });
-    const contenu = reponse.status === 204 ? null : await reponse.json().catch(() => null);
-    return { reponse, contenu };
+    const content = response.status === 204 ? null : await response.json().catch(() => null);
+    return { response, content };
   }
 
-  const euros = n => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-  const echapper = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const euros = n => n.toLocaleString('en-GB', { style: 'currency', currency: 'EUR' });
+  const escape = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const $ = id => document.getElementById(id);
 
-  async function afficher() {
-    const { reponse, contenu: t } = await bff('GET', '/api/tableau-de-bord');
-    if (reponse.status === 401) { $('connexion').hidden = false; $('espace').hidden = true; $('entete-utilisateur').textContent = ''; return; }
-    $('connexion').hidden = true; $('espace').hidden = false;
-    $('entete-utilisateur').innerHTML = `${echapper(t.client.prenom)} ${echapper(t.client.nom)} <button id="deconnexion">Se déconnecter</button>`;
-    $('deconnexion').onclick = async () => { await bff('POST', '/bff/deconnexion'); afficher(); };
+  async function display() {
+    const { response, content: t } = await bff('GET', '/api/dashboard');
+    if (response.status === 401) { $('login').hidden = false; $('space').hidden = true; $('header-user').textContent = ''; return; }
+    $('login').hidden = true; $('space').hidden = false;
+    $('header-user').innerHTML = `${escape(t.customer.firstName)} ${escape(t.customer.lastName)} <button id="logout">Log out</button>`;
+    $('logout').onclick = async () => { await bff('POST', '/bff/logout'); display(); };
 
-    // Ce que le navigateur détient : rien d'exploitable par un script.
-    $('technique').innerHTML =
-      `Ce tableau de bord = <b>1</b> requête du navigateur, <b>${reponse.headers.get('X-Appels-Aval')}</b> appels aux services faits par le BFF ` +
-      `(${reponse.headers.get('X-Duree-Totale-Ms')} ms au total, ${reponse.headers.get('X-Duree-Aval-Cumulee-Ms')} ms s'ils avaient été enchaînés).<br>` +
-      `document.cookie = "${echapper(document.cookie)}" · localStorage : ${localStorage.length} entrée(s) · jeton d'accès dans le navigateur : aucun.`;
+    // What the browser holds: nothing a script could exploit.
+    $('technical').innerHTML =
+      `This dashboard = <b>1</b> browser request, <b>${response.headers.get('X-Downstream-Calls')}</b> calls to the services made by the BFF ` +
+      `(${response.headers.get('X-Total-Duration-Ms')} ms in total, ${response.headers.get('X-Downstream-Cumulative-Ms')} ms if they had been chained).<br>` +
+      `document.cookie = "${escape(document.cookie)}" · localStorage: ${localStorage.length} entry(ies) · access token in the browser: none.`;
 
-    $('degrade').hidden = t.degrade.length === 0;
-    $('degrade').textContent = `Affichage partiel : ${t.degrade.join(', ')} momentanément indisponible(s).`;
+    $('degraded').hidden = t.degraded.length === 0;
+    $('degraded').textContent = `Partial display: ${t.degraded.join(', ')} temporarily unavailable.`;
 
-    $('comptes').innerHTML = t.comptes.map(c => `
+    $('accounts').innerHTML = t.accounts.map(c => `
       <section>
-        <h3>${echapper(c.libelle)} <small>${echapper(c.iban)}</small></h3>
-        <p style="font-size:24px">${euros(c.solde)}</p>
-        <table>${c.operations.map(o => `<tr><td>${new Date(o.date).toLocaleDateString('fr-FR')}</td><td>${echapper(o.libelle)}</td>
-          <td>${echapper(o.categorie)}</td><td class="montant ${o.montant < 0 ? 'negatif' : 'positif'}">${euros(o.montant)}</td></tr>`).join('')}</table>
-        <small>10 dernières opérations sur ${c.nombreOperations}</small>
+        <h3>${escape(c.label)} <small>${escape(c.iban)}</small></h3>
+        <p style="font-size:24px">${euros(c.balance)}</p>
+        <table>${c.operations.map(o => `<tr><td>${new Date(o.date).toLocaleDateString('en-GB')}</td><td>${escape(o.label)}</td>
+          <td>${escape(o.category)}</td><td class="amount ${o.amount < 0 ? 'negative' : 'positive'}">${euros(o.amount)}</td></tr>`).join('')}</table>
+        <small>10 latest operations out of ${c.operationCount}</small>
       </section>`).join('');
-    $('source').innerHTML = t.comptes.map(c => `<option value="${c.id}">${echapper(c.libelle)} (${euros(c.solde)})</option>`).join('');
+    $('source').innerHTML = t.accounts.map(c => `<option value="${c.id}">${escape(c.label)} (${euros(c.balance)})</option>`).join('');
 
-    const max = Math.max(...t.depensesParCategorie.map(d => d.total), 1);
-    $('depenses').innerHTML = `<table>${t.depensesParCategorie.map(d => `<tr><td>${echapper(d.categorie)}</td>
-      <td style="width:50%"><div class="barre" style="width:${100 * d.total / max}%"></div></td><td class="montant">${euros(d.total)}</td></tr>`).join('')}</table>`;
+    const max = Math.max(...t.spendingByCategory.map(d => d.total), 1);
+    $('spending').innerHTML = `<table>${t.spendingByCategory.map(d => `<tr><td>${escape(d.category)}</td>
+      <td style="width:50%"><div class="bar" style="width:${100 * d.total / max}%"></div></td><td class="amount">${euros(d.total)}</td></tr>`).join('')}</table>`;
 
-    const cs = t.client.conseiller;
-    $('conseiller').innerHTML = `<b>${echapper(cs.nom)}</b><br>${echapper(cs.agence)}<br>${echapper(cs.telephone)}<br>${echapper(cs.email)}`;
+    const cs = t.customer.advisor;
+    $('advisor').innerHTML = `<b>${escape(cs.name)}</b><br>${escape(cs.branch)}<br>${escape(cs.phone)}<br>${escape(cs.email)}`;
 
-    $('offres').hidden = !t.offres;
-    $('offres').innerHTML = t.offres ? `<h3>Pour vous</h3>${t.offres.map(o => `<p><b>${echapper(o.titre)}</b> — ${echapper(o.texte)}</p>`).join('')}` : '';
+    $('offers').hidden = !t.offers;
+    $('offers').innerHTML = t.offers ? `<h3>For you</h3>${t.offers.map(o => `<p><b>${escape(o.title)}</b> — ${escape(o.text)}</p>`).join('')}` : '';
   }
 
-  $('form-connexion').onsubmit = async e => {
+  $('form-login').onsubmit = async e => {
     e.preventDefault();
     const f = new FormData(e.target);
-    const { reponse } = await bff('POST', '/bff/connexion', { utilisateur: f.get('utilisateur'), motDePasse: f.get('motDePasse') });
-    $('erreur-connexion').textContent = reponse.ok ? '' : 'Identifiants incorrects.';
-    if (reponse.ok) afficher();
+    const { response } = await bff('POST', '/bff/login', { user: f.get('user'), password: f.get('password') });
+    $('login-error').textContent = response.ok ? '' : 'Incorrect credentials.';
+    if (response.ok) display();
   };
 
-  $('form-virement').onsubmit = async e => {
+  $('form-transfer').onsubmit = async e => {
     e.preventDefault();
     const f = new FormData(e.target);
-    const { reponse, contenu } = await bff('POST', '/api/virements', { source: f.get('source'), cible: f.get('cible'), montant: Number(f.get('montant')) });
-    $('resultat-virement').textContent = reponse.ok ? 'Virement effectué.' : `Refusé : ${contenu?.erreur ?? reponse.status}`;
-    if (reponse.ok) afficher();
+    const { response, content } = await bff('POST', '/api/transfers', { source: f.get('source'), target: f.get('target'), amount: Number(f.get('amount')) });
+    $('transfer-result').textContent = response.ok ? 'Transfer done.' : `Refused: ${content?.error ?? response.status}`;
+    if (response.ok) display();
   };
 
-  afficher();
+  display();
 </script>
 </body>
 </html>

@@ -6,59 +6,59 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Pas de champ null dans les réponses : chaque octet compte sur un réseau mobile.
+// No null field in the responses: every byte counts on a mobile network.
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
-builder.Services.AddScoped<MesureAval>();
-builder.Services.AddScoped<Ecrans>();
-builder.Services.AddHttpClient<ClientServices>(c => c.BaseAddress = new Uri(builder.Configuration["Services:Url"]!));
+builder.Services.AddScoped<DownstreamMetrics>();
+builder.Services.AddScoped<Screens>();
+builder.Services.AddHttpClient<ServicesClient>(c => c.BaseAddress = new Uri(builder.Configuration["Services:Url"]!));
 
 var app = builder.Build();
 
-app.Use(async (http, suite) =>
+app.Use(async (http, next) =>
 {
-    var mesure = http.RequestServices.GetRequiredService<MesureAval>();
-    var debut = Stopwatch.GetTimestamp();
+    var metrics = http.RequestServices.GetRequiredService<DownstreamMetrics>();
+    var start = Stopwatch.GetTimestamp();
     http.Response.OnStarting(() =>
     {
-        http.Response.Headers["X-Appels-Aval"] = mesure.Appels.ToString();
-        http.Response.Headers["X-Duree-Aval-Cumulee-Ms"] = ((int)mesure.DureeCumulee.TotalMilliseconds).ToString();
-        http.Response.Headers["X-Duree-Totale-Ms"] = ((int)Stopwatch.GetElapsedTime(debut).TotalMilliseconds).ToString();
+        http.Response.Headers["X-Downstream-Calls"] = metrics.Calls.ToString();
+        http.Response.Headers["X-Downstream-Cumulative-Ms"] = ((int)metrics.CumulativeDuration.TotalMilliseconds).ToString();
+        http.Response.Headers["X-Total-Duration-Ms"] = ((int)Stopwatch.GetElapsedTime(start).TotalMilliseconds).ToString();
         return Task.CompletedTask;
     });
     try
     {
-        await suite(http);
+        await next(http);
     }
-    catch (ServiceAvalException e)
+    catch (DownstreamServiceException e)
     {
-        http.Response.StatusCode = e.Statut is 400 or 401 or 403 or 404 ? e.Statut : StatusCodes.Status502BadGateway;
+        http.Response.StatusCode = e.Status is 400 or 401 or 403 or 404 ? e.Status : StatusCodes.Status502BadGateway;
         http.Response.ContentType = "application/json; charset=utf-8";
-        await http.Response.WriteAsync(e.Corps.StartsWith('{') ? e.Corps : """{"erreur":"Service indisponible."}""");
+        await http.Response.WriteAsync(e.Body.StartsWith('{') ? e.Body : """{"error":"Service unavailable."}""");
     }
 });
 
-// Une application mobile native garde son jeton dans le stockage sécurisé du téléphone (Keychain, Keystore) :
-// pas de cookie ici, le BFF reçoit le jeton dans l'en-tête Authorization et le transmet aux services.
-static string Jeton(HttpContext http)
+// A native mobile application keeps its token in the phone's secure storage (Keychain, Keystore):
+// no cookie here, the BFF receives the token in the Authorization header and passes it on to the services.
+static string Token(HttpContext http)
 {
-    var entete = http.Request.Headers.Authorization.ToString();
-    return entete.StartsWith("Bearer ") ? entete[7..] : throw new ServiceAvalException(401, """{"erreur":"Jeton d'accès requis."}""");
+    var header = http.Request.Headers.Authorization.ToString();
+    return header.StartsWith("Bearer ") ? header[7..] : throw new DownstreamServiceException(401, """{"error":"Access token required."}""");
 }
 
-// ─── v1 : la version actuellement installée sur la plupart des téléphones ───
+// ─── v1: the version currently installed on most phones ───
 var v1 = app.MapGroup("/mobile/v1");
 
-v1.MapPost("/connexion", async (Connexion c, ClientServices services) => Results.Ok(await services.ObtenirJeton(c.Utilisateur, c.MotDePasse)));
+v1.MapPost("/login", async (Login l, ServicesClient services) => Results.Ok(await services.GetToken(l.User, l.Password)));
 
-v1.MapGet("/accueil", async (HttpContext http, Ecrans ecrans) => Results.Ok(await ecrans.Accueil(Jeton(http), version: 1)));
+v1.MapGet("/home", async (HttpContext http, Screens screens) => Results.Ok(await screens.Home(Token(http), version: 1)));
 
-v1.MapGet("/comptes/{id:guid}/operations", async (Guid id, string? curseur, HttpContext http, Ecrans ecrans) =>
-    Results.Ok(await ecrans.Operations(id, curseur, Jeton(http))));
+v1.MapGet("/accounts/{id:guid}/operations", async (Guid id, string? cursor, HttpContext http, Screens screens) =>
+    Results.Ok(await screens.Operations(id, cursor, Token(http))));
 
-v1.MapPost("/virements", async (VirementRequete r, HttpContext http, ClientServices services) =>
-    Results.Ok(await services.Virer(r.Source, r.Cible, r.Montant, Jeton(http))));
+v1.MapPost("/transfers", async (TransferRequest r, HttpContext http, ServicesClient services) =>
+    Results.Ok(await services.Transfer(r.Source, r.Target, r.Amount, Token(http))));
 
-// ─── v2 : la nouvelle version de l'application ; seul l'accueil change ───
-app.MapGet("/mobile/v2/accueil", async (HttpContext http, Ecrans ecrans) => Results.Ok(await ecrans.Accueil(Jeton(http), version: 2)));
+// ─── v2: the new version of the application; only the home screen changes ───
+app.MapGet("/mobile/v2/home", async (HttpContext http, Screens screens) => Results.Ok(await screens.Home(Token(http), version: 2)));
 
 app.Run();

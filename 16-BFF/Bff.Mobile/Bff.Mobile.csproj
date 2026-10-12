@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <!--
-    LE BFF DE L'APPLICATION MOBILE : réponses compactes, un appel par écran, pagination par curseur, versions d'API
-    alignées sur les versions de l'application. Le jeton est géré par l'application et simplement transmis.
-    Aucune référence aux autres projets : il ne connaît les services que par HTTP.
+    THE MOBILE APPLICATION'S BFF: compact responses, one call per screen, cursor pagination, API versions
+    aligned with the application's versions. The token is handled by the application and merely passed on.
+    No reference to the other projects: it only knows the services through HTTP.
   -->
 
 </Project>

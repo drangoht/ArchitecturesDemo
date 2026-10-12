@@ -1,95 +1,95 @@
 namespace Bff.Services;
 
-/// <summary>Pannes et lenteurs simulées, réglables par PUT /chaos.</summary>
+/// <summary>Simulated failures and slowness, settable through PUT /chaos.</summary>
 public sealed class Chaos
 {
-    public int LatenceMs { get; set; }
-    public bool OffresEnPanne { get; set; }
+    public int LatencyMs { get; set; }
+    public bool OffersDown { get; set; }
 }
 
 internal static class Endpoints
 {
-    internal record DemandeJeton(string Utilisateur, string MotDePasse);
-    internal record VirementRequete(Guid Source, Guid Cible, decimal Montant);
-    internal record ChaosRequete(int? LatenceMs, bool? OffresEnPanne);
+    internal record TokenRequest(string User, string Password);
+    internal record TransferRequest(Guid Source, Guid Target, decimal Amount);
+    internal record ChaosRequest(int? LatencyMs, bool? OffersDown);
 
-    private static string Utilisateur(HttpContext http) => (string)http.Items["utilisateur"]!;
+    private static string User(HttpContext http) => (string)http.Items["user"]!;
 
-    private static IResult Interdit() =>
-        Results.Json(new { erreur = "Cette donnée n'appartient pas à l'utilisateur du jeton." }, statusCode: StatusCodes.Status403Forbidden);
+    private static IResult Forbidden() =>
+        Results.Json(new { error = "This data does not belong to the token's user." }, statusCode: StatusCodes.Status403Forbidden);
 
     public static void MapServices(this IEndpointRouteBuilder app)
     {
-        // ─── Identité ───
-        app.MapPost("/identite/jeton", (DemandeJeton d, Banque banque, Jetons jetons) =>
-            banque.Utilisateurs.TryGetValue(d.Utilisateur, out var u) && u.MotDePasse == d.MotDePasse
-                ? Results.Ok(new { jeton = jetons.Emettre(u.Id), expireDans = (int)Jetons.Duree.TotalSeconds })
-                : Results.Json(new { erreur = "Identifiants incorrects." }, statusCode: StatusCodes.Status401Unauthorized));
+        // ─── Identity ───
+        app.MapPost("/identity/token", (TokenRequest d, Bank bank, Tokens tokens) =>
+            bank.Users.TryGetValue(d.User, out var u) && u.Password == d.Password
+                ? Results.Ok(new { token = tokens.Issue(u.Id), expiresIn = (int)Tokens.Duration.TotalSeconds })
+                : Results.Json(new { error = "Incorrect credentials." }, statusCode: StatusCodes.Status401Unauthorized));
 
-        // ─── Profil : tout ce que la banque sait du client, quel que soit l'écran ───
-        app.MapGet("/profils/moi", (HttpContext http, Banque banque) =>
+        // ─── Profile: everything the bank knows about the customer, whatever the screen ───
+        app.MapGet("/profiles/me", (HttpContext http, Bank bank) =>
         {
-            var u = banque.Utilisateurs[Utilisateur(http)];
+            var u = bank.Users[User(http)];
             return Results.Ok(new
             {
-                u.Id, u.Prenom, u.Nom, u.Email, u.Segment, u.ConseillerId, u.Comptes,
-                Adresse = "12 rue de l'Exemple, 75011 Paris", DateNaissance = new DateOnly(1990, 5, 17),
-                Preferences = new { Langue = "fr", Notifications = true, Theme = "clair" }
+                u.Id, u.FirstName, u.LastName, u.Email, u.Segment, u.AdvisorId, u.Accounts,
+                Address = "12 Example Street, 75011 Paris", BirthDate = new DateOnly(1990, 5, 17),
+                Preferences = new { Language = "en", Notifications = true, Theme = "light" }
             });
         });
 
-        // ─── Comptes ───
-        app.MapGet("/comptes/{id:guid}", (Guid id, HttpContext http, Banque banque) =>
-            banque.Compte(id) is not { } compte ? Results.NotFound()
-            : compte.Titulaire != Utilisateur(http) ? Interdit()
-            : Results.Ok(compte));
+        // ─── Accounts ───
+        app.MapGet("/accounts/{id:guid}", (Guid id, HttpContext http, Bank bank) =>
+            bank.Account(id) is not { } account ? Results.NotFound()
+            : account.Owner != User(http) ? Forbidden()
+            : Results.Ok(account));
 
-        app.MapGet("/comptes/{id:guid}/operations", (Guid id, int? page, int? taille, HttpContext http, Banque banque) =>
+        app.MapGet("/accounts/{id:guid}/operations", (Guid id, int? page, int? size, HttpContext http, Bank bank) =>
         {
-            if (banque.Compte(id) is not { } compte)
+            if (bank.Account(id) is not { } account)
                 return Results.NotFound();
-            if (compte.Titulaire != Utilisateur(http))
-                return Interdit();
-            var (p, t) = (Math.Max(page ?? 1, 1), Math.Clamp(taille ?? 20, 1, 100));
-            var (operations, total) = banque.Operations(id, p, t);
-            return Results.Ok(new { page = p, taille = t, total, operations });
+            if (account.Owner != User(http))
+                return Forbidden();
+            var (p, t) = (Math.Max(page ?? 1, 1), Math.Clamp(size ?? 20, 1, 100));
+            var (operations, total) = bank.Operations(id, p, t);
+            return Results.Ok(new { page = p, size = t, total, operations });
         });
 
-        // ─── Conseillers, offres ───
-        app.MapGet("/conseillers/{id}", (string id, Banque banque) =>
-            banque.Conseillers.TryGetValue(id, out var c) ? Results.Ok(c) : Results.NotFound());
+        // ─── Advisors, offers ───
+        app.MapGet("/advisors/{id}", (string id, Bank bank) =>
+            bank.Advisors.TryGetValue(id, out var c) ? Results.Ok(c) : Results.NotFound());
 
-        app.MapGet("/offres", (string? segment, Banque banque, Chaos chaos) =>
-            chaos.OffresEnPanne
-                ? Results.Problem("Service des offres indisponible.", statusCode: StatusCodes.Status503ServiceUnavailable)
-                : Results.Ok(banque.Offres.Where(o => segment is null || o.Segment == segment)));
+        app.MapGet("/offers", (string? segment, Bank bank, Chaos chaos) =>
+            chaos.OffersDown
+                ? Results.Problem("Offers service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable)
+                : Results.Ok(bank.Offers.Where(o => segment is null || o.Segment == segment)));
 
-        // ─── Virements ───
-        app.MapPost("/virements", (VirementRequete r, HttpContext http, Banque banque, TimeProvider horloge) =>
+        // ─── Transfers ───
+        app.MapPost("/transfers", (TransferRequest r, HttpContext http, Bank bank, TimeProvider clock) =>
         {
-            if (banque.Compte(r.Source) is { } source && source.Titulaire != Utilisateur(http))
-                return Interdit();
+            if (bank.Account(r.Source) is { } source && source.Owner != User(http))
+                return Forbidden();
             try
             {
-                var compte = banque.Virer(r.Source, r.Cible, r.Montant, horloge.GetUtcNow());
-                return Results.Ok(new { compte.Id, compte.Solde });
+                var account = bank.Transfer(r.Source, r.Target, r.Amount, clock.GetUtcNow());
+                return Results.Ok(new { account.Id, account.Balance });
             }
             catch (KeyNotFoundException e)
             {
-                return Results.NotFound(new { erreur = e.Message });
+                return Results.NotFound(new { error = e.Message });
             }
             catch (InvalidOperationException e)
             {
-                return Results.BadRequest(new { erreur = e.Message });
+                return Results.BadRequest(new { error = e.Message });
             }
         });
 
-        // ─── Démo ───
+        // ─── Demo ───
         app.MapGet("/chaos", (Chaos chaos) => chaos);
-        app.MapPut("/chaos", (ChaosRequete r, Chaos chaos) =>
+        app.MapPut("/chaos", (ChaosRequest r, Chaos chaos) =>
         {
-            chaos.LatenceMs = r.LatenceMs ?? chaos.LatenceMs;
-            chaos.OffresEnPanne = r.OffresEnPanne ?? chaos.OffresEnPanne;
+            chaos.LatencyMs = r.LatencyMs ?? chaos.LatencyMs;
+            chaos.OffersDown = r.OffersDown ?? chaos.OffersDown;
             return Results.Ok(chaos);
         });
     }

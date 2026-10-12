@@ -1,0 +1,81 @@
+# Start the services first (Bff.Services, port 5210), then this BFF (port 5115).
+# The most telling: open http://localhost:5115 in a browser (alice / demo).
+# Here, the REST client keeps the session cookie between requests, like a browser.
+@web = http://localhost:5115
+@services = http://localhost:5210
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Without a session: 401 (and not a redirect to a login page)
+GET {{web}}/api/dashboard
+X-CSRF: 1
+
+### Login: the response only contains an HttpOnly cookie, no token
+POST {{web}}/bff/login
+X-CSRF: 1
+Content-Type: application/json
+
+{ "user": "alice", "password": "demo" }
+
+### Dashboard: 1 request, 7 calls to the services (see X-Downstream-Calls, X-Total-Duration-Ms, X-Downstream-Cumulative-Ms)
+GET {{web}}/api/dashboard
+X-CSRF: 1
+
+### Without the X-CSRF header: refused, even with a valid session
+POST {{web}}/api/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 25 }
+
+### With the header: transfer done, with Alice's token kept on the server side
+POST {{web}}/api/transfers
+X-CSRF: 1
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 25 }
+
+### Debit Bob's account: 403, the services check the rights (the BFF has no special privilege)
+POST {{web}}/api/transfers
+X-CSRF: 1
+Content-Type: application/json
+
+{ "source": "{{bob}}", "target": "{{alice}}", "amount": 25 }
+
+### ─── Degradation: the offers service goes down ───
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "offersDown": true }
+
+### The dashboard is displayed anyway: "offers": null, "degraded": ["offers"]
+GET {{web}}/api/dashboard
+X-CSRF: 1
+
+###
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "offersDown": false }
+
+### Slower services: the total duration follows the slowest call, not the sum
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "latencyMs": 400 }
+
+###
+GET {{web}}/api/dashboard
+X-CSRF: 1
+
+###
+PUT {{services}}/chaos
+Content-Type: application/json
+
+{ "latencyMs": 120 }
+
+### Logout: the session is deleted on the server side
+POST {{web}}/bff/logout
+X-CSRF: 1
+
+### The services refuse a direct call without a token: only the BFF (with the user's token) gets in
+GET {{services}}/profiles/me

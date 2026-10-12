@@ -5,39 +5,39 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<Banque>();
-builder.Services.AddSingleton<Jetons>();
-builder.Services.AddSingleton(new Chaos { LatenceMs = builder.Configuration.GetValue("Services:LatenceMs", 120) });
+builder.Services.AddSingleton<Bank>();
+builder.Services.AddSingleton<Tokens>();
+builder.Services.AddSingleton(new Chaos { LatencyMs = builder.Configuration.GetValue("Services:LatencyMs", 120) });
 
 var app = builder.Build();
 
-// Chaque appel coûte un aller-retour réseau et un peu de traitement : on le simule, pour que l'agrégation se mesure.
-app.Use(async (http, suite) =>
+// Each call costs a network round trip and a bit of processing: it is simulated, so that the aggregation can be measured.
+app.Use(async (http, next) =>
 {
     if (!http.Request.Path.StartsWithSegments("/chaos"))
-        await Task.Delay(http.RequestServices.GetRequiredService<Chaos>().LatenceMs);
-    await suite(http);
+        await Task.Delay(http.RequestServices.GetRequiredService<Chaos>().LatencyMs);
+    await next(http);
 });
 
-// Toutes les API métier exigent un jeton valide ; elles vérifient aussi que la donnée appartient à l'utilisateur.
-// Le BFF n'a donc AUCUN passe-droit : il agit avec le jeton de l'utilisateur, jamais avec le sien.
-app.Use(async (http, suite) =>
+// All the business APIs require a valid token; they also check that the data belongs to the user.
+// The BFF therefore has NO special privilege: it acts with the user's token, never with its own.
+app.Use(async (http, next) =>
 {
-    if (http.Request.Path.StartsWithSegments("/identite") || http.Request.Path.StartsWithSegments("/chaos"))
+    if (http.Request.Path.StartsWithSegments("/identity") || http.Request.Path.StartsWithSegments("/chaos"))
     {
-        await suite(http);
+        await next(http);
         return;
     }
-    var entete = http.Request.Headers.Authorization.ToString();
-    var utilisateur = entete.StartsWith("Bearer ") ? http.RequestServices.GetRequiredService<Jetons>().Valider(entete[7..]) : null;
-    if (utilisateur is null)
+    var header = http.Request.Headers.Authorization.ToString();
+    var user = header.StartsWith("Bearer ") ? http.RequestServices.GetRequiredService<Tokens>().Validate(header[7..]) : null;
+    if (user is null)
     {
         http.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        await http.Response.WriteAsJsonAsync(new { erreur = "Jeton d'accès absent, invalide ou expiré." });
+        await http.Response.WriteAsJsonAsync(new { error = "Access token missing, invalid or expired." });
         return;
     }
-    http.Items["utilisateur"] = utilisateur;
-    await suite(http);
+    http.Items["user"] = user;
+    await next(http);
 });
 
 app.MapServices();

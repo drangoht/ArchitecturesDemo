@@ -5,21 +5,21 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 namespace Bff.Web;
 
 /// <summary>
-/// Les sessions, gardées sur le serveur. Le cookie ne contient qu'une clé (chiffrée) vers cette table ; le jeton d'accès,
-/// lui, reste ici. Effet de bord utile : se déconnecter supprime la session, et un cookie volé devient inutilisable.
-/// En production : un cache distribué (Redis…), pour que toutes les instances du BFF partagent les sessions.
+/// The sessions, kept on the server. The cookie only contains an (encrypted) key to this table; the access token
+/// itself stays here. Useful side effect: logging out deletes the session, and a stolen cookie becomes unusable.
+/// In production: a distributed cache (Redis…), so that all the instances of the BFF share the sessions.
 /// </summary>
-public sealed class SessionsEnMemoire : ITicketStore
+public sealed class InMemorySessions : ITicketStore
 {
     private readonly ConcurrentDictionary<string, AuthenticationTicket> _sessions = new();
 
-    public int Nombre => _sessions.Count;
+    public int Count => _sessions.Count;
 
     public Task<string> StoreAsync(AuthenticationTicket ticket)
     {
-        var cle = Guid.NewGuid().ToString("N");
-        _sessions[cle] = ticket;
-        return Task.FromResult(cle);
+        var key = Guid.NewGuid().ToString("N");
+        _sessions[key] = ticket;
+        return Task.FromResult(key);
     }
 
     public Task RenewAsync(string key, AuthenticationTicket ticket)
@@ -38,39 +38,39 @@ public sealed class SessionsEnMemoire : ITicketStore
 }
 
 /// <summary>
-/// Protection contre la falsification de requêtes (CSRF) : toute requête vers /bff et /api doit porter l'en-tête
-/// <c>X-CSRF: 1</c>. Un formulaire d'un autre site ne peut pas ajouter d'en-tête, et un script d'un autre site
-/// déclenche une requête préliminaire CORS que ce BFF refuse. Avec <c>SameSite=Strict</c>, c'est une double barrière.
+/// Protection against cross-site request forgery (CSRF): every request to /bff and /api must carry the header
+/// <c>X-CSRF: 1</c>. A form on another site cannot add a header, and a script on another site
+/// triggers a CORS preflight request that this BFF refuses. With <c>SameSite=Strict</c>, it is a double barrier.
 /// </summary>
-public sealed class ExigerEnTeteAntiCsrf : IEndpointFilter
+public sealed class RequireAntiCsrfHeader : IEndpointFilter
 {
-    public const string EnTete = "X-CSRF";
+    public const string Header = "X-CSRF";
 
-    public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext contexte, EndpointFilterDelegate suite) =>
-        contexte.HttpContext.Request.Headers[EnTete] == "1"
-            ? suite(contexte)
-            : ValueTask.FromResult<object?>(Results.Json(new { erreur = $"En-tête {EnTete} manquant." }, statusCode: StatusCodes.Status400BadRequest));
+    public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next) =>
+        context.HttpContext.Request.Headers[Header] == "1"
+            ? next(context)
+            : ValueTask.FromResult<object?>(Results.Json(new { error = $"Missing {Header} header." }, statusCode: StatusCodes.Status400BadRequest));
 }
 
-public static class InstallationSession
+public static class SessionSetup
 {
-    public static IServiceCollection AddSessionBff(this IServiceCollection services)
+    public static IServiceCollection AddBffSession(this IServiceCollection services)
     {
-        services.AddSingleton<SessionsEnMemoire>();
+        services.AddSingleton<InMemorySessions>();
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
         {
             o.Cookie.Name = "bff-session";
-            o.Cookie.HttpOnly = true;                                 // illisible depuis JavaScript : une faille XSS ne peut pas le voler
-            o.Cookie.SameSite = SameSiteMode.Strict;                  // jamais envoyé depuis un autre site
-            o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // en production : Always, et le préfixe « __Host- »
-            o.ExpireTimeSpan = TimeSpan.FromMinutes(15);              // comme le jeton d'accès (pas de renouvellement dans la démo)
+            o.Cookie.HttpOnly = true;                                 // unreadable from JavaScript: an XSS flaw cannot steal it
+            o.Cookie.SameSite = SameSiteMode.Strict;                  // never sent from another site
+            o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // in production: Always, and the "__Host-" prefix
+            o.ExpireTimeSpan = TimeSpan.FromMinutes(15);              // like the access token (no renewal in the demo)
             o.SlidingExpiration = false;
-            // Une API répond 401/403 ; la redirection vers une page de connexion, c'est pour les sites rendus côté serveur.
+            // An API answers 401/403; redirecting to a login page is for server-rendered sites.
             o.Events.OnRedirectToLogin = c => { c.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
             o.Events.OnRedirectToAccessDenied = c => { c.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
         });
         services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
-            .Configure<SessionsEnMemoire>((o, sessions) => o.SessionStore = sessions);
+            .Configure<InMemorySessions>((o, sessions) => o.SessionStore = sessions);
         services.AddAuthorization();
         return services;
     }
