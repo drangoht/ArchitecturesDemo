@@ -1,146 +1,146 @@
-using Es.Domaine;
-using Es.Stockage;
+using Es.Domain;
+using Es.Storage;
 
 namespace Es.Projections;
 
 public interface IProjection
 {
-    void Appliquer(EvenementStocke stocke, IEvenement evenement);
-    void Vider();
+    void Apply(StoredEvent stored, IEvent @event);
+    void Clear();
 }
 
-// ─── Relevés : l'état courant de chaque compte, prêt à afficher ───
+// ─── Statements: the current state of each account, ready to display ───
 
-public record ReleveVue(Guid Id, string Titulaire, decimal Solde, bool Cloture, int NombreOperations, int Version);
+public record StatementView(Guid Id, string Owner, decimal Balance, bool Closed, int OperationCount, int Version);
 
-public class ProjectionReleves : IProjection
+public class StatementsProjection : IProjection
 {
-    private readonly Dictionary<Guid, ReleveVue> _releves = [];
+    private readonly Dictionary<Guid, StatementView> _statements = [];
 
-    public ReleveVue? Obtenir(Guid id) => _releves.GetValueOrDefault(id);
+    public StatementView? Get(Guid id) => _statements.GetValueOrDefault(id);
 
-    public void Appliquer(EvenementStocke stocke, IEvenement evenement)
+    public void Apply(StoredEvent stored, IEvent @event)
     {
-        if (evenement is CompteOuvert o)
+        if (@event is AccountOpened o)
         {
-            _releves[o.CompteId] = new ReleveVue(o.CompteId, o.Titulaire, o.DepotInitial, false, 1, stocke.Version);
+            _statements[o.AccountId] = new StatementView(o.AccountId, o.Owner, o.InitialDeposit, false, 1, stored.Version);
             return;
         }
 
-        var r = _releves[evenement.CompteId];
-        var solde = evenement switch
+        var r = _statements[@event.AccountId];
+        var balance = @event switch
         {
-            ArgentDepose e => r.Solde + e.Montant,
-            ArgentRetire e => r.Solde - e.Montant,
-            VirementEmis e => r.Solde - e.Montant,
-            VirementRecu e => r.Solde + e.Montant,
-            _ => r.Solde
+            MoneyDeposited e => r.Balance + e.Amount,
+            MoneyWithdrawn e => r.Balance - e.Amount,
+            TransferSent e => r.Balance - e.Amount,
+            TransferReceived e => r.Balance + e.Amount,
+            _ => r.Balance
         };
-        _releves[evenement.CompteId] = r with
+        _statements[@event.AccountId] = r with
         {
-            Solde = solde,
-            Cloture = r.Cloture || evenement is CompteCloture,
-            NombreOperations = r.NombreOperations + 1,
-            Version = stocke.Version
+            Balance = balance,
+            Closed = r.Closed || @event is AccountClosed,
+            OperationCount = r.OperationCount + 1,
+            Version = stored.Version
         };
     }
 
-    public void Vider() => _releves.Clear();
+    public void Clear() => _statements.Clear();
 }
 
-// ─── Plus gros retraits : une projection ajoutée APRÈS coup ───
-// Comme elle se construit en rejouant tout le flux, elle connaît d'emblée tous les retraits passés,
-// y compris ceux faits avant qu'elle existe. Impossible avec une base classique, qui n'a gardé que l'état final.
+// ─── Largest withdrawals: a projection added AFTERWARDS ───
+// Since it is built by replaying the whole stream, it knows all the past withdrawals right away,
+// including those made before it existed. Impossible with a classic database, which kept only the final state.
 
-public record RetraitVue(string Titulaire, decimal Montant, string Motif, DateTime Date);
+public record WithdrawalView(string Owner, decimal Amount, string Reason, DateTime Date);
 
-public class ProjectionPlusGrosRetraits : IProjection
+public class LargestWithdrawalsProjection : IProjection
 {
-    private readonly Dictionary<Guid, string> _titulaires = [];
-    private readonly List<RetraitVue> _retraits = [];
+    private readonly Dictionary<Guid, string> _owners = [];
+    private readonly List<WithdrawalView> _withdrawals = [];
 
-    public IReadOnlyList<RetraitVue> Top(int nombre) =>
-        _retraits.OrderByDescending(r => r.Montant).ThenBy(r => r.Date).Take(nombre).ToList();
+    public IReadOnlyList<WithdrawalView> Top(int count) =>
+        _withdrawals.OrderByDescending(r => r.Amount).ThenBy(r => r.Date).Take(count).ToList();
 
-    public void Appliquer(EvenementStocke stocke, IEvenement evenement)
+    public void Apply(StoredEvent stored, IEvent @event)
     {
-        switch (evenement)
+        switch (@event)
         {
-            case CompteOuvert e:
-                _titulaires[e.CompteId] = e.Titulaire;
+            case AccountOpened e:
+                _owners[e.AccountId] = e.Owner;
                 break;
-            case ArgentRetire e:
-                _retraits.Add(new RetraitVue(_titulaires[e.CompteId], e.Montant, e.Motif, e.Date));
+            case MoneyWithdrawn e:
+                _withdrawals.Add(new WithdrawalView(_owners[e.AccountId], e.Amount, e.Reason, e.Date));
                 break;
         }
     }
 
-    public void Vider()
+    public void Clear()
     {
-        _titulaires.Clear();
-        _retraits.Clear();
+        _owners.Clear();
+        _withdrawals.Clear();
     }
 }
 
 /// <summary>
-/// Fait avancer toutes les projections sur le flux global, depuis la dernière position traitée.
-/// Toutes les lectures passent par ce moteur, protégé par un verrou (les projections sont en mémoire).
+/// Moves all the projections forward on the global stream, from the last processed position.
+/// All the reads go through this engine, protected by a lock (the projections are in memory).
 /// </summary>
-public class MoteurProjections(IMagasinEvenements magasin, ProjectionReleves releves, ProjectionPlusGrosRetraits retraits)
+public class ProjectionEngine(IEventStore store, StatementsProjection statements, LargestWithdrawalsProjection withdrawals)
 {
-    private readonly IProjection[] _projections = [releves, retraits];
-    private readonly SemaphoreSlim _verrou = new(1, 1);
+    private readonly IProjection[] _projections = [statements, withdrawals];
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
     public long Position { get; private set; }
 
-    public async Task<int> Rattraper()
+    public async Task<int> CatchUp()
     {
-        await _verrou.WaitAsync();
+        await _lock.WaitAsync();
         try
         {
-            var nouveaux = await magasin.LireTout(Position);
-            foreach (var stocke in nouveaux)
+            var newEvents = await store.ReadAll(Position);
+            foreach (var stored in newEvents)
             {
-                var evenement = stocke.Evenement();
+                var @event = stored.Event();
                 foreach (var projection in _projections)
-                    projection.Appliquer(stocke, evenement);
-                Position = stocke.Position;
+                    projection.Apply(stored, @event);
+                Position = stored.Position;
             }
-            return nouveaux.Count;
+            return newEvents.Count;
         }
         finally
         {
-            _verrou.Release();
+            _lock.Release();
         }
     }
 
-    /// <summary>Efface toutes les projections et rejoue tout l'historique depuis le premier événement.</summary>
-    public async Task<int> Reconstruire()
+    /// <summary>Clears all the projections and replays the whole history from the first event.</summary>
+    public async Task<int> Rebuild()
     {
-        await _verrou.WaitAsync();
+        await _lock.WaitAsync();
         try
         {
             foreach (var projection in _projections)
-                projection.Vider();
+                projection.Clear();
             Position = 0;
         }
         finally
         {
-            _verrou.Release();
+            _lock.Release();
         }
-        return await Rattraper();
+        return await CatchUp();
     }
 
-    public async Task<T> Lire<T>(Func<T> lecture)
+    public async Task<T> Read<T>(Func<T> read)
     {
-        await _verrou.WaitAsync();
+        await _lock.WaitAsync();
         try
         {
-            return lecture();
+            return read();
         }
         finally
         {
-            _verrou.Release();
+            _lock.Release();
         }
     }
 }

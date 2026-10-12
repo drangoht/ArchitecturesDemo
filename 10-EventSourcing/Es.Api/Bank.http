@@ -1,0 +1,52 @@
+# The events are written to Es.Api\events.jsonl: open it to see the "database".
+# Stop then restart the API: the whole state is rebuilt from this file.
+# To start from scratch: delete the file.
+@base = http://localhost:5109
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Alice's statement (projection): note the version
+GET {{base}}/accounts/{{alice}}
+
+### Withdraw 100 €, with a reason
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 100, "reason": "Groceries" }
+
+### Withdraw 300 €
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 300, "reason": "Rent" }
+
+### Transfer from Alice to Bob (two streams, written all or nothing)
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 250 }
+
+### Audit: Alice's whole history, immutable
+GET {{base}}/accounts/{{alice}}/events
+
+### Time travel: Alice as she was at version 2 (after the 1st withdrawal)
+GET {{base}}/accounts/{{alice}}/state?version=2
+
+### Optimistic concurrency: "I withdraw based on version 1" → 409, because the account changed since
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+If-Match: 1
+
+{ "amount": 50 }
+
+### Closure refused: the balance is not zero
+POST {{base}}/accounts/{{bob}}/closure
+
+### Projection added afterwards: yet it knows all the past withdrawals
+GET {{base}}/statistics/largest-withdrawals
+
+### Clear and rebuild all the projections from the first event
+POST {{base}}/admin/projections/rebuild
+
+### Content of the store
+GET {{base}}/admin/store

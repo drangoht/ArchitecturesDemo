@@ -1,12 +1,12 @@
 using System.Text.Json;
-using Es.Domaine;
+using Es.Domain;
 using Es.Projections;
-using Es.Stockage;
+using Es.Storage;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Es.Api;
 
-public static class DonneesDeDemo
+public static class DemoData
 {
     public static readonly Guid Alice = Guid.Parse("11111111-1111-1111-1111-111111111111");
     public static readonly Guid Bob = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -14,123 +14,123 @@ public static class DonneesDeDemo
 
 internal static class Endpoints
 {
-    internal record OuvertureRequete(string Titulaire, decimal DepotInitial);
-    internal record MontantRequete(decimal Montant);
-    internal record RetraitRequete(decimal Montant, string? Motif);
-    internal record VirementRequete(Guid Source, Guid Cible, decimal Montant);
+    internal record OpeningRequest(string Owner, decimal InitialDeposit);
+    internal record AmountRequest(decimal Amount);
+    internal record WithdrawalRequest(decimal Amount, string? Reason);
+    internal record TransferRequest(Guid Source, Guid Target, decimal Amount);
 
-    // ─── Commandes : charger (rejouer) → décider → ajouter les nouveaux événements ───
+    // ─── Commands: load (replay) → decide → append the new events ───
 
-    public static void MapCommandes(this IEndpointRouteBuilder app)
+    public static void MapCommands(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/comptes", async (OuvertureRequete r, DepotComptes depot, TimeProvider horloge) =>
+        app.MapPost("/accounts", async (OpeningRequest r, AccountRepository repository, TimeProvider clock) =>
         {
-            var compte = Compte.Ouvrir(Guid.NewGuid(), r.Titulaire, r.DepotInitial, horloge.GetUtcNow().UtcDateTime);
-            await depot.Enregistrer(compte);
-            return Results.Created($"/comptes/{compte.Id}", new { compte.Id, compte.Version });
+            var account = Account.Open(Guid.NewGuid(), r.Owner, r.InitialDeposit, clock.GetUtcNow().UtcDateTime);
+            await repository.Save(account);
+            return Results.Created($"/accounts/{account.Id}", new { account.Id, account.Version });
         });
 
-        app.MapPost("/comptes/{id:guid}/depot", (Guid id, MontantRequete r, [FromHeader(Name = "If-Match")] int? version,
-                DepotComptes depot, TimeProvider horloge) =>
-            Modifier(id, version, depot, c => c.Deposer(r.Montant, horloge.GetUtcNow().UtcDateTime)));
+        app.MapPost("/accounts/{id:guid}/deposit", (Guid id, AmountRequest r, [FromHeader(Name = "If-Match")] int? version,
+                AccountRepository repository, TimeProvider clock) =>
+            Modify(id, version, repository, c => c.Deposit(r.Amount, clock.GetUtcNow().UtcDateTime)));
 
-        app.MapPost("/comptes/{id:guid}/retrait", (Guid id, RetraitRequete r, [FromHeader(Name = "If-Match")] int? version,
-                DepotComptes depot, TimeProvider horloge) =>
-            Modifier(id, version, depot, c => c.Retirer(r.Montant, r.Motif ?? "Retrait au guichet", horloge.GetUtcNow().UtcDateTime)));
+        app.MapPost("/accounts/{id:guid}/withdrawal", (Guid id, WithdrawalRequest r, [FromHeader(Name = "If-Match")] int? version,
+                AccountRepository repository, TimeProvider clock) =>
+            Modify(id, version, repository, c => c.Withdraw(r.Amount, r.Reason ?? "Counter withdrawal", clock.GetUtcNow().UtcDateTime)));
 
-        app.MapPost("/comptes/{id:guid}/cloture", (Guid id, [FromHeader(Name = "If-Match")] int? version,
-                DepotComptes depot, TimeProvider horloge) =>
-            Modifier(id, version, depot, c => c.Cloturer(horloge.GetUtcNow().UtcDateTime)));
+        app.MapPost("/accounts/{id:guid}/closure", (Guid id, [FromHeader(Name = "If-Match")] int? version,
+                AccountRepository repository, TimeProvider clock) =>
+            Modify(id, version, repository, c => c.Close(clock.GetUtcNow().UtcDateTime)));
 
-        app.MapPost("/virements", async (VirementRequete r, DepotComptes depot, TimeProvider horloge) =>
+        app.MapPost("/transfers", async (TransferRequest r, AccountRepository repository, TimeProvider clock) =>
         {
-            if (r.Source == r.Cible)
-                throw new RegleMetierException("Impossible de virer vers le même compte.");
+            if (r.Source == r.Target)
+                throw new BusinessRuleException("Cannot transfer to the same account.");
 
-            var (source, cible) = (await depot.Charger(r.Source), await depot.Charger(r.Cible));
-            var (virementId, maintenant) = (Guid.NewGuid(), horloge.GetUtcNow().UtcDateTime);
-            source.EmettreVirement(virementId, cible.Id, r.Montant, maintenant);
-            cible.RecevoirVirement(virementId, source.Id, r.Montant, maintenant);
+            var (source, target) = (await repository.Load(r.Source), await repository.Load(r.Target));
+            var (transferId, now) = (Guid.NewGuid(), clock.GetUtcNow().UtcDateTime);
+            source.SendTransfer(transferId, target.Id, r.Amount, now);
+            target.ReceiveTransfer(transferId, source.Id, r.Amount, now);
 
-            // Deux flux modifiés, écrits en tout ou rien (si l'un a bougé entre-temps : 409, rien n'est écrit).
-            await depot.Enregistrer(source, cible);
-            return Results.Ok(new { virementId, soldeSource = source.Solde, soldeCible = cible.Solde });
+            // Two streams changed, written all or nothing (if one moved in the meantime: 409, nothing is written).
+            await repository.Save(source, target);
+            return Results.Ok(new { transferId, sourceBalance = source.Balance, targetBalance = target.Balance });
         });
     }
 
-    /// <param name="versionAttendue">
-    /// En-tête If-Match facultatif : « je modifie le compte tel que je l'ai vu à cette version ».
-    /// S'il a changé depuis, la modification est refusée (409) au lieu d'écraser une décision prise sur des données périmées.
+    /// <param name="expectedVersion">
+    /// Optional If-Match header: "I am changing the account as I saw it at this version".
+    /// If it changed since, the change is refused (409) instead of overwriting a decision made on stale data.
     /// </param>
-    private static async Task<IResult> Modifier(Guid id, int? versionAttendue, DepotComptes depot, Action<Compte> decision)
+    private static async Task<IResult> Modify(Guid id, int? expectedVersion, AccountRepository repository, Action<Account> decision)
     {
-        var compte = await depot.Charger(id);
-        if (versionAttendue is not null && versionAttendue != compte.Version)
-            throw new ConflitDeConcurrenceException(id, versionAttendue.Value, compte.Version);
+        var account = await repository.Load(id);
+        if (expectedVersion is not null && expectedVersion != account.Version)
+            throw new ConcurrencyConflictException(id, expectedVersion.Value, account.Version);
 
-        decision(compte);
-        await depot.Enregistrer(compte);
-        return Results.Ok(new { compte.Id, compte.Solde, compte.Version });
+        decision(account);
+        await repository.Save(account);
+        return Results.Ok(new { account.Id, account.Balance, account.Version });
     }
 
-    // ─── Lectures ───
+    // ─── Reads ───
 
-    public static void MapLectures(this IEndpointRouteBuilder app)
+    public static void MapReads(this IEndpointRouteBuilder app)
     {
-        // Vue courante, servie par une projection.
-        app.MapGet("/comptes/{id:guid}", async (Guid id, MoteurProjections moteur, ProjectionReleves releves) =>
-            await moteur.Lire(() => releves.Obtenir(id)) is { } releve ? Results.Ok(releve) : Results.NotFound());
+        // Current view, served by a projection.
+        app.MapGet("/accounts/{id:guid}", async (Guid id, ProjectionEngine engine, StatementsProjection statements) =>
+            await engine.Read(() => statements.Get(id)) is { } statement ? Results.Ok(statement) : Results.NotFound());
 
-        // Audit : l'historique complet et immuable du compte.
-        app.MapGet("/comptes/{id:guid}/evenements", async (Guid id, IMagasinEvenements magasin) =>
-            (await magasin.LireFlux(id)).Select(e => new
+        // Audit: the complete and immutable history of the account.
+        app.MapGet("/accounts/{id:guid}/events", async (Guid id, IEventStore store) =>
+            (await store.ReadStream(id)).Select(e => new
             {
                 e.Version,
                 e.Position,
                 e.Type,
                 e.Date,
-                Donnees = JsonSerializer.Deserialize<JsonElement>(e.Donnees)
+                Data = JsonSerializer.Deserialize<JsonElement>(e.Data)
             }));
 
-        // Voyage dans le temps : l'état à une version ou à une date passée, recalculé en rejouant les événements.
-        app.MapGet("/comptes/{id:guid}/etat", async (Guid id, int? version, DateTime? date, DepotComptes depot) =>
+        // Time travel: the state at a past version or date, recomputed by replaying the events.
+        app.MapGet("/accounts/{id:guid}/state", async (Guid id, int? version, DateTime? date, AccountRepository repository) =>
         {
-            var compte = version is not null ? await depot.ChargerALaVersion(id, version.Value)
-                : date is not null ? await depot.ChargerALaDate(id, date.Value.ToUniversalTime())
-                : await depot.Charger(id);
-            return Results.Ok(new { compte.Id, compte.Titulaire, compte.Solde, compte.Cloture, compte.Version });
+            var account = version is not null ? await repository.LoadAtVersion(id, version.Value)
+                : date is not null ? await repository.LoadAtDate(id, date.Value.ToUniversalTime())
+                : await repository.Load(id);
+            return Results.Ok(new { account.Id, account.Owner, account.Balance, account.Closed, account.Version });
         });
 
-        app.MapGet("/statistiques/plus-gros-retraits", (MoteurProjections moteur, ProjectionPlusGrosRetraits retraits) =>
-            moteur.Lire(() => retraits.Top(5)));
+        app.MapGet("/statistics/largest-withdrawals", (ProjectionEngine engine, LargestWithdrawalsProjection withdrawals) =>
+            engine.Read(() => withdrawals.Top(5)));
 
-        // Les projections sont jetables : on les efface et on rejoue tout le magasin.
-        app.MapPost("/admin/projections/reconstruire", async (MoteurProjections moteur) =>
-            Results.Ok(new { evenementsRejoues = await moteur.Reconstruire() }));
+        // The projections are disposable: they are cleared and the whole store is replayed.
+        app.MapPost("/admin/projections/rebuild", async (ProjectionEngine engine) =>
+            Results.Ok(new { eventsReplayed = await engine.Rebuild() }));
 
-        app.MapGet("/admin/magasin", async (IMagasinEvenements magasin, MoteurProjections moteur) =>
+        app.MapGet("/admin/store", async (IEventStore store, ProjectionEngine engine) =>
         {
-            var tout = await magasin.LireTout();
+            var all = await store.ReadAll();
             return Results.Ok(new
             {
-                nombreEvenements = tout.Count,
-                nombreFlux = tout.Select(e => e.Flux).Distinct().Count(),
-                parType = tout.GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.Count()),
-                positionDesProjections = moteur.Position
+                eventCount = all.Count,
+                streamCount = all.Select(e => e.Stream).Distinct().Count(),
+                byType = all.GroupBy(e => e.Type).ToDictionary(g => g.Key, g => g.Count()),
+                projectionPosition = engine.Position
             });
         });
     }
 }
 
-/// <summary>Fait suivre aux projections les nouveaux événements, en continu.</summary>
-internal sealed class AbonnementProjections(MoteurProjections moteur) : BackgroundService
+/// <summary>Feeds the new events to the projections, continuously.</summary>
+internal sealed class ProjectionSubscription(ProjectionEngine engine) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken arret)
+    protected override async Task ExecuteAsync(CancellationToken stopping)
     {
-        while (!arret.IsCancellationRequested)
+        while (!stopping.IsCancellationRequested)
         {
-            await moteur.Rattraper();
-            await Task.Delay(TimeSpan.FromMilliseconds(100), arret);
+            await engine.CatchUp();
+            await Task.Delay(TimeSpan.FromMilliseconds(100), stopping);
         }
     }
 }

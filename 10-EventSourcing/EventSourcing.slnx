@@ -1,7 +1,7 @@
 <Solution>
   <Project Path="Es.Api/Es.Api.csproj" />
-  <Project Path="Es.Domaine/Es.Domaine.csproj" />
+  <Project Path="Es.Domain/Es.Domain.csproj" />
   <Project Path="Es.Projections/Es.Projections.csproj" />
-  <Project Path="Es.Stockage/Es.Stockage.csproj" />
+  <Project Path="Es.Storage/Es.Storage.csproj" />
   <Project Path="Es.Tests/Es.Tests.csproj" />
 </Solution>

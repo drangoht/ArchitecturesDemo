@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The domain: the events and the aggregate that rehydrates itself by replaying them. No dependency. -->
+
+</Project>

@@ -1,60 +1,60 @@
 using Es.Api;
-using Es.Domaine;
+using Es.Domain;
 using Es.Projections;
-using Es.Stockage;
+using Es.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Stockage:Fichier vide → magasin en mémoire (utilisé par les tests).
-var fichier = builder.Configuration["Stockage:Fichier"];
-var cheminFichier = string.IsNullOrWhiteSpace(fichier) ? null : Path.Combine(builder.Environment.ContentRootPath, fichier);
+// Empty Storage:File → in-memory store (used by the tests).
+var file = builder.Configuration["Storage:File"];
+var filePath = string.IsNullOrWhiteSpace(file) ? null : Path.Combine(builder.Environment.ContentRootPath, file);
 
-builder.Services.AddSingleton<IMagasinEvenements>(new MagasinEvenements(cheminFichier));
-builder.Services.AddSingleton<MagasinInstantanes>();
-builder.Services.AddScoped<DepotComptes>();
-builder.Services.AddSingleton<ProjectionReleves>();
-builder.Services.AddSingleton<ProjectionPlusGrosRetraits>();
-builder.Services.AddSingleton<MoteurProjections>();
-builder.Services.AddHostedService<AbonnementProjections>();
+builder.Services.AddSingleton<IEventStore>(new EventStore(filePath));
+builder.Services.AddSingleton<SnapshotStore>();
+builder.Services.AddScoped<AccountRepository>();
+builder.Services.AddSingleton<StatementsProjection>();
+builder.Services.AddSingleton<LargestWithdrawalsProjection>();
+builder.Services.AddSingleton<ProjectionEngine>();
+builder.Services.AddHostedService<ProjectionSubscription>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 var app = builder.Build();
 
-// Premier démarrage (magasin vide) : on crée les comptes de démo… par des événements, évidemment.
-if ((await app.Services.GetRequiredService<IMagasinEvenements>().LireTout(maximum: 1)).Count == 0)
+// First start (empty store): the demo accounts are created… through events, of course.
+if ((await app.Services.GetRequiredService<IEventStore>().ReadAll(maximum: 1)).Count == 0)
 {
     using var scope = app.Services.CreateScope();
-    var maintenant = DateTime.UtcNow;
-    await scope.ServiceProvider.GetRequiredService<DepotComptes>().Enregistrer(
-        Compte.Ouvrir(DonneesDeDemo.Alice, "Alice", 1000m, maintenant),
-        Compte.Ouvrir(DonneesDeDemo.Bob, "Bob", 500m, maintenant));
+    var now = DateTime.UtcNow;
+    await scope.ServiceProvider.GetRequiredService<AccountRepository>().Save(
+        Account.Open(DemoData.Alice, "Alice", 1000m, now),
+        Account.Open(DemoData.Bob, "Bob", 500m, now));
 }
 
-app.Use(async (contexte, suivant) =>
+app.Use(async (context, next) =>
 {
     try
     {
-        await suivant(contexte);
+        await next(context);
     }
-    catch (RegleMetierException e)
+    catch (BusinessRuleException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
-    catch (CompteIntrouvableException e)
+    catch (AccountNotFoundException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status404NotFound;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
-    catch (ConflitDeConcurrenceException e)
+    catch (ConcurrencyConflictException e)
     {
-        contexte.Response.StatusCode = StatusCodes.Status409Conflict;
-        await contexte.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
     }
 });
 
-app.MapCommandes();
-app.MapLectures();
+app.MapCommands();
+app.MapReads();
 
 app.Run();
 
