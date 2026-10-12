@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE BUSINESS CODE, written as for a single customer: no method receives or filters a tenant identifier.
+    The isolation is ensured below, by BankDbContext (global filter + stamping) and BankFactory (choice of the database).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mt.Tenants\Mt.Tenants.csproj" />
+  </ItemGroup>
+
+</Project>

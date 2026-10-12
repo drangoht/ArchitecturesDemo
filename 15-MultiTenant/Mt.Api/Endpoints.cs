@@ -1,100 +1,100 @@
-using Mt.Banque;
-using Mt.Locataires;
+using Mt.Bank;
+using Mt.Tenants;
 
 namespace Mt.Api;
 
-public static class DonneesDeDemo
+public static class DemoData
 {
     public static readonly Guid Alice = Guid.Parse("11111111-1111-1111-1111-111111111111");
     public static readonly Guid Bob = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     /// <summary>
-    /// Alice et Bob existent chez CHAQUE banque, avec les mêmes identifiants mais des soldes différents :
-    /// la même URL /comptes/1111… donne trois réponses selon le locataire.
+    /// Alice and Bob exist at EACH bank, with the same identifiers but different balances:
+    /// the same URL /accounts/1111… gives three answers depending on the tenant.
     /// </summary>
-    public static IEnumerable<Compte> Comptes(string locataire) => locataire switch
+    public static IEnumerable<Account> Accounts(string tenant) => tenant switch
     {
-        "alpha" => [new Compte(Alice, "Alice", 1_000m), new Compte(Bob, "Bob", 500m)],
-        "beta" => [new Compte(Alice, "Alice", 3_000m), new Compte(Bob, "Bob", 200m)],
-        "gamma" => [new Compte(Alice, "Alice", 25_000m), new Compte(Bob, "Bob", 1_500m)],
+        "alpha" => [new Account(Alice, "Alice", 1_000m), new Account(Bob, "Bob", 500m)],
+        "beta" => [new Account(Alice, "Alice", 3_000m), new Account(Bob, "Bob", 200m)],
+        "gamma" => [new Account(Alice, "Alice", 25_000m), new Account(Bob, "Bob", 1_500m)],
         _ => []
     };
 }
 
 internal static class Endpoints
 {
-    internal record OuvertureRequete(string Titulaire, decimal DepotInitial);
-    internal record MontantRequete(decimal Montant);
-    internal record VirementRequete(Guid Source, Guid Cible, decimal Montant);
-    internal record FormuleRequete(Plan Plan);
-    internal record FraisRequete(string Mois);
+    internal record OpeningRequest(string Owner, decimal InitialDeposit);
+    internal record AmountRequest(decimal Amount);
+    internal record TransferRequest(Guid Source, Guid Target, decimal Amount);
+    internal record PlanRequest(Plan Plan);
+    internal record FeeRequest(string Month);
 
-    /// <summary>L'API des clients : chaque route s'exécute pour le locataire de la requête, sans jamais le mentionner.</summary>
-    public static void MapBanque(this IEndpointRouteBuilder app)
+    /// <summary>The customers' API: each route runs for the tenant of the request, without ever mentioning it.</summary>
+    public static void MapBank(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/locataire", (IContexteLocataire contexte) =>
+        app.MapGet("/tenant", (ITenantContext context) =>
         {
-            var l = contexte.Exiger();
-            return Results.Ok(new { l.Id, l.Nom, l.Plan, l.Isolation, l.Regles, l.Quotas });
+            var l = context.Require();
+            return Results.Ok(new { l.Id, l.Name, l.Plan, l.Isolation, l.Rules, l.Quotas });
         });
 
-        app.MapGet("/comptes", async (ServiceBancaire banque) => Results.Ok(await banque.Lister()));
+        app.MapGet("/accounts", async (BankingService bank) => Results.Ok(await bank.List()));
 
-        app.MapPost("/comptes", async (OuvertureRequete r, ServiceBancaire banque) =>
+        app.MapPost("/accounts", async (OpeningRequest r, BankingService bank) =>
         {
-            var compte = await banque.Ouvrir(r.Titulaire, r.DepotInitial);
-            return Results.Created($"/comptes/{compte.Id}", compte);
+            var account = await bank.Open(r.Owner, r.InitialDeposit);
+            return Results.Created($"/accounts/{account.Id}", account);
         });
 
-        // Le compte d'une autre banque répond 404, comme un compte qui n'existe pas : on ne révèle même pas son existence.
-        app.MapGet("/comptes/{id:guid}", async (Guid id, ServiceBancaire banque) =>
-            await banque.Consulter(id) is { } compte ? Results.Ok(compte) : Results.NotFound());
+        // Another bank's account answers 404, like an account that does not exist: its existence is not even revealed.
+        app.MapGet("/accounts/{id:guid}", async (Guid id, BankingService bank) =>
+            await bank.Get(id) is { } account ? Results.Ok(account) : Results.NotFound());
 
-        app.MapGet("/comptes/{id:guid}/operations", async (Guid id, ServiceBancaire banque) =>
-            Results.Ok(await banque.Operations(id)));
+        app.MapGet("/accounts/{id:guid}/operations", async (Guid id, BankingService bank) =>
+            Results.Ok(await bank.Operations(id)));
 
-        app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, MontantRequete r, ServiceBancaire banque) =>
-            Results.Ok(await banque.Retirer(id, r.Montant)));
+        app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, AmountRequest r, BankingService bank) =>
+            Results.Ok(await bank.Withdraw(id, r.Amount)));
 
-        app.MapPost("/virements", async (VirementRequete r, ServiceBancaire banque) =>
-            Results.Ok(await banque.Virer(r.Source, r.Cible, r.Montant)));
+        app.MapPost("/transfers", async (TransferRequest r, BankingService bank) =>
+            Results.Ok(await bank.Transfer(r.Source, r.Target, r.Amount)));
     }
 
-    /// <summary>Le back-office de l'éditeur (hors locataire).</summary>
-    public static void MapPlateforme(this IEndpointRouteBuilder app)
+    /// <summary>The vendor's back office (outside any tenant).</summary>
+    public static void MapPlatform(this IEndpointRouteBuilder app)
     {
-        var plateforme = app.MapGroup("/plateforme");
+        var platform = app.MapGroup("/platform");
 
-        plateforme.MapGet("/locataires", (CatalogueLocataires catalogue) =>
-            Results.Ok(catalogue.Tous().Select(Vue)));
+        platform.MapGet("/tenants", (TenantCatalog catalog) =>
+            Results.Ok(catalog.All().Select(View)));
 
-        plateforme.MapGet("/locataires/{id}", (string id, CatalogueLocataires catalogue) =>
-            catalogue.Trouver(id) is { } l ? Results.Ok(Vue(l)) : Results.NotFound());
+        platform.MapGet("/tenants/{id}", (string id, TenantCatalog catalog) =>
+            catalog.Find(id) is { } l ? Results.Ok(View(l)) : Results.NotFound());
 
-        plateforme.MapPost("/locataires", async (DefinitionLocataire d, ServicePlateforme service) =>
+        platform.MapPost("/tenants", async (TenantDefinition d, PlatformService service) =>
         {
-            var locataire = await service.Inscrire(d);
-            return Results.Created($"/plateforme/locataires/{locataire.Id}", Vue(locataire));
+            var tenant = await service.Register(d);
+            return Results.Created($"/platform/tenants/{tenant.Id}", View(tenant));
         });
 
-        plateforme.MapPost("/locataires/{id}/suspendre", (string id, ServicePlateforme service) =>
-            service.Suspendre(id, true) ? Results.NoContent() : Results.NotFound());
+        platform.MapPost("/tenants/{id}/suspend", (string id, PlatformService service) =>
+            service.Suspend(id, true) ? Results.NoContent() : Results.NotFound());
 
-        plateforme.MapPost("/locataires/{id}/reactiver", (string id, ServicePlateforme service) =>
-            service.Suspendre(id, false) ? Results.NoContent() : Results.NotFound());
+        platform.MapPost("/tenants/{id}/reactivate", (string id, PlatformService service) =>
+            service.Suspend(id, false) ? Results.NoContent() : Results.NotFound());
 
-        plateforme.MapPost("/locataires/{id}/formule", async (string id, FormuleRequete r, ServicePlateforme service) =>
-            await service.ChangerDeFormule(id, r.Plan) is { } bilan ? Results.Ok(bilan) : Results.NotFound());
+        platform.MapPost("/tenants/{id}/plan", async (string id, PlanRequest r, PlatformService service) =>
+            await service.ChangePlan(id, r.Plan) is { } report ? Results.Ok(report) : Results.NotFound());
 
-        plateforme.MapDelete("/locataires/{id}", async (string id, ServicePlateforme service) =>
-            await service.Supprimer(id) is { } bilan ? Results.Ok(bilan) : Results.NotFound());
+        platform.MapDelete("/tenants/{id}", async (string id, PlatformService service) =>
+            await service.Delete(id) is { } report ? Results.Ok(report) : Results.NotFound());
 
-        plateforme.MapGet("/stockage", async (ServicePlateforme service) => Results.Ok(await service.Inventaire()));
+        platform.MapGet("/storage", async (PlatformService service) => Results.Ok(await service.Inventory()));
 
-        plateforme.MapPost("/taches/frais-mensuels", async (FraisRequete r, ServicePlateforme service) =>
-            Results.Ok(await service.PreleverFraisMensuels(r.Mois)));
+        platform.MapPost("/tasks/monthly-fees", async (FeeRequest r, PlatformService service) =>
+            Results.Ok(await service.ChargeMonthlyFees(r.Month)));
     }
 
-    private static object Vue(Locataire l) =>
-        new { l.Id, l.Nom, l.Plan, l.Isolation, Base = FabriqueBanque.NomBase(l), l.Actif, l.Regles, l.Quotas };
+    private static object View(Tenant l) =>
+        new { l.Id, l.Name, l.Plan, l.Isolation, Database = BankFactory.DatabaseName(l), l.Active, l.Rules, l.Quotas };
 }

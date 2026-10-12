@@ -1,50 +1,50 @@
 using System.Text.Json.Serialization;
 using Mt.Api;
-using Mt.Banque;
-using Mt.Locataires;
+using Mt.Bank;
+using Mt.Tenants;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddLocataires();
-builder.Services.AddLimitationParLocataire();
-builder.Services.AddBanque();
-builder.Services.AddSingleton<ServicePlateforme>();
+builder.Services.AddTenants();
+builder.Services.AddPerTenantRateLimiting();
+builder.Services.AddBank();
+builder.Services.AddSingleton<PlatformService>();
 
 var app = builder.Build();
 
-// Les banques de démo passent par le même chemin qu'un nouveau client inscrit depuis le back-office.
-var plateforme = app.Services.GetRequiredService<ServicePlateforme>();
-foreach (var definition in app.Configuration.GetSection("Locataires").Get<List<DefinitionLocataire>>() ?? [])
-    await plateforme.Inscrire(definition, DonneesDeDemo.Comptes(definition.Id));
+// The demo banks go through the same path as a new customer registered from the back office.
+var platform = app.Services.GetRequiredService<PlatformService>();
+foreach (var definition in app.Configuration.GetSection("Tenants").Get<List<TenantDefinition>>() ?? [])
+    await platform.Register(definition, DemoData.Accounts(definition.Id));
 
-// Erreurs métier → HTTP, une seule fois pour toutes les routes.
-app.Use(async (http, suite) =>
+// Business errors → HTTP, once for all the routes.
+app.Use(async (http, next) =>
 {
     try
     {
-        await suite(http);
+        await next(http);
     }
-    catch (RegleMetierException e)
+    catch (BusinessRuleException e)
     {
         http.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await http.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        await http.Response.WriteAsJsonAsync(new { error = e.Message });
     }
-    catch (CompteIntrouvableException e)
+    catch (AccountNotFoundException e)
     {
         http.Response.StatusCode = StatusCodes.Status404NotFound;
-        await http.Response.WriteAsJsonAsync(new { erreur = e.Message });
+        await http.Response.WriteAsJsonAsync(new { error = e.Message });
     }
 });
 
-// L'ordre compte : d'abord savoir QUI appelle, ensuite appliquer SON quota.
-app.UseLocataires("/plateforme");
+// Order matters: first know WHO is calling, then apply THEIR quota.
+app.UseTenants("/platform");
 app.UseRateLimiter();
 
-app.MapBanque();
-app.MapPlateforme();
+app.MapBank();
+app.MapPlatform();
 
 app.Run();
 

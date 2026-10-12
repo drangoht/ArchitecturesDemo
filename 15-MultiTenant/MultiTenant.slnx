@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="Mt.Api/Mt.Api.csproj" />
-  <Project Path="Mt.Banque/Mt.Banque.csproj" />
-  <Project Path="Mt.Locataires/Mt.Locataires.csproj" />
+  <Project Path="Mt.Bank/Mt.Bank.csproj" />
+  <Project Path="Mt.Tenants/Mt.Tenants.csproj" />
   <Project Path="Mt.Tests/Mt.Tests.csproj" />
 </Solution>

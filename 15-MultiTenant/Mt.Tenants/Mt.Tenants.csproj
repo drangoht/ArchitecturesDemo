@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    TENANCY: who the tenants are, how to recognize the tenant of a request, and what each one
+    is allowed to consume. No banking logic here: this project would serve as is for any SaaS application.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

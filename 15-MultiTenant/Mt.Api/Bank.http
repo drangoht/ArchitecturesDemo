@@ -1,0 +1,86 @@
+@base = http://localhost:5114
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Without a tenant: 400 (the request does not reach the business code)
+GET {{base}}/accounts
+
+### The same URL at three banks: Alice has 1,000 €, 3,000 € or 25,000 €
+GET {{base}}/accounts/{{alice}}
+X-Tenant: alpha
+
+###
+GET {{base}}/accounts/{{alice}}
+X-Tenant: beta
+
+###
+GET {{base}}/accounts/{{alice}}
+X-Tenant: gamma
+
+### The tenant can also come from the subdomain (*.localhost points to the local machine)
+GET http://beta.localhost:5114/tenant
+
+### Contradictory subdomain and header: 400, we don't pick one
+GET http://beta.localhost:5114/accounts
+X-Tenant: alpha
+
+### Transfer of 1,500 € at Alpha: refused (limit 1,000 €)
+POST {{base}}/transfers
+X-Tenant: alpha
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 1500 }
+
+### The same at Beta: accepted, with 0.50 € of fees
+POST {{base}}/transfers
+X-Tenant: beta
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 1500 }
+
+### Open an account at Alpha (quota: 5 accounts)
+POST {{base}}/accounts
+X-Tenant: alpha
+Content-Type: application/json
+
+{ "owner": "Zoe", "initialDeposit": 100 }
+
+### ─── Platform back office (without a tenant) ───
+
+### The tenants: plan, isolation, database, rules, quotas
+GET {{base}}/platform/tenants
+
+### The content of each database: Alpha and Beta share a database, Gamma has its own
+GET {{base}}/platform/storage
+
+### Register a new customer: usable immediately (X-Tenant: delta)
+POST {{base}}/platform/tenants
+Content-Type: application/json
+
+{
+  "id": "delta",
+  "name": "Bank Delta",
+  "plan": "Standard",
+  "rules": { "transferLimit": 2000, "transferFee": 1, "monthlyFee": 0, "maxAccounts": 50 }
+}
+
+### Alpha moves to Premium: its data moves to a dedicated database (see /platform/storage)
+POST {{base}}/platform/tenants/alpha/plan
+Content-Type: application/json
+
+{ "plan": "Premium" }
+
+### Suspend Beta: its requests answer 403, the other banks see nothing
+POST {{base}}/platform/tenants/beta/suspend
+
+###
+POST {{base}}/platform/tenants/beta/reactivate
+
+### Background task: account keeping fees, at each bank's rate (replaying the same month has no effect)
+POST {{base}}/platform/tasks/monthly-fees
+Content-Type: application/json
+
+{ "month": "2026-10" }
+
+### A customer leaves: all its data is erased, and only its data
+DELETE {{base}}/platform/tenants/beta

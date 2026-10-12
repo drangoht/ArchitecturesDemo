@@ -1,170 +1,170 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using Mt.Banque;
-using Mt.Locataires;
+using Mt.Bank;
+using Mt.Tenants;
 
 namespace Mt.Tests;
 
-/// <summary>Le garde-fou des données : filtre global, estampillage, refus des écritures croisées, choix de la base.</summary>
+/// <summary>The data safety net: global filter, stamping, refusal of cross writes, choice of the database.</summary>
 public class IsolationTests
 {
     private static readonly Guid Alice = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-    private readonly FabriqueBanque _fabrique = new(new InMemoryDatabaseRoot());
+    private readonly BankFactory _factory = new(new InMemoryDatabaseRoot());
 
-    private static Locataire Nouveau(string id, Plan plan = Plan.Standard, ReglesLocataire? regles = null) =>
-        Formules.Creer(new DefinitionLocataire(id, $"Banque {id}", plan, regles ?? new ReglesLocataire(1_000m, 0m, 0m, 10)));
+    private static Tenant New(string id, Plan plan = Plan.Standard, TenantRules? rules = null) =>
+        Plans.Create(new TenantDefinition(id, $"Bank {id}", plan, rules ?? new TenantRules(1_000m, 0m, 0m, 10)));
 
-    private ServiceBancaire Banque(Locataire locataire) =>
-        new(_fabrique.Ouvrir(locataire), ContexteLocataire.Pour(locataire), TimeProvider.System);
+    private BankingService Bank(Tenant tenant) =>
+        new(_factory.Open(tenant), TenantContext.For(tenant), TimeProvider.System);
 
-    private async Task Semer(Locataire locataire, params Compte[] comptes)
+    private async Task Seed(Tenant tenant, params Account[] accounts)
     {
-        await using var db = _fabrique.Ouvrir(locataire);
-        db.Comptes.AddRange(comptes);
+        await using var db = _factory.Open(tenant);
+        db.Accounts.AddRange(accounts);
         await db.SaveChangesAsync();
     }
 
     [Fact]
-    public async Task Le_meme_identifiant_designe_un_compte_different_chez_chaque_locataire()
+    public async Task The_same_identifier_designates_a_different_account_at_each_tenant()
     {
-        var alpha = Nouveau("alpha");
-        var beta = Nouveau("beta");
-        await Semer(alpha, new Compte(Alice, "Alice", 1_000m));
-        await Semer(beta, new Compte(Alice, "Alice", 3_000m));  // même Guid, même base partagée : la clé inclut le locataire
+        var alpha = New("alpha");
+        var beta = New("beta");
+        await Seed(alpha, new Account(Alice, "Alice", 1_000m));
+        await Seed(beta, new Account(Alice, "Alice", 3_000m));  // same Guid, same shared database: the key includes the tenant
 
-        Assert.Equal(1_000m, (await Banque(alpha).Consulter(Alice))!.Solde);
-        Assert.Equal(3_000m, (await Banque(beta).Consulter(Alice))!.Solde);
+        Assert.Equal(1_000m, (await Bank(alpha).Get(Alice))!.Balance);
+        Assert.Equal(3_000m, (await Bank(beta).Get(Alice))!.Balance);
     }
 
     [Fact]
-    public async Task Un_locataire_ne_voit_ni_ne_touche_les_comptes_d_un_autre()
+    public async Task A_tenant_neither_sees_nor_touches_another_s_accounts()
     {
-        var alpha = Nouveau("alpha");
-        var beta = Nouveau("beta");
-        var compte = await Banque(alpha).Ouvrir("Zoé", 100m);
+        var alpha = New("alpha");
+        var beta = New("beta");
+        var account = await Bank(alpha).Open("Zoe", 100m);
 
-        Assert.Null(await Banque(beta).Consulter(compte.Id));
-        Assert.DoesNotContain(await Banque(beta).Lister(), c => c.Id == compte.Id);
-        await Assert.ThrowsAsync<CompteIntrouvableException>(() => Banque(beta).Retirer(compte.Id, 10m));
-        Assert.Equal(100m, (await Banque(alpha).Consulter(compte.Id))!.Solde);
+        Assert.Null(await Bank(beta).Get(account.Id));
+        Assert.DoesNotContain(await Bank(beta).List(), c => c.Id == account.Id);
+        await Assert.ThrowsAsync<AccountNotFoundException>(() => Bank(beta).Withdraw(account.Id, 10m));
+        Assert.Equal(100m, (await Bank(alpha).Get(account.Id))!.Balance);
     }
 
     [Fact]
-    public async Task Sans_locataire_une_requete_echoue_au_lieu_de_tout_renvoyer()
+    public async Task Without_a_tenant_a_query_fails_instead_of_returning_everything()
     {
-        await Semer(Nouveau("alpha"), new Compte(Alice, "Alice", 1_000m));
-        await using var db = _fabrique.OuvrirSansLocataire(FabriqueBanque.BasePartagee);
+        await Seed(New("alpha"), new Account(Alice, "Alice", 1_000m));
+        await using var db = _factory.OpenWithoutTenant(BankFactory.SharedDatabase);
 
-        await Assert.ThrowsAsync<AucunLocataireException>(() => db.Comptes.ToListAsync());
-        // Voir tous les locataires reste possible, mais seulement de façon explicite.
-        Assert.Single(await db.Comptes.IgnoreQueryFilters().ToListAsync());
+        await Assert.ThrowsAsync<NoTenantException>(() => db.Accounts.ToListAsync());
+        // Seeing all the tenants remains possible, but only explicitly.
+        Assert.Single(await db.Accounts.IgnoreQueryFilters().ToListAsync());
     }
 
     [Fact]
-    public async Task Une_insertion_est_estampillee_avec_le_locataire_courant()
+    public async Task An_insertion_is_stamped_with_the_current_tenant()
     {
-        var compte = await Banque(Nouveau("alpha")).Ouvrir("Zoé", 100m);
+        var account = await Bank(New("alpha")).Open("Zoe", 100m);
 
-        await using var db = _fabrique.OuvrirSansLocataire(FabriqueBanque.BasePartagee);
-        Assert.Equal("alpha", (await db.Comptes.IgnoreQueryFilters().SingleAsync(c => c.Id == compte.Id)).LocataireId);
-        Assert.All(await db.Operations.IgnoreQueryFilters().ToListAsync(), o => Assert.Equal("alpha", o.LocataireId));
+        await using var db = _factory.OpenWithoutTenant(BankFactory.SharedDatabase);
+        Assert.Equal("alpha", (await db.Accounts.IgnoreQueryFilters().SingleAsync(c => c.Id == account.Id)).TenantId);
+        Assert.All(await db.Operations.IgnoreQueryFilters().ToListAsync(), o => Assert.Equal("alpha", o.TenantId));
     }
 
     [Fact]
-    public async Task Enregistrer_une_donnee_d_un_autre_locataire_est_refuse()
+    public async Task Saving_data_of_another_tenant_is_refused()
     {
-        var alpha = Nouveau("alpha");
-        await Semer(alpha, new Compte(Alice, "Alice", 1_000m));
-        Compte compteAlpha;
-        await using (var db = _fabrique.Ouvrir(alpha))
-            compteAlpha = await db.Comptes.AsNoTracking().SingleAsync();
+        var alpha = New("alpha");
+        await Seed(alpha, new Account(Alice, "Alice", 1_000m));
+        Account alphaAccount;
+        await using (var db = _factory.Open(alpha))
+            alphaAccount = await db.Accounts.AsNoTracking().SingleAsync();
 
-        // Un bogue fait passer une entité d'alpha au DbContext de beta (cache partagé, variable statique…).
-        await using var dbBeta = _fabrique.Ouvrir(Nouveau("beta"));
-        compteAlpha.Debiter(1_000m);
-        dbBeta.Update(compteAlpha);
+        // A bug passes an entity of alpha to beta's DbContext (shared cache, static variable…).
+        await using var dbBeta = _factory.Open(New("beta"));
+        alphaAccount.Debit(1_000m);
+        dbBeta.Update(alphaAccount);
 
-        await Assert.ThrowsAsync<FuiteEntreLocatairesException>(() => dbBeta.SaveChangesAsync());
+        await Assert.ThrowsAsync<CrossTenantLeakException>(() => dbBeta.SaveChangesAsync());
     }
 
     [Fact]
-    public async Task Les_donnees_d_un_locataire_premium_sont_dans_sa_propre_base()
+    public async Task The_data_of_a_premium_tenant_is_in_its_own_database()
     {
-        var gamma = Nouveau("gamma", Plan.Premium);
-        await Banque(gamma).Ouvrir("Zoé", 100m);
-        await Banque(Nouveau("alpha")).Ouvrir("Yann", 50m);
+        var gamma = New("gamma", Plan.Premium);
+        await Bank(gamma).Open("Zoe", 100m);
+        await Bank(New("alpha")).Open("Yann", 50m);
 
-        Assert.Equal(["banque-gamma", "banque-partagee"], _fabrique.Bases);
-        await using var partagee = _fabrique.OuvrirSansLocataire(FabriqueBanque.BasePartagee);
-        Assert.DoesNotContain(await partagee.Comptes.IgnoreQueryFilters().ToListAsync(), c => c.LocataireId == "gamma");
+        Assert.Equal(["bank-gamma", "bank-shared"], _factory.Databases);
+        await using var shared = _factory.OpenWithoutTenant(BankFactory.SharedDatabase);
+        Assert.DoesNotContain(await shared.Accounts.IgnoreQueryFilters().ToListAsync(), c => c.TenantId == "gamma");
     }
 
     [Fact]
-    public void Toute_donnee_d_un_locataire_est_filtree_et_porte_le_locataire_dans_sa_cle()
+    public void All_the_data_of_a_tenant_is_filtered_and_carries_the_tenant_in_its_key()
     {
-        // Test d'architecture : une entité ajoutée demain sera protégée, ou ce test échouera.
-        var typesDuLocataire = typeof(Compte).Assembly.GetTypes()
-            .Where(t => t.IsClass && typeof(IAppartientAUnLocataire).IsAssignableFrom(t)).ToList();
-        using var db = _fabrique.OuvrirSansLocataire("modele");
+        // Architecture test: an entity added tomorrow will be protected, or this test will fail.
+        var tenantTypes = typeof(Account).Assembly.GetTypes()
+            .Where(t => t.IsClass && typeof(IBelongsToTenant).IsAssignableFrom(t)).ToList();
+        using var db = _factory.OpenWithoutTenant("model");
 
-        Assert.NotEmpty(typesDuLocataire);
-        foreach (var type in typesDuLocataire)
+        Assert.NotEmpty(tenantTypes);
+        foreach (var type in tenantTypes)
         {
-            var entite = db.Model.FindEntityType(type);
-            Assert.True(entite is not null, $"{type.Name} n'est pas dans le modèle EF.");
-            Assert.NotEmpty(entite.GetDeclaredQueryFilters());
-            Assert.Contains(entite.FindPrimaryKey()!.Properties, p => p.Name == nameof(IAppartientAUnLocataire.LocataireId));
+            var entity = db.Model.FindEntityType(type);
+            Assert.True(entity is not null, $"{type.Name} is not in the EF model.");
+            Assert.NotEmpty(entity.GetDeclaredQueryFilters());
+            Assert.Contains(entity.FindPrimaryKey()!.Properties, p => p.Name == nameof(IBelongsToTenant.TenantId));
         }
     }
 
     [Fact]
-    public void Le_contexte_ne_change_pas_de_locataire_en_cours_de_route()
+    public void The_context_does_not_change_tenant_along_the_way()
     {
-        var contexte = ContexteLocataire.Pour(Nouveau("alpha"));
+        var context = TenantContext.For(New("alpha"));
 
-        Assert.Throws<InvalidOperationException>(() => contexte.Definir(Nouveau("beta")));
-        Assert.Throws<AucunLocataireException>(() => new ContexteLocataire().Exiger());
+        Assert.Throws<InvalidOperationException>(() => context.Set(New("beta")));
+        Assert.Throws<NoTenantException>(() => new TenantContext().Require());
     }
 
     [Fact]
-    public async Task Les_regles_metier_sont_celles_du_locataire()
+    public async Task The_business_rules_are_those_of_the_tenant()
     {
         var bob = Guid.NewGuid();
-        var prudente = Nouveau("prudente", regles: new ReglesLocataire(PlafondVirement: 500m, FraisVirement: 0m, FraisMensuels: 0m, ComptesMax: 10));
-        var payante = Nouveau("payante", regles: new ReglesLocataire(PlafondVirement: 5_000m, FraisVirement: 0.5m, FraisMensuels: 0m, ComptesMax: 10));
-        await Semer(prudente, new Compte(Alice, "Alice", 1_000m), new Compte(bob, "Bob", 0m));
-        await Semer(payante, new Compte(Alice, "Alice", 1_000m), new Compte(bob, "Bob", 0m));
+        var cautious = New("cautious", rules: new TenantRules(TransferLimit: 500m, TransferFee: 0m, MonthlyFee: 0m, MaxAccounts: 10));
+        var paying = New("paying", rules: new TenantRules(TransferLimit: 5_000m, TransferFee: 0.5m, MonthlyFee: 0m, MaxAccounts: 10));
+        await Seed(cautious, new Account(Alice, "Alice", 1_000m), new Account(bob, "Bob", 0m));
+        await Seed(paying, new Account(Alice, "Alice", 1_000m), new Account(bob, "Bob", 0m));
 
-        var refus = await Assert.ThrowsAsync<RegleMetierException>(() => Banque(prudente).Virer(Alice, bob, 800m));
-        var virement = await Banque(payante).Virer(Alice, bob, 800m);
+        var refusal = await Assert.ThrowsAsync<BusinessRuleException>(() => Bank(cautious).Transfer(Alice, bob, 800m));
+        var transfer = await Bank(paying).Transfer(Alice, bob, 800m);
 
-        Assert.Contains("Plafond", refus.Message);
-        Assert.Equal(0.5m, virement.Frais);
-        Assert.Equal(199.5m, virement.SoldeSource);
+        Assert.Contains("Transfer limit", refusal.Message);
+        Assert.Equal(0.5m, transfer.Fee);
+        Assert.Equal(199.5m, transfer.SourceBalance);
     }
 
     [Fact]
-    public async Task Le_quota_de_comptes_est_celui_du_locataire()
+    public async Task The_account_quota_is_the_tenant_s()
     {
-        var petite = Nouveau("petite", regles: new ReglesLocataire(1_000m, 0m, 0m, ComptesMax: 2));
-        await Banque(petite).Ouvrir("Un", 0m);
-        await Banque(petite).Ouvrir("Deux", 0m);
-        await Banque(Nouveau("voisine")).Ouvrir("Trois", 0m);  // les comptes d'une autre banque ne comptent pas
+        var small = New("small", rules: new TenantRules(1_000m, 0m, 0m, MaxAccounts: 2));
+        await Bank(small).Open("One", 0m);
+        await Bank(small).Open("Two", 0m);
+        await Bank(New("neighbour")).Open("Three", 0m);  // the accounts of another bank do not count
 
-        var refus = await Assert.ThrowsAsync<RegleMetierException>(() => Banque(petite).Ouvrir("Trois", 0m));
-        Assert.Contains("quota de 2 comptes", refus.Message);
+        var refusal = await Assert.ThrowsAsync<BusinessRuleException>(() => Bank(small).Open("Three", 0m));
+        Assert.Contains("quota of 2 accounts", refusal.Message);
     }
 
     [Fact]
-    public async Task Les_frais_mensuels_ne_sont_preleves_qu_une_fois_par_mois()
+    public async Task The_monthly_fees_are_charged_only_once_a_month()
     {
-        var alpha = Nouveau("alpha", regles: new ReglesLocataire(1_000m, 0m, FraisMensuels: 2m, ComptesMax: 10));
-        await Semer(alpha, new Compte(Alice, "Alice", 1_000m));
+        var alpha = New("alpha", rules: new TenantRules(1_000m, 0m, MonthlyFee: 2m, MaxAccounts: 10));
+        await Seed(alpha, new Account(Alice, "Alice", 1_000m));
 
-        Assert.Equal(1, await Banque(alpha).PreleverFraisMensuels("2026-10"));
-        Assert.Equal(0, await Banque(alpha).PreleverFraisMensuels("2026-10"));
-        Assert.Equal(1, await Banque(alpha).PreleverFraisMensuels("2026-11"));
-        Assert.Equal(996m, (await Banque(alpha).Consulter(Alice))!.Solde);
+        Assert.Equal(1, await Bank(alpha).ChargeMonthlyFees("2026-10"));
+        Assert.Equal(0, await Bank(alpha).ChargeMonthlyFees("2026-10"));
+        Assert.Equal(1, await Bank(alpha).ChargeMonthlyFees("2026-11"));
+        Assert.Equal(996m, (await Bank(alpha).Get(Alice))!.Balance);
     }
 }

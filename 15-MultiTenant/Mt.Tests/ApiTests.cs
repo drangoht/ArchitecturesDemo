@@ -6,7 +6,7 @@ using Mt.Api;
 
 namespace Mt.Tests;
 
-/// <summary>L'application complète : identification du locataire, quotas, back-office de la plateforme.</summary>
+/// <summary>The complete application: tenant identification, quotas, platform back office.</summary>
 public class ApiTests : IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _app = new();
@@ -15,166 +15,166 @@ public class ApiTests : IAsyncLifetime
 
     public Task DisposeAsync() => _app.DisposeAsync().AsTask();
 
-    /// <summary>Un client qui s'annonce par l'en-tête X-Locataire.</summary>
-    private HttpClient Client(string? locataire = null)
+    /// <summary>A client that announces itself with the X-Tenant header.</summary>
+    private HttpClient Client(string? tenant = null)
     {
         var client = _app.CreateClient();
-        if (locataire is not null)
-            client.DefaultRequestHeaders.Add("X-Locataire", locataire);
+        if (tenant is not null)
+            client.DefaultRequestHeaders.Add("X-Tenant", tenant);
         return client;
     }
 
-    private async Task<decimal> Solde(string locataire, Guid compte) =>
-        (await Client(locataire).GetFromJsonAsync<JsonElement>($"/comptes/{compte}")).GetProperty("solde").GetDecimal();
+    private async Task<decimal> Balance(string tenant, Guid account) =>
+        (await Client(tenant).GetFromJsonAsync<JsonElement>($"/accounts/{account}")).GetProperty("balance").GetDecimal();
 
-    private async Task<JsonElement> Stockage() => await Client().GetFromJsonAsync<JsonElement>("/plateforme/stockage");
+    private async Task<JsonElement> Storage() => await Client().GetFromJsonAsync<JsonElement>("/platform/storage");
 
-    private static IEnumerable<string> LocatairesDe(JsonElement stockage, string nomBase) =>
-        stockage.EnumerateArray().Where(b => b.GetProperty("base").GetString() == nomBase)
-            .SelectMany(b => b.GetProperty("locataires").EnumerateArray().Select(l => l.GetProperty("locataire").GetString()!));
+    private static IEnumerable<string> TenantsOf(JsonElement storage, string databaseName) =>
+        storage.EnumerateArray().Where(b => b.GetProperty("database").GetString() == databaseName)
+            .SelectMany(b => b.GetProperty("tenants").EnumerateArray().Select(l => l.GetProperty("tenant").GetString()!));
 
     [Fact]
-    public async Task La_meme_URL_donne_une_reponse_differente_selon_le_locataire()
+    public async Task The_same_URL_gives_a_different_answer_depending_on_the_tenant()
     {
-        Assert.Equal(1_000m, await Solde("alpha", DonneesDeDemo.Alice));
-        Assert.Equal(3_000m, await Solde("beta", DonneesDeDemo.Alice));
-        Assert.Equal(25_000m, await Solde("gamma", DonneesDeDemo.Alice));
+        Assert.Equal(1_000m, await Balance("alpha", DemoData.Alice));
+        Assert.Equal(3_000m, await Balance("beta", DemoData.Alice));
+        Assert.Equal(25_000m, await Balance("gamma", DemoData.Alice));
     }
 
     [Fact]
-    public async Task Le_locataire_se_reconnait_aussi_au_sous_domaine()
+    public async Task The_tenant_is_also_recognized_by_the_subdomain()
     {
         var client = _app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("http://beta.localhost") });
 
-        var reponse = await client.GetAsync($"/comptes/{DonneesDeDemo.Alice}");
+        var response = await client.GetAsync($"/accounts/{DemoData.Alice}");
 
-        Assert.Equal(HttpStatusCode.OK, reponse.StatusCode);
-        Assert.Equal("beta", reponse.Headers.GetValues("X-Locataire").Single());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("beta", response.Headers.GetValues("X-Tenant").Single());
     }
 
     [Theory]
-    [InlineData(null, null, HttpStatusCode.BadRequest)]          // aucun locataire
-    [InlineData("inconnue", null, HttpStatusCode.NotFound)]      // locataire absent du catalogue
-    [InlineData("alpha", "http://beta.localhost", HttpStatusCode.BadRequest)]  // en-tête et sous-domaine se contredisent
-    [InlineData("beta", "http://beta.localhost", HttpStatusCode.OK)]           // concordants : accepté
-    public async Task Une_requete_sans_locataire_clair_n_atteint_pas_le_metier(string? enTete, string? adresse, HttpStatusCode attendu)
+    [InlineData(null, null, HttpStatusCode.BadRequest)]          // no tenant
+    [InlineData("unknown", null, HttpStatusCode.NotFound)]       // tenant missing from the catalog
+    [InlineData("alpha", "http://beta.localhost", HttpStatusCode.BadRequest)]  // header and subdomain contradict each other
+    [InlineData("beta", "http://beta.localhost", HttpStatusCode.OK)]           // consistent: accepted
+    public async Task A_request_without_a_clear_tenant_does_not_reach_the_business_code(string? header, string? address, HttpStatusCode expected)
     {
-        var client = _app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri(adresse ?? "http://localhost") });
-        if (enTete is not null)
-            client.DefaultRequestHeaders.Add("X-Locataire", enTete);
+        var client = _app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri(address ?? "http://localhost") });
+        if (header is not null)
+            client.DefaultRequestHeaders.Add("X-Tenant", header);
 
-        Assert.Equal(attendu, (await client.GetAsync("/comptes")).StatusCode);
+        Assert.Equal(expected, (await client.GetAsync("/accounts")).StatusCode);
     }
 
     [Fact]
-    public async Task Le_compte_d_une_autre_banque_repond_404_comme_un_compte_inexistant()
+    public async Task Another_bank_s_account_answers_404_like_an_account_that_does_not_exist()
     {
-        var reponse = await Client("alpha").PostAsJsonAsync("/comptes", new { titulaire = "Zoe", depotInitial = 100 });
-        var url = reponse.Headers.Location!.ToString();
+        var response = await Client("alpha").PostAsJsonAsync("/accounts", new { owner = "Zoe", initialDeposit = 100 });
+        var url = response.Headers.Location!.ToString();
 
         Assert.Equal(HttpStatusCode.OK, (await Client("alpha").GetAsync(url)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await Client("beta").GetAsync(url)).StatusCode);
     }
 
     [Fact]
-    public async Task Les_regles_du_virement_dependent_de_la_banque()
+    public async Task The_transfer_rules_depend_on_the_bank()
     {
-        var virement = new { source = DonneesDeDemo.Alice, cible = DonneesDeDemo.Bob, montant = 1_500 };
+        var transfer = new { source = DemoData.Alice, target = DemoData.Bob, amount = 1_500 };
 
-        Assert.Equal(HttpStatusCode.BadRequest, (await Client("alpha").PostAsJsonAsync("/virements", virement)).StatusCode);  // plafond 1 000 €
-        var beta = await (await Client("beta").PostAsJsonAsync("/virements", virement)).Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(0.5m, beta.GetProperty("frais").GetDecimal());
+        Assert.Equal(HttpStatusCode.BadRequest, (await Client("alpha").PostAsJsonAsync("/transfers", transfer)).StatusCode);  // limit 1,000 €
+        var beta = await (await Client("beta").PostAsJsonAsync("/transfers", transfer)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0.5m, beta.GetProperty("fee").GetDecimal());
     }
 
     [Fact]
-    public async Task Un_locataire_suspendu_est_refuse_puis_retrouve_ses_donnees()
+    public async Task A_suspended_tenant_is_refused_then_finds_its_data_again()
     {
-        await Client().PostAsync("/plateforme/locataires/alpha/suspendre", null);
-        Assert.Equal(HttpStatusCode.Forbidden, (await Client("alpha").GetAsync("/comptes")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await Client("beta").GetAsync("/comptes")).StatusCode);
+        await Client().PostAsync("/platform/tenants/alpha/suspend", null);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Client("alpha").GetAsync("/accounts")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Client("beta").GetAsync("/accounts")).StatusCode);
 
-        await Client().PostAsync("/plateforme/locataires/alpha/reactiver", null);
-        Assert.Equal(1_000m, await Solde("alpha", DonneesDeDemo.Alice));
+        await Client().PostAsync("/platform/tenants/alpha/reactivate", null);
+        Assert.Equal(1_000m, await Balance("alpha", DemoData.Alice));
     }
 
     [Fact]
-    public async Task Un_voisin_bruyant_epuise_son_quota_sans_gener_les_autres()
+    public async Task A_noisy_neighbour_exhausts_its_quota_without_disturbing_the_others()
     {
         var alpha = Client("alpha");
         for (var i = 0; i < 60; i++)
-            Assert.Equal(HttpStatusCode.OK, (await alpha.GetAsync("/locataire")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await alpha.GetAsync("/tenant")).StatusCode);
 
-        var refus = await alpha.GetAsync("/locataire");
+        var refusal = await alpha.GetAsync("/tenant");
 
-        Assert.Equal(HttpStatusCode.TooManyRequests, refus.StatusCode);
-        Assert.Contains("60 requêtes par minute", await refus.Content.ReadAsStringAsync());
-        Assert.Equal(HttpStatusCode.OK, (await Client("beta").GetAsync("/locataire")).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, refusal.StatusCode);
+        Assert.Contains("60 requests per minute", await refusal.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, (await Client("beta").GetAsync("/tenant")).StatusCode);
     }
 
     [Fact]
-    public async Task Un_nouveau_client_est_operationnel_des_son_inscription()
+    public async Task A_new_customer_is_operational_as_soon_as_it_registers()
     {
         var definition = new
         {
-            id = "delta", nom = "Banque Delta", plan = "Premium",
-            regles = new { plafondVirement = 2_000, fraisVirement = 1, fraisMensuels = 0, comptesMax = 50 }
+            id = "delta", name = "Bank Delta", plan = "Premium",
+            rules = new { transferLimit = 2_000, transferFee = 1, monthlyFee = 0, maxAccounts = 50 }
         };
 
-        var inscription = await Client().PostAsJsonAsync("/plateforme/locataires", definition);
-        var ouverture = await Client("delta").PostAsJsonAsync("/comptes", new { titulaire = "Zoe", depotInitial = 100 });
+        var registration = await Client().PostAsJsonAsync("/platform/tenants", definition);
+        var opening = await Client("delta").PostAsJsonAsync("/accounts", new { owner = "Zoe", initialDeposit = 100 });
 
-        Assert.Equal(HttpStatusCode.Created, inscription.StatusCode);
-        Assert.Equal(HttpStatusCode.Created, ouverture.StatusCode);
-        Assert.Contains("delta", LocatairesDe(await Stockage(), "banque-delta"));
-        Assert.Equal(HttpStatusCode.BadRequest, (await Client().PostAsJsonAsync("/plateforme/locataires", definition)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, registration.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, opening.StatusCode);
+        Assert.Contains("delta", TenantsOf(await Storage(), "bank-delta"));
+        Assert.Equal(HttpStatusCode.BadRequest, (await Client().PostAsJsonAsync("/platform/tenants", definition)).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest,
-            (await Client().PostAsJsonAsync("/plateforme/locataires", definition with { id = "Pas Valide!" })).StatusCode);
+            (await Client().PostAsJsonAsync("/platform/tenants", definition with { id = "Not Valid!" })).StatusCode);
     }
 
     [Fact]
-    public async Task Le_depart_d_un_client_efface_ses_donnees_et_seulement_les_siennes()
+    public async Task A_customer_leaving_erases_its_data_and_only_its_data()
     {
-        var bilan = await (await Client().DeleteAsync("/plateforme/locataires/alpha")).Content.ReadFromJsonAsync<JsonElement>();
+        var report = await (await Client().DeleteAsync("/platform/tenants/alpha")).Content.ReadFromJsonAsync<JsonElement>();
 
-        Assert.Equal(2, bilan.GetProperty("comptes").GetInt32());
-        Assert.Equal(["beta"], LocatairesDe(await Stockage(), "banque-partagee"));
-        Assert.Equal(HttpStatusCode.NotFound, (await Client("alpha").GetAsync("/comptes")).StatusCode);
-        Assert.Equal(3_000m, await Solde("beta", DonneesDeDemo.Alice));
+        Assert.Equal(2, report.GetProperty("accounts").GetInt32());
+        Assert.Equal(["beta"], TenantsOf(await Storage(), "bank-shared"));
+        Assert.Equal(HttpStatusCode.NotFound, (await Client("alpha").GetAsync("/accounts")).StatusCode);
+        Assert.Equal(3_000m, await Balance("beta", DemoData.Alice));
     }
 
     [Fact]
-    public async Task Passer_en_premium_demenage_les_donnees_dans_une_base_dediee()
+    public async Task Moving_to_premium_moves_the_data_to_a_dedicated_database()
     {
-        await Client("alpha").PostAsJsonAsync($"/comptes/{DonneesDeDemo.Alice}/retrait", new { montant = 100 });
+        await Client("alpha").PostAsJsonAsync($"/accounts/{DemoData.Alice}/withdrawal", new { amount = 100 });
 
-        var reponse = await Client().PostAsJsonAsync("/plateforme/locataires/alpha/formule", new { plan = "Premium" });
-        var bilan = await reponse.Content.ReadFromJsonAsync<JsonElement>();
+        var response = await Client().PostAsJsonAsync("/platform/tenants/alpha/plan", new { plan = "Premium" });
+        var report = await response.Content.ReadFromJsonAsync<JsonElement>();
 
-        Assert.Equal("banque-alpha", bilan.GetProperty("vers").GetString());
-        Assert.Equal(2, bilan.GetProperty("comptes").GetInt32());
-        Assert.Equal(900m, await Solde("alpha", DonneesDeDemo.Alice));
-        Assert.Equal(2, (await Client("alpha").GetFromJsonAsync<JsonElement>($"/comptes/{DonneesDeDemo.Alice}/operations")).GetArrayLength());  // dépôt initial + retrait
-        var stockage = await Stockage();
-        Assert.DoesNotContain("alpha", LocatairesDe(stockage, "banque-partagee"));
-        Assert.Equal(["alpha"], LocatairesDe(stockage, "banque-alpha"));
-        var quotas = (await Client("alpha").GetFromJsonAsync<JsonElement>("/locataire")).GetProperty("quotas");
-        Assert.Equal(600, quotas.GetProperty("requetesParMinute").GetInt32());
+        Assert.Equal("bank-alpha", report.GetProperty("to").GetString());
+        Assert.Equal(2, report.GetProperty("accounts").GetInt32());
+        Assert.Equal(900m, await Balance("alpha", DemoData.Alice));
+        Assert.Equal(2, (await Client("alpha").GetFromJsonAsync<JsonElement>($"/accounts/{DemoData.Alice}/operations")).GetArrayLength());  // initial deposit + withdrawal
+        var storage = await Storage();
+        Assert.DoesNotContain("alpha", TenantsOf(storage, "bank-shared"));
+        Assert.Equal(["alpha"], TenantsOf(storage, "bank-alpha"));
+        var quotas = (await Client("alpha").GetFromJsonAsync<JsonElement>("/tenant")).GetProperty("quotas");
+        Assert.Equal(600, quotas.GetProperty("requestsPerMinute").GetInt32());
     }
 
     [Fact]
-    public async Task La_tache_de_frais_mensuels_travaille_locataire_par_locataire()
+    public async Task The_monthly_fee_task_works_tenant_by_tenant()
     {
-        await Client().PostAsync("/plateforme/locataires/beta/suspendre", null);
+        await Client().PostAsync("/platform/tenants/beta/suspend", null);
 
-        var bilans = await (await Client().PostAsJsonAsync("/plateforme/taches/frais-mensuels", new { mois = "2026-10" }))
+        var reports = await (await Client().PostAsJsonAsync("/platform/tasks/monthly-fees", new { month = "2026-10" }))
             .Content.ReadFromJsonAsync<JsonElement>();
-        await Client().PostAsJsonAsync("/plateforme/taches/frais-mensuels", new { mois = "2026-10" });  // rejouée : sans effet
-        await Client().PostAsync("/plateforme/locataires/beta/reactiver", null);
+        await Client().PostAsJsonAsync("/platform/tasks/monthly-fees", new { month = "2026-10" });  // replayed: no effect
+        await Client().PostAsync("/platform/tenants/beta/reactivate", null);
 
-        Assert.Equal(998m, await Solde("alpha", DonneesDeDemo.Alice));    // 2 € chez Alpha
-        Assert.Equal(3_000m, await Solde("beta", DonneesDeDemo.Alice));   // Bêta suspendue : ignorée
-        Assert.Equal(24_990m, await Solde("gamma", DonneesDeDemo.Alice)); // 10 € chez Gamma, dans sa propre base
-        Assert.Contains(bilans.EnumerateArray(), b => b.GetProperty("locataire").GetString() == "beta"
-                                                      && b.GetProperty("remarque").GetString() == "suspendu : ignoré");
+        Assert.Equal(998m, await Balance("alpha", DemoData.Alice));    // 2 € at Alpha
+        Assert.Equal(3_000m, await Balance("beta", DemoData.Alice));   // Beta suspended: skipped
+        Assert.Equal(24_990m, await Balance("gamma", DemoData.Alice)); // 10 € at Gamma, in its own database
+        Assert.Contains(reports.EnumerateArray(), b => b.GetProperty("tenant").GetString() == "beta"
+                                                       && b.GetProperty("note").GetString() == "suspended: skipped");
     }
 }
