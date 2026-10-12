@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Transfers module. It needs the accounts, but only references their CONTRACTS:
+    the implementation of IAccountsApi is provided by the host, through dependency injection.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modular.Accounts.Contracts\Modular.Accounts.Contracts.csproj" />
+    <ProjectReference Include="..\Modular.Transfers.Contracts\Modular.Transfers.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

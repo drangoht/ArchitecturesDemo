@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="Modular.Accounts.Contracts/Modular.Accounts.Contracts.csproj" />
+  <Project Path="Modular.Accounts/Modular.Accounts.csproj" />
+  <Project Path="Modular.Host/Modular.Host.csproj" />
+  <Project Path="Modular.Notifications/Modular.Notifications.csproj" />
+  <Project Path="Modular.Shared/Modular.Shared.csproj" />
+  <Project Path="Modular.Tests/Modular.Tests.csproj" />
+  <Project Path="Modular.Transfers.Contracts/Modular.Transfers.Contracts.csproj" />
+  <Project Path="Modular.Transfers/Modular.Transfers.csproj" />
+</Solution>

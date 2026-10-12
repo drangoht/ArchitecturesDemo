@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Notifications module: all it does is listen to the other modules' events.
+    It was added without changing a single line of Accounts or Transfers.
+    Nobody calls it: so it needs no Contracts project.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modular.Accounts.Contracts\Modular.Accounts.Contracts.csproj" />
+    <ProjectReference Include="..\Modular.Transfers.Contracts\Modular.Transfers.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

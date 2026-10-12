@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Public contracts of the Accounts module: what the OTHER modules are allowed to know.
+    The other modules reference this project, never Modular.Accounts itself.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modular.Shared\Modular.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

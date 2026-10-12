@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Public contracts of the Transfers module: here only the event it publishes. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modular.Shared\Modular.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

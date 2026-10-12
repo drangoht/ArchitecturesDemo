@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The host: a single process, a single deployment. It assembles the modules and contains no business logic. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modular.Accounts\Modular.Accounts.csproj" />
+    <ProjectReference Include="..\Modular.Transfers\Modular.Transfers.csproj" />
+    <ProjectReference Include="..\Modular.Notifications\Modular.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>
