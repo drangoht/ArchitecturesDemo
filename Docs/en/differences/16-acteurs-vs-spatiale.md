@@ -59,16 +59,16 @@ The code is quoted exactly as it is, French comments and messages included.
 ([SystemeActeurs.cs](../../../18-ModeleActeurs/Acteurs.Noyau/SystemeActeurs.cs)):
 
 ```csharp
-// LE point clé du modèle : un seul message à la fois, chacun traité jusqu'au bout avant le suivant.
-reponse = await activation.Instance!.Recevoir(enveloppe.Message);
+// THE key point of the model: only one message at a time, each handled to the end before the next one.
+response = await activation.Instance!.Receive(envelope.Message);
 ```
 
 The account can therefore write the most naive code: read, check, modify, without a lock
 ([CompteActeur.cs](../../../18-ModeleActeurs/Acteurs.Banque/CompteActeur.cs)):
 
 ```csharp
-if (debit && montant > etat.Solde)
-    return new Refus($"Solde insuffisant ({etat.Solde:0.00} €).");
+if (debit && amount > state.Balance)
+    return new Refusal($"Insufficient balance ({state.Balance:0.00} €).");
 ```
 
 **Space-based**: the write is applied in the local replica, then **published** to the other replicas and the pump,
@@ -76,22 +76,22 @@ without waiting for them — the database is not on the request path
 ([GrilleDeDonnees.cs](../../../19-SpaceBased/Espace.Grille/GrilleDeDonnees.cs)):
 
 ```csharp
-// La base n'est pas sur le chemin de la requête : l'écriture part dans la pompe, on n'attend pas.
-_versLaPompe(modification);
+// The database is not on the request path: the write goes into the pump, we do not wait.
+_toThePump(modification);
 ```
 
 On receipt, a replica detects that a modification doesn't start from the version it knows: that is a collision, and the
 highest version wins ([Replique.cs](../../../19-SpaceBased/Espace.Grille/Replique.cs)):
 
 ```csharp
-var concurrente = locale != m.Precedente && locale.Unite != "" && locale.Unite != m.Version.Unite;
+var concurrent = local != m.Previous && local.Unit != "" && local.Unit != m.Version.Unit;
 ```
 
 The countermeasure is to always route the same key to the same unit
 ([GrilleDeMessages.cs](../../../19-SpaceBased/Espace.Grille/GrilleDeMessages.cs)):
 
 ```csharp
-: _unites.MaxBy(u => Hachage($"{cle}/{u.Id}"))!;
+: _units.MaxBy(u => Hash($"{key}/{u.Id}"))!;
 ```
 
 ## The same experiment, two results

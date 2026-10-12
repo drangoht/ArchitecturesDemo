@@ -59,34 +59,34 @@ The code is quoted exactly as it is, French comments included.
 ([Program.cs](../../../06-Composants/Composants.Api/Program.cs)):
 
 ```csharp
-// Essayez d'écrire « new ComptesDbContext(...) » ou « new Compte(...) » ici : ça ne compile pas.
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete requete, IComptesComposant comptes) =>
-    EnHttp(await comptes.Retirer(id, requete.Montant)));
+// Try writing "new AccountsDbContext(...)" or "new Account(...)" here: it does not compile.
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest request, IAccountsComponent accounts) =>
+    ToHttp(await accounts.Withdraw(id, request.Amount)));
 ```
 
 **Modular Monolith**: the host only knows modules, each one brings its routes, its database, its subscriptions
 ([Program.cs](../../../07-MonolitheModulaire/Modulaire.Hote/Program.cs)):
 
 ```csharp
-// La liste des modules : retirer une ligne retire une fonctionnalité entière (routes, base, abonnements).
-IModule[] modules = [new ComptesModule(), new VirementsModule(), new NotificationsModule()];
+// The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
+IModule[] modules = [new AccountsModule(), new TransfersModule(), new NotificationsModule()];
 ```
 
 A module's contract also contains **its events**
 ([Contrats.cs](../../../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs)):
 
 ```csharp
-// ─── Communication asynchrone : les événements que le module publie ───
-public record RetraitEffectue(Guid CompteId, decimal Montant, decimal NouveauSolde) : IEvenementIntegration;
+// ─── Asynchronous communication: the events the module publishes ───
+public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance) : IIntegrationEvent;
 ```
 
 And a module can be **added without touching the others**: Notifications only subscribes
 ([NotificationsModule.cs](../../../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs)):
 
 ```csharp
-// Abonnements aux événements des autres modules.
-services.AddScoped<IGestionnaireEvenement<RetraitEffectue>, SurRetraitEffectue>();
-services.AddScoped<IGestionnaireEvenement<VirementEffectue>, SurVirementEffectue>();
+// Subscriptions to the other modules' events.
+services.AddScoped<IEventHandler<WithdrawalMade>, OnWithdrawalMade>();
+services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 ```
 
 In the Package by Component demo, notifying Bob of a transfer would require modifying `VirementsComposant` (or the web

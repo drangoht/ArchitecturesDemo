@@ -57,8 +57,8 @@ deliberate copy, not a project shared with the web BFF, because each BFF belongs
 ([ClientServices.cs](../../16-BFF/Bff.Mobile/ClientServices.cs))
 
 ```csharp
-// Copie volontaire, et non projet partagé avec le BFF web : chaque BFF appartient à l'équipe de SON application
-// et évolue à son rythme. Seuls les champs utiles à l'application mobile sont lus.
+// Deliberate copy, and not a project shared with the web BFF: each BFF belongs to the team of ITS application
+// and evolves at its own pace. Only the fields useful to the mobile application are read.
 ```
 
 The code is quoted exactly as it is, French comments included.
@@ -74,15 +74,15 @@ that of the slowest call, not the sum.
 ([TableauDeBord.cs](../../16-BFF/Bff.Web/TableauDeBord.cs))
 
 ```csharp
-// ① Le profil d'abord : il dit quels comptes afficher, quel conseiller, quel segment d'offres.
-var profil = await services.Profil(jeton);
+// ① The profile first: it says which accounts to display, which advisor, which offer segment.
+var profile = await services.Profile(token);
 
-// ② Puis tout le reste EN PARALLÈLE : la durée totale est celle de l'appel le plus lent, pas la somme.
-var conseiller = services.Conseiller(profil.ConseillerId, jeton);
-var offres = Facultatif(annulation => services.Offres(profil.Segment, jeton, annulation), BudgetOffres);
-var comptes = profil.Comptes.Select(id => CompteAvecOperations(id, jeton)).ToList();
-Task[] appels = [conseiller, offres, .. comptes];
-await Task.WhenAll(appels);
+// ② Then all the rest IN PARALLEL: the total duration is that of the slowest call, not the sum.
+var advisor = services.Advisor(profile.AdvisorId, token);
+var offers = Optional(cancellation => services.Offers(profile.Segment, token, cancellation), OffersBudget);
+var accounts = profile.Accounts.Select(id => AccountWithOperations(id, token)).ToList();
+Task[] calls = [advisor, offers, .. accounts];
+await Task.WhenAll(calls);
 ```
 
 ```mermaid
@@ -136,10 +136,10 @@ cursor. The BFF can change strategy without updating the app.
 ([Ecrans.cs](../../16-BFF/Bff.Mobile/Ecrans.cs))
 
 ```csharp
-var page = LirePage(curseur);
-var resultat = await services.Operations(compte, page, TaillePage, jeton);
-var suivant = page * TaillePage < resultat.Total ? Curseur(page + 1) : null;
-return new PageMobile(resultat.Operations.Select(Vue).ToList(), suivant);
+var page = ReadPage(cursor);
+var result = await services.Operations(account, page, PageSize, token);
+var next = page * PageSize < result.Total ? Cursor(page + 1) : null;
+return new MobilePage(result.Operations.Select(View).ToList(), next);
 ```
 
 ### App versions
@@ -149,7 +149,7 @@ therefore live at the same time. Version 2 of the app shows an offer banner: the
 keeps serving `/mobile/v1/accueil` to phones not yet updated. **The services didn't change.**
 
 ```csharp
-var offre = version >= 2 ? Facultatif(a => services.Offres(profil.Segment, jeton, a), BudgetOffre) : Task.FromResult<OffreAval[]?>(null);
+var offer = version >= 2 ? Optional(c => services.Offers(profile.Segment, token, c), OfferBudget) : Task.FromResult<DownstreamOffer[]?>(null);
 ```
 
 ---
@@ -182,9 +182,9 @@ The comments: unreadable from JavaScript (an XSS flaw cannot steal it); never se
 ([Session.cs](../../16-BFF/Bff.Web/Session.cs))
 
 ```csharp
-o.Cookie.HttpOnly = true;                                 // illisible depuis JavaScript : une faille XSS ne peut pas le voler
-o.Cookie.SameSite = SameSiteMode.Strict;                  // jamais envoyé depuis un autre site
-o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // en production : Always, et le préfixe « __Host- »
+o.Cookie.HttpOnly = true;                                 // unreadable from JavaScript: an XSS flaw cannot steal it
+o.Cookie.SameSite = SameSiteMode.Strict;                  // never sent from another site
+o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // in production: Always, and the "__Host-" prefix
 ```
 
 - **Server-side session** (`SessionsEnMemoire`, an `ITicketStore`): the cookie only contains an encrypted key. Logging
@@ -212,14 +212,14 @@ A screen that aggregates seven calls has seven chances to fail. The BFF distingu
 accounts) from the **optional** (offers): an optional call has a time budget, and its failure is absorbed.
 
 ```csharp
-private static async Task<T?> Facultatif<T>(Func<CancellationToken, Task<T>> appel, TimeSpan budget) where T : class
+private static async Task<T?> Optional<T>(Func<CancellationToken, Task<T>> call, TimeSpan budget) where T : class
 {
-    using var delai = new CancellationTokenSource(budget);
+    using var timeout = new CancellationTokenSource(budget);
     try
     {
-        return await appel(delai.Token);
+        return await call(timeout.Token);
     }
-    catch (Exception e) when (e is ServiceAvalException or HttpRequestException or OperationCanceledException)
+    catch (Exception e) when (e is DownstreamServiceException or HttpRequestException or OperationCanceledException)
     {
         return null;
     }

@@ -62,45 +62,45 @@ The code is quoted exactly as it is.
 ([VirementsAppService.cs](../../../02-Onion/Onion.Application/VirementsAppService.cs)):
 
 ```csharp
-serviceVirement.Virer(source, cible, montant);
-await unitOfWork.Enregistrer();
-return new VirementResultat(CompteDto.Depuis(source), CompteDto.Depuis(cible));
+transferService.Transfer(source, target, amount);
+await unitOfWork.Save();
+return new TransferResult(AccountDto.From(source), AccountDto.From(target));
 ```
 
 **Clean**: the interactor returns nothing; each outcome is a method of the output boundary
 ([Retrait.cs](../../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs)):
 
 ```csharp
-public interface IRetraitSortie
+public interface IWithdrawalOutput
 {
-    void Succes(ReponseRetrait reponse);
-    void CompteIntrouvable(Guid compteId);
-    void Refus(string raison);
+    void Success(WithdrawalResponse response);
+    void AccountNotFound(Guid accountId);
+    void Refused(string reason);
 }
 ```
 
 ```csharp
 try
 {
-    compte.Retirer(demande.Montant);
+    account.Withdraw(request.Amount);
 }
-catch (RegleMetierException e)
+catch (BusinessRuleException e)
 {
-    sortie.Refus(e.Message);
+    output.Refused(e.Message);
     return;
 }
 
-await comptes.Sauvegarder(compte);
-sortie.Succes(new ReponseRetrait(compte.Id, ancienSolde, compte.Solde));
+await accounts.Save(account);
+output.Success(new WithdrawalResponse(account.Id, oldBalance, account.Balance));
 ```
 
 The outer circle creates the presenter, calls the controller, then reads the produced view
 ([Program.cs](../../../03-Clean/Clean.Web/Program.cs)):
 
 ```csharp
-var presenter = new RetraitPresenterHttp();
-await controleur.Retirer(id, requete.Montant, presenter);
-return EnHttp(presenter.Vue);
+var presenter = new WithdrawalHttpPresenter();
+await controller.Withdraw(id, body.Amount, presenter);
+return ToHttp(presenter.View);
 ```
 
 What this buys: **several presentations of the same use case** without touching it (the demo has a JSON presenter and

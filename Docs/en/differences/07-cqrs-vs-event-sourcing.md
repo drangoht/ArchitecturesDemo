@@ -58,13 +58,13 @@ The code is quoted exactly as it is, French comments and messages included.
 in the same transaction ([EcritureDb.cs](../../../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs)):
 
 ```csharp
-public async Task Enregistrer(params IEvenementDomaine[] evenementsSupplementaires)
+public async Task Save(params IDomainEvent[] extraEvents)
 {
-    var evenements = ChangeTracker.Entries<Compte>()
-        .SelectMany(entree => entree.Entity.ExtraireEvenements())
-        .Concat(evenementsSupplementaires)
+    var events = ChangeTracker.Entries<Account>()
+        .SelectMany(entry => entry.Entity.ExtractEvents())
+        .Concat(extraEvents)
         .ToList();
-    // … chaque événement ajouté à la table Evenements …
+    // … each event added to the Events table …
     await SaveChangesAsync();
 }
 ```
@@ -73,30 +73,30 @@ public async Task Enregistrer(params IEvenementDomaine[] evenementsSupplementair
 the event to evolve its in-memory state ([Compte.cs](../../../10-EventSourcing/Es.Domaine/Compte.cs)):
 
 ```csharp
-// ─── Décisions ───
+// ─── Decisions ───
 // …
-public void Retirer(decimal montant, string motif, DateTime date)
+public void Withdraw(decimal amount, string reason, DateTime date)
 {
-    VerifierOuvert();
-    VerifierMontant(montant);
-    if (montant > Solde)
-        throw new RegleMetierException("Solde insuffisant.");
-    Enregistrer(new ArgentRetire(Id, montant, motif, date));
+    CheckOpen();
+    CheckAmount(amount);
+    if (amount > Balance)
+        throw new BusinessRuleException("Insufficient balance.");
+    Record(new MoneyWithdrawn(Id, amount, reason, date));
 }
 ```
 
 ```csharp
-public static Compte Reconstituer(IEnumerable<IEvenement> historique) =>
-    DepuisInstantane(null, historique);
+public static Account Rehydrate(IEnumerable<IEvent> history) =>
+    FromSnapshot(null, history);
 ```
 
 And the store refuses to write if the stream has moved since it was loaded
 ([MagasinEvenements.cs](../../../10-EventSourcing/Es.Stockage/MagasinEvenements.cs)):
 
 ```csharp
-var actuelle = _evenements.Count(e => e.Flux == ecriture.Flux);
-if (actuelle != ecriture.VersionAttendue)
-    throw new ConflitDeConcurrenceException(ecriture.Flux, ecriture.VersionAttendue, actuelle);
+var current = _events.Count(e => e.Stream == write.Stream);
+if (current != write.ExpectedVersion)
+    throw new ConcurrencyConflictException(write.Stream, write.ExpectedVersion, current);
 ```
 
 **What only one side can do**: both demos can throw away their views and rebuild them by replaying their events. But only

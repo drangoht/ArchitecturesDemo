@@ -59,12 +59,12 @@ The code is quoted exactly as it is, French comments included.
 ([BanqueDbContext.cs](../../../15-MultiTenant/Mt.Banque/BanqueDbContext.cs)):
 
 ```csharp
-private void Isoler<T>(ModelBuilder modele) where T : class, IAppartientAUnLocataire
+private void Isolate<T>(ModelBuilder model) where T : class, IBelongsToTenant
 {
-    // Clé composite : deux locataires peuvent avoir un compte de même identifiant (ici, Alice et Bob existent partout)
-    // sans conflit dans la base partagée.
-    modele.Entity<T>().HasKey(nameof(IAppartientAUnLocataire.LocataireId), "Id");
-    modele.Entity<T>().HasQueryFilter(e => e.LocataireId == LocataireCourant);
+    // Composite key: two tenants can have an account with the same identifier (here, Alice and Bob exist everywhere)
+    // without conflict in the shared database.
+    model.Entity<T>().HasKey(nameof(IBelongsToTenant.TenantId), "Id");
+    model.Entity<T>().HasQueryFilter(e => e.TenantId == CurrentTenant);
 }
 ```
 
@@ -77,7 +77,7 @@ customers — blast radius ([Relais.cs](../../../17-CellBased/Cell.Routeur/Relai
 ```csharp
 catch (HttpRequestException)
 {
-    // Rayon d'impact : seuls les clients de CETTE cellule reçoivent cette erreur.
+    // Blast radius: only the customers of THIS cell get this error.
 ```
 
 **The greedy customer**: multi-tenant **throttles** it with a quota specific to its plan
@@ -89,10 +89,10 @@ left; when all are full, you don't enlarge a cell, you add one
 ([PlanDeControle.cs](../../../17-CellBased/Cell.Routeur/PlanDeControle.cs)):
 
 ```csharp
-/// <summary>La cellule ouverte la moins chargée qui a encore de la place.</summary>
-public Cellule? ChoisirCellule() => registre.Toutes()
-    .Where(c => c.Ouverte && placement.Nombre(c.Id) < c.Capacite)
-    .OrderBy(c => placement.Nombre(c.Id)).ThenBy(c => c.Id)
+/// <summary>The least loaded open cell that still has room.</summary>
+public CellInfo? ChooseCell() => registry.All()
+    .Where(c => c.Open && placement.Count(c.Id) < c.Capacity)
+    .OrderBy(c => placement.Count(c.Id)).ThenBy(c => c.Id)
     .FirstOrDefault();
 ```
 

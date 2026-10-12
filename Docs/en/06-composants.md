@@ -78,13 +78,13 @@ It is all the rest of the application can see.
 ([IComptesComposant.cs](../../06-Composants/Composants.Comptes/IComptesComposant.cs))
 
 ```csharp
-// ─── Surface publique du composant : c'est tout ce que le reste de l'application peut voir. ───
-public interface IComptesComposant
+// ─── Public surface of the component: this is all the rest of the application can see. ───
+public interface IAccountsComponent
 {
-    Task<CompteDto> Ouvrir(string titulaire, decimal depotInitial, Guid? id = null);
-    Task<CompteDto?> Consulter(Guid compteId);
-    Task<Resultat> Retirer(Guid compteId, decimal montant);
-    Task<Resultat> Deposer(Guid compteId, decimal montant);
+    Task<AccountDto> Open(string owner, decimal initialDeposit, Guid? id = null);
+    Task<AccountDto?> Get(Guid accountId);
+    Task<Result> Withdraw(Guid accountId, decimal amount);
+    Task<Result> Deposit(Guid accountId, decimal amount);
 }
 ```
 
@@ -95,11 +95,11 @@ dependency injection.
 ([Compte.cs](../../06-Composants/Composants.Comptes/Interne/Compte.cs), [ComptesComposant.cs](../../06-Composants/Composants.Comptes/Interne/ComptesComposant.cs))
 
 ```csharp
-// internal : invisible hors du composant. Personne ne peut faire « new Compte() » depuis l'API.
-internal class Compte { /* … */ }
+// internal: invisible outside the component. Nobody can do "new Account()" from the API.
+internal class Account { /* … */ }
 
-// L'implémentation est internal : on ne l'obtient que par l'interface, via l'injection de dépendances.
-internal class ComptesComposant(ComptesDbContext db) : IComptesComposant { /* … */ }
+// The implementation is internal: it can only be obtained through the interface, via dependency injection.
+internal class AccountsComponent(AccountsDbContext db) : IAccountsComponent { /* … */ }
 ```
 
 The only other public point: plugging it into dependency injection. The component owns ITS database: no other
@@ -107,11 +107,11 @@ component accesses it.
 ([ComptesExtensions.cs](../../06-Composants/Composants.Comptes/ComptesExtensions.cs))
 
 ```csharp
-public static IServiceCollection AddComposantComptes(this IServiceCollection services, string nomBase = "Comptes")
+public static IServiceCollection AddAccountsComponent(this IServiceCollection services, string databaseName = "Accounts")
 {
-    // Le composant possède SA base : aucun autre composant n'y accède.
-    services.AddDbContext<ComptesDbContext>(options => options.UseInMemoryDatabase(nomBase));
-    services.AddScoped<IComptesComposant, ComptesComposant>();
+    // The component owns ITS database: no other component accesses it.
+    services.AddDbContext<AccountsDbContext>(options => options.UseInMemoryDatabase(databaseName));
+    services.AddScoped<IAccountsComponent, AccountsComponent>();
     return services;
 }
 ```
@@ -122,17 +122,17 @@ With no shared transaction between two databases, you have to **compensate** if 
 ([VirementsComposant.cs](../../06-Composants/Composants.Virements/Interne/VirementsComposant.cs))
 
 ```csharp
-var retrait = await comptes.Retirer(sourceId, montant);
-if (!retrait.Succes)
-    return retrait;
+var withdrawal = await accounts.Withdraw(sourceId, amount);
+if (!withdrawal.Success)
+    return withdrawal;
 
-var depot = await comptes.Deposer(cibleId, montant);
-if (!depot.Succes)
+var deposit = await accounts.Deposit(targetId, amount);
+if (!deposit.Success)
 {
-    // Pas de transaction commune entre deux composants qui ont chacun leur base :
-    // si la 2e étape échoue, on compense la 1re.
-    await comptes.Deposer(sourceId, montant);
-    return depot;
+    // No shared transaction between two components that each have their own database:
+    // if the 2nd step fails, the 1st one is compensated.
+    await accounts.Deposit(sourceId, amount);
+    return deposit;
 }
 ```
 
@@ -161,9 +161,9 @@ Try writing `new ComptesDbContext(...)` or `new Compte(...)` there: it doesn't c
 ([Program.cs](../../06-Composants/Composants.Api/Program.cs))
 
 ```csharp
-// Essayez d'écrire « new ComptesDbContext(...) » ou « new Compte(...) » ici : ça ne compile pas.
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete requete, IComptesComposant comptes) =>
-    EnHttp(await comptes.Retirer(id, requete.Montant)));
+// Try writing "new AccountsDbContext(...)" or "new Account(...)" here: it does not compile.
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest request, IAccountsComponent accounts) =>
+    ToHttp(await accounts.Withdraw(id, request.Amount)));
 ```
 
 ---
@@ -175,17 +175,17 @@ app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete requete
   the compensation ([VirementsComposantTests.cs](../../06-Composants/Composants.Tests/VirementsComposantTests.cs)):
 
 ```csharp
-Assert.Equal(["retrait source 40", "dépôt cible 40 (refusé)", "dépôt source 40"], faux.Journal);
+Assert.Equal(["withdrawal source 40", "deposit target 40 (refused)", "deposit source 40"], fake.Log);
 ```
 
 - **Safeguard**: the public surface is locked. Making an internal type `public` fails the test
   ([ArchitectureTests.cs](../../06-Composants/Composants.Tests/ArchitectureTests.cs)):
 
 ```csharp
-var publics = typeof(IComptesComposant).Assembly.GetExportedTypes().Select(t => t.Name).Order();
+var publics = typeof(IAccountsComponent).Assembly.GetExportedTypes().Select(t => t.Name).Order();
 
 Assert.Equal(
-    ["CompteDto", "ComptesExtensions", "IComptesComposant", "Resultat", "StatutResultat"],
+    ["AccountDto", "AccountsExtensions", "IAccountsComponent", "Result", "ResultStatus"],
     publics);
 ```
 

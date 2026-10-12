@@ -83,19 +83,19 @@ processing) and a scheduled trigger.
 ([Deploiement.cs](../../12-Serverless/Sls.Fonctions/Deploiement.cs))
 
 ```csharp
-public static void Declarer(Manifeste manifeste) => manifeste
-    // Déclencheurs HTTP (derrière une passerelle API gérée)
-    .Http("OuvrirCompte", "POST", "/comptes", ComptesFonctions.Ouvrir)
-    .Http("Retirer", "POST", "/comptes/{id}/retrait", ComptesFonctions.Retirer)
-    .Http("DemanderVirement", "POST", "/virements", VirementsFonctions.Demander)
+public static void Declare(Manifest manifest) => manifest
+    // HTTP triggers (behind a managed API gateway)
+    .Http("OpenAccount", "POST", "/accounts", AccountsFunctions.Open)
+    .Http("Withdraw", "POST", "/accounts/{id}/withdrawal", AccountsFunctions.Withdraw)
+    .Http("RequestTransfer", "POST", "/transfers", TransfersFunctions.Request)
     // …
-    // Déclencheurs de file : traitement asynchrone, avec nouveaux essais automatiques
-    .File("ExecuterVirement", Files.Virements, VirementsFonctions.Executer, memoireMo: 256)
-    .File("EnvoyerNotification", Files.Notifications, NotificationsFonctions.Envoyer)
-    // Déclencheur de stockage : un fichier déposé lance son traitement
-    .Stockage("TraiterImport", "imports/", ImportsFonctions.Traiter, memoireMo: 512)
-    // Déclencheur planifié
-    .Minuterie("ProduireRapport", TimeSpan.FromSeconds(30), RapportsFonctions.Produire);
+    // Queue triggers: asynchronous processing, with automatic retries
+    .Queue("ExecuteTransfer", Queues.Transfers, TransfersFunctions.Execute, memoryMb: 256)
+    .Queue("SendNotification", Queues.Notifications, NotificationsFunctions.Send)
+    // Storage trigger: an uploaded file starts its processing
+    .Storage("ProcessImport", "imports/", ImportsFunctions.Process, memoryMb: 512)
+    // Scheduled trigger
+    .Timer("ProduceReport", TimeSpan.FromSeconds(30), ReportsFunctions.Produce);
 ```
 
 ### 2. A function: a static method
@@ -105,15 +105,15 @@ the transfer is NOT made in the HTTP function: it is accepted (202) and handed t
 ([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs))
 
 ```csharp
-/// <summary>HTTP : on ne fait PAS le virement ici. On l'accepte (202) et on le confie à une file : réponse immédiate.</summary>
-public static async Task<ReponseHttp> Demander(RequeteHttp requete, ContexteFonction contexte)
+/// <summary>HTTP: the transfer is NOT made here. It is accepted (202) and handed to a queue: immediate response.</summary>
+public static async Task<HttpResponseData> Request(HttpRequestData request, FunctionContext context)
 {
-    var demande = requete.Lire<VirementDemande>();
-    if (await Valider(demande, contexte) is { } erreur)
-        return ReponseHttp.Invalide(erreur);
+    var demand = request.Read<TransferRequest>();
+    if (await Validate(demand, context) is { } error)
+        return HttpResponseData.Invalid(error);
 
-    var virement = await Planifier(demande, contexte, Guid.NewGuid());
-    return ReponseHttp.Accepte($"/virements/{virement.Id}", new { virementId = virement.Id, statut = virement.Statut });
+    var transfer = await Schedule(demand, context, Guid.NewGuid());
+    return HttpResponseData.Accepted($"/transfers/{transfer.Id}", new { transferId = transfer.Id, status = transfer.Status });
 }
 ```
 
@@ -123,24 +123,24 @@ Downloading the code, starting the .NET runtime, initializing: that is the "cold
 ([MoteurExecution.cs](../../12-Serverless/Sls.Plateforme/MoteurExecution.cs))
 
 ```csharp
-lock (etat)
+lock (state)
 {
-    instance = etat.Instances.FirstOrDefault(i => !i.Occupee);
-    aFroid = instance is null;
+    instance = state.Instances.FirstOrDefault(i => !i.Busy);
+    cold = instance is null;
     if (instance is null)
     {
-        if (etat.Instances.Count >= _options.InstancesMaxParFonction)
-            throw new EtranglementException(nom);
-        instance = new Instance($"{++etat.NumeroInstance}");
-        etat.Instances.Add(instance);
+        if (state.Instances.Count >= _options.MaxInstancesPerFunction)
+            throw new ThrottlingException(name);
+        instance = new Instance($"{++state.InstanceNumber}");
+        state.Instances.Add(instance);
     }
-    instance.Occupee = true;
+    instance.Busy = true;
 }
 // …
-if (aFroid)
+if (cold)
 {
-    // Téléchargement du code, démarrage du runtime .NET, initialisation : c'est le « cold start ».
-    await Task.Delay(_options.DemarrageAFroidMs);
+    // Downloading the code, starting the .NET runtime, initializing: that is the "cold start".
+    await Task.Delay(_options.ColdStartMs);
 }
 ```
 
@@ -188,13 +188,13 @@ all instances and durable.
 ([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs))
 
 ```csharp
-// ✗ Mémoire de l'instance : propre à CETTE instance, remise à zéro à chaque démarrage à froid.
-var compteurDeLInstance = (contexte.MemoireInstance.TryGetValue("visites", out var v) ? (long)v : 0) + 1;
-contexte.MemoireInstance["visites"] = compteurDeLInstance;
+// ✗ Instance memory: specific to THIS instance, reset at each cold start.
+var instanceCounter = (context.InstanceMemory.TryGetValue("visits", out var v) ? (long)v : 0) + 1;
+context.InstanceMemory["visits"] = instanceCounter;
 
-// ✓ Service géré : partagé par toutes les instances, durable.
-var global = await Concurrence.ModifierOuCreer(contexte.Table(Tables.Compteurs), "visites",
-    new Compteur(0), c => c with { Valeur = c.Valeur + 1 });
+// ✓ Managed service: shared by all the instances, durable.
+var global = await Concurrency.ModifyOrCreate(context.Table(Tables.Counters), "visits",
+    new Counter(0), c => c with { Value = c.Value + 1 });
 ```
 
 ### 6. Concurrency: conditional writes (ETag)
@@ -204,23 +204,23 @@ the meantime", and start again otherwise.
 ([Modele.cs](../../12-Serverless/Sls.Fonctions/Modele.cs))
 
 ```csharp
-/// Lire → modifier → écrire « seulement si personne n'a écrit entre-temps », et recommencer sinon.
-public static async Task<T> Modifier<T>(TableGeree table, string cle, Func<T, T> modification) where T : class
+/// Read → modify → write "only if nobody wrote in the meantime", and start over otherwise.
+public static async Task<T> Modify<T>(ManagedTable table, string key, Func<T, T> modification) where T : class
 {
-    for (var essai = 1; ; essai++)
+    for (var attempt = 1; ; attempt++)
     {
-        var (valeur, etag) = await table.Lire<T>(cle);
-        if (valeur is null)
-            throw new KeyNotFoundException($"{table.Nom}/{cle}");
+        var (value, etag) = await table.Read<T>(key);
+        if (value is null)
+            throw new KeyNotFoundException($"{table.Name}/{key}");
         try
         {
-            var nouvelle = modification(valeur);
-            await table.Ecrire(cle, nouvelle, etag);
-            return nouvelle;
+            var updated = modification(value);
+            await table.Write(key, updated, etag);
+            return updated;
         }
-        catch (ConflitEcritureException) when (essai < 20)
+        catch (WriteConflictException) when (attempt < 20)
         {
-            // Une autre instance a écrit avant nous : on relit et on recommence.
+            // Another instance wrote before us: read again and start over.
         }
     }
 }
@@ -232,17 +232,17 @@ An exception gets the message redelivered (increasing delay); after 3 failures, 
 ([ServicesGeres.cs](../../12-Serverless/Sls.Plateforme/ServicesGeres.cs))
 
 ```csharp
-internal void Echec(string file, MessageEnFile message, string erreur)
+internal void Failed(string queue, QueuedMessage message, string error)
 {
-    var tentative = message.Tentative + 1;
-    if (tentative >= options.TentativesMax)
-        Ajouter($"{file}-poison", message with { Tentative = tentative, DerniereErreur = erreur });
+    var attempt = message.Attempt + 1;
+    if (attempt >= options.MaxAttempts)
+        Add($"{queue}-poison", message with { Attempt = attempt, LastError = error });
     else
-        Ajouter(file, message with
+        Add(queue, message with
         {
-            Tentative = tentative,
-            DerniereErreur = erreur,
-            VisibleApres = DateTime.UtcNow.AddMilliseconds(options.AttenteEntreTentativesMs * Math.Pow(2, tentative - 1))
+            Attempt = attempt,
+            LastError = error,
+            VisibleAfter = DateTime.UtcNow.AddMilliseconds(options.DelayBetweenAttemptsMs * Math.Pow(2, attempt - 1))
         });
 }
 ```
@@ -264,13 +264,13 @@ already known operation, notifications have a deterministic key, and a reprocess
 (identifier derived from the file and the line number).
 
 ```csharp
-public Compte Appliquer(Guid operation, decimal variation)
+public Account Apply(Guid operation, decimal change)
 {
     if (Operations.Contains(operation))
         return this;
-    if (Solde + variation < 0)
-        throw new RegleMetierException("Solde insuffisant.");
-    return this with { Solde = Solde + variation, Operations = [.. Operations.TakeLast(49), operation] };
+    if (Balance + change < 0)
+        throw new BusinessRuleException("Insufficient balance.");
+    return this with { Balance = Balance + change, Operations = [.. Operations.TakeLast(49), operation] };
 }
 ```
 
@@ -296,14 +296,14 @@ In this test, 30 "instances" withdraw €100 at the same time from a €1,000 ac
 
 ```csharp
 [Fact]
-public async Task Des_retraits_simultanes_ne_mettent_jamais_le_compte_a_decouvert()
+public async Task Simultaneous_withdrawals_never_overdraw_the_account()
 {
-    // 30 « instances » retirent 100 € en même temps sur un compte de 1 000 € : grâce aux ETag, exactement 10 réussissent.
-    var reponses = await Task.WhenAll(Enumerable.Range(0, 30).Select(_ =>
-        ComptesFonctions.Retirer(Requete(new { montant = 100m }, DonneesDeDemo.Alice.ToString()), Contexte)));
+    // 30 "instances" withdraw 100 € at the same time from an account of 1,000 €: thanks to the ETags, exactly 10 succeed.
+    var responses = await Task.WhenAll(Enumerable.Range(0, 30).Select(_ =>
+        AccountsFunctions.Withdraw(Request(new { amount = 100m }, DemoData.Alice.ToString()), Context)));
 
-    Assert.Equal(10, reponses.Count(r => r.Statut == 200));
-    Assert.Equal(0m, await Solde(DonneesDeDemo.Alice));
+    Assert.Equal(10, responses.Count(r => r.Status == 200));
+    Assert.Equal(0m, await Balance(DemoData.Alice));
 }
 ```
 

@@ -57,24 +57,24 @@ A filter boils down to one method — a rejection is a normal result (the line i
 exception stops the whole pipeline (the code is quoted exactly as it is, French comments included):
 
 ```csharp
-public interface IFiltre<in TEntree, TSortie>
+public interface IFilter<in TInput, TOutput>
 {
-    string Nom { get; }
+    string Name { get; }
 
-    /// <summary>Un rejet est un résultat normal (la ligne est écartée, le flux continue) ; une exception arrête tout le pipeline.</summary>
-    ValueTask<Issue<TSortie>> Traiter(TEntree entree, CancellationToken annulation);
+    /// <summary>A rejection is a normal result (the line is discarded, the flow goes on); an exception stops the whole pipeline.</summary>
+    ValueTask<Outcome<TOutput>> Process(TInput input, CancellationToken cancellation);
 }
 ```
 
 The assembly reads like the diagram, and the compiler checks that each filter's output is the next one's input:
 
 ```csharp
-Noyau.Pipeline.Depuis<string>()
-    .Puis(new Analyser())
-    .Puis(new Valider())
-    .Puis(new Dedupliquer(registre))
-    .Puis(new Convertir())
-    .Puis(new ControlerFraude(options.CoutScoring), options.ParallelismeFraude, options.Ordonne);
+Core.Pipeline.From<string>()
+    .Then(new Parse())
+    .Then(new Validate())
+    .Then(new Deduplicate(ledger))
+    .Then(new ConvertCurrency())
+    .Then(new CheckFraud(options.ScoringCost), options.FraudParallelism, options.Ordered);
 ```
 
 In production: **TPL Dataflow** or **Channels** directly within a process, **Akka Streams**; at system scale, filters
@@ -107,9 +107,9 @@ An **exception**, on the other hand, signals a failure: the whole pipeline stops
 others).
 
 ```csharp
-// Le premier étage qui échoue arrête tous les autres.
-foreach (var tache in taches)
-    _ = tache.ContinueWith(_ => arret.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
+// The first stage that fails stops all the others.
+foreach (var task in tasks)
+    _ = task.ContinueWith(_ => stopping.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
 ```
 
 ---
@@ -121,7 +121,7 @@ Since the filters don't know each other, they can be reassembled at will. The **
 touching a single account.
 
 ```csharp
-public static Pipeline<string, Virement> ABlanc(Registre registre, OptionsImport options) => Controles(registre, options).Construire();
+public static Pipeline<string, Transfer> DryRun(Ledger ledger, ImportOptions options) => Checks(ledger, options).Build();
 ```
 
 Likewise, the demo's simulated failure is a filter inserted before *Execute*, and the tests assemble their own pipelines
@@ -141,11 +141,11 @@ stage **waits** to write; the wait propagates all the way back to the file readi
 is back-pressure.
 
 ```csharp
-/// <summary>Écrire dans un tuyau plein BLOQUE : l'étage attend que le suivant ait de la place. C'est la contre-pression.</summary>
-private async Task Ecrire(ChannelWriter<Element<TSortie>> sortie, Element<TSortie> element, ContexteExecution contexte)
+/// <summary>Writing into a full pipe BLOCKS: the stage waits for the next one to have room. That is the back-pressure.</summary>
+private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput> element, RunContext context)
 {
-    var debut = Stopwatch.GetTimestamp();
-    await sortie.WriteAsync(element, contexte.Annulation);
+    var start = Stopwatch.GetTimestamp();
+    await output.WriteAsync(element, context.Cancellation);
 ```
 
 Result: the file is never loaded in full. **Real run**, 100,000 lines generated on the fly: at most **330 to 375 lines
@@ -178,12 +178,12 @@ Bob €1,000 on line 2, line 2 is only possible after line 1. The parallel stage
 them in arrival order:
 
 ```csharp
-while (enAvance.Remove(attendu, out var suivant))
+while (early.Remove(expected, out var next))
 {
-    if (suivant is not null)
-        await Ecrire(sortie, suivant, contexte);
-    attendu++;
-    fenetre.Release();
+    if (next is not null)
+        await Write(output, next, context);
+    expected++;
+    window.Release();
 }
 ```
 

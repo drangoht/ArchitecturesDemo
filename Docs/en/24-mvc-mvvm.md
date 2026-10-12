@@ -69,9 +69,9 @@ Ihm.Tests         51 tests: model, controllers, full site, ViewModels, console v
 ```
 
 ```powershell
-dotnet run --project 24-MvcMvvm\Ihm.Mvc        # puis http://localhost:5124
-dotnet run --project 24-MvcMvvm\Ihm.Wpf        # la fenêtre (Windows) ; 400 ms par appel à la banque
-dotnet run --project 24-MvcMvvm\Ihm.Console    # la même chose au clavier (« aide »)
+dotnet run --project 24-MvcMvvm\Ui.Mvc        # then http://localhost:5124
+dotnet run --project 24-MvcMvvm\Ui.Wpf        # the window (Windows); 400 ms per call to the bank
+dotnet run --project 24-MvcMvvm\Ui.Console    # the same thing at the keyboard ("help")
 ```
 
 (Then `http://localhost:5124`; the window (Windows), with 400 ms per call to the bank; the same thing from the keyboard,
@@ -131,7 +131,7 @@ bank's). If there is an error, **the same view is shown again** (200), with the 
 
 ```csharp
         if (!ModelState.IsValid)
-            return await Reafficher(formulaire, annulation);
+            return await Redisplay(form, cancellation);
 ```
 
 If there is none, the transfer is made, then the controller **redirects** ("Post/Redirect/Get"): the landing page is
@@ -139,10 +139,10 @@ reached with a GET, which can be refreshed without redoing the transfer. The suc
 **TempData** (a cookie), which is erased as soon as it is read — it shows only once:
 
 ```csharp
-            var virement = await banque.VirerAsync(source, cible, montant, annulation);
-            // TempData survit à UNE redirection (cookie), puis disparaît : le message s'affiche une seule fois.
-            TempData["Message"] = $"Virement de {Format.Euros(virement.Montant)} effectué. Nouveau solde : {Format.Euros(virement.SoldeSource)}.";
-            return RedirectToAction(nameof(ComptesController.Detail), "Comptes", new { id = source });
+            var transfer = await bank.TransferAsync(source, target, amount, cancellation);
+            // TempData survives ONE redirection (cookie), then disappears: the message is displayed only once.
+            TempData["Message"] = $"Transfer of {Format.Euros(transfer.Amount)} done. New balance: {Format.Euros(transfer.SourceBalance)}.";
+            return RedirectToAction(nameof(AccountsController.Detail), "Accounts", new { id = source });
 ```
 
 A refusal from the bank (insufficient balance) becomes a form error, without a field, shown at the top
@@ -154,10 +154,10 @@ tag helper adds by itself: without it, `400` (global `AutoValidateAntiforgeryTok
 `Confirme=true`:
 
 ```csharp
-        if (montant >= ReglesVirement.SeuilConfirmation && !formulaire.Confirme)
+        if (amount >= TransferRules.ConfirmationThreshold && !form.Confirmed)
         {
-            await ChargerComptes(formulaire, annulation);
-            return View("Confirmer", formulaire);
+            await LoadAccounts(form, cancellation);
+            return View("Confirm", form);
         }
 ```
 
@@ -176,12 +176,12 @@ It contains the state (displayed accounts, selected account, typed text, errors,
 ([Outillage.cs](../../24-MvcMvvm/Ihm.Presentation/Outillage.cs)):
 
 ```csharp
-    protected bool Definir<T>(ref T champ, T valeur, [CallerMemberName] string? propriete = null)
+    protected bool Set<T>(ref T storage, T value, [CallerMemberName] string? property = null)
     {
-        if (EqualityComparer<T>.Default.Equals(champ, valeur))
+        if (EqualityComparer<T>.Default.Equals(storage, value))
             return false;
-        champ = valeur;
-        Signaler(propriete!);
+        storage = value;
+        Notify(property!);
         return true;
     }
 ```
@@ -191,10 +191,10 @@ property and subscribes to its changes; in the other direction, a keystroke or a
 `Command` connects a button to a command, whose `CanExecute` greys out or enables the button:
 
 ```xml
-                <TextBox Text="{Binding MontantSaisi, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,2" Padding="2" />
-                <TextBlock Text="{Binding ErreurMontant}" Foreground="#B42318" TextWrapping="Wrap" />
+                <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,2" Padding="2" />
+                <TextBlock Text="{Binding AmountError}" Foreground="#B42318" TextWrapping="Wrap" />
 
-                <Button Content="Virer" Command="{Binding VirerCommande}" Padding="16,6" Margin="0,12,0,8" HorizontalAlignment="Left" />
+                <Button Content="Transfer" Command="{Binding TransferCommand}" Padding="16,6" Margin="0,12,0,8" HorizontalAlignment="Left" />
 ```
 
 ```mermaid
@@ -256,11 +256,11 @@ screen would show Bob's operations under the Livret's title. Each load has a num
 kept ([ComptesViewModel.cs](../../24-MvcMvvm/Ihm.Presentation/ComptesViewModel.cs)):
 
 ```csharp
-        var demande = ++_derniereDemande;
+        var request = ++_lastRequest;
 ```
 ```csharp
-            var operations = await banque.OperationsAsync(compte.Id);
-            if (demande != _derniereDemande)
+            var operations = await bank.OperationsAsync(account.Id);
+            if (request != _lastRequest)
                 return;
 ```
 
@@ -278,10 +278,10 @@ which each view implements its own way: a dialog box in WPF, a line read from th
 answer in the tests.
 
 ```csharp
-        if (montant >= ReglesVirement.SeuilConfirmation
-            && !await _confirmation.DemanderAsync($"Virer {Format.Euros(montant)} de {source.Affichage} vers {cible.Affichage} ?"))
+        if (amount >= TransferRules.ConfirmationThreshold
+            && !await _confirmation.AskAsync($"Transfer {Format.Euros(amount)} from {source.Display} to {target.Display}?"))
         {
-            Informer("Virement annulé.", erreur: false);
+            Inform("Transfer cancelled.", error: false);
             return;
         }
 ```
@@ -300,11 +300,11 @@ them. Its bindings are done by hand by [Liaison.cs](../../24-MvcMvvm/Ihm.Console
 empty name means "everything may have changed").
 
 ```csharp
-    private void Changement(object? emetteur, PropertyChangedEventArgs e)
+    private void Changed(object? sender, PropertyChangedEventArgs e)
     {
-        // Un nom vide signifie « tout a pu changer ».
-        if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == _propriete.Name)
-            Pousser();
+        // An empty name means "everything may have changed".
+        if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == _property.Name)
+            Push();
     }
 ```
 

@@ -97,18 +97,18 @@ last N leave in parallel, but that is three waves of round trips, and one reques
 exactly as it is):
 
 ```csharp
-var client = await http.GetFromJsonAsync<JsonObject>($"/clients/{clientId}");
-var comptes = await http.GetFromJsonAsync<JsonArray>($"/clients/{clientId}/comptes");
-// 1 + 1 + N : une requête par compte pour ses opérations (en parallèle, mais une requête chacune).
+var customer = await http.GetFromJsonAsync<JsonObject>($"/customers/{customerId}");
+var accounts = await http.GetFromJsonAsync<JsonArray>($"/customers/{customerId}/accounts");
+// 1 + 1 + N: one request per account for its operations (in parallel, but one request each).
 ```
 
 **GraphQL** sends the description of the screen; the response has exactly its shape:
 
 ```graphql
-query EcranAccueil($id: ID!, $n: Int) {
-  client(id: $id) {
-    nom
-    comptes { numero libelle solde operations(derniers: $n) { date libelle montant } }
+query HomeScreen($id: ID!, $n: Int) {
+  customer(id: $id) {
+    name
+    accounts { number label balance operations(latest: $n) { date label amount } }
   }
 }
 ```
@@ -116,7 +116,7 @@ query EcranAccueil($id: ID!, $n: Int) {
 **gRPC** has a procedure tailored to this screen, declared in the contract:
 
 ```protobuf
-rpc ObtenirTableauDeBord (DemandeTableauDeBord) returns (TableauDeBord);
+rpc GetDashboard (DashboardRequest) returns (Dashboard);
 ```
 
 ```mermaid
@@ -150,9 +150,9 @@ For the same screen, REST receives **2.3 times** more than GraphQL and **5 times
 receives ten (over-fetching, test `La_representation_d_un_compte_est_complete_et_la_meme_pour_tous_les_clients`):
 
 ```json
-{"numero":"10001","libelle":"Compte courant","type":"courant","iban":"FR76 3000 4000 0110 0010 0010 001","solde":1626.05,
- "devise":"EUR","dateOuverture":"2015-03-02","plafondDecouvert":500,"titulaire":{"id":"alice","nom":"Alice Martin"},
- "_links":{"self":"/comptes/10001","operations":"/comptes/10001/operations","titulaire":"/clients/alice"}}
+{"number":"10001","label":"Current account","type":"current","iban":"FR76 3000 4000 0110 0010 0010 001","balance":1626.05,
+ "currency":"EUR","openingDate":"2015-03-02","overdraftLimit":500,"owner":{"id":"alice","name":"Alice Martin"},
+ "_links":{"self":"/accounts/10001","operations":"/accounts/10001/operations","owner":"/customers/alice"}}
 ```
 
 **GraphQL** only returns the requested fields, but in JSON: each field name is repeated in every object. And it is the
@@ -173,13 +173,13 @@ Two consequences visible in the contract: a default value (0, empty string) **do
 **no decimal type**, hence amounts in cents:
 
 ```protobuf
-// Pas de type décimal en Protobuf : les montants circulent en centimes, sur des entiers.
-message Compte {
-  string numero = 1;
-  string libelle = 2;
-  TypeCompte type = 3;
-  int64 solde_centimes = 4;
-  repeated Operation dernieres_operations = 5;
+// No decimal type in Protobuf: amounts travel in cents, on integers.
+message Account {
+  string number = 1;
+  string label = 2;
+  AccountType type = 3;
+  int64 balance_cents = 4;
+  repeated Operation latest_operations = 5;
 }
 ```
 
@@ -189,7 +189,7 @@ screen different from the other two, because the schema dated to the second whil
 therefore now dates its operations to the second:
 
 ```csharp
-maintenant = maintenant.AddTicks(-(maintenant.Ticks % TimeSpan.TicksPerSecond));
+now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
 ```
 
 ---
@@ -205,11 +205,11 @@ The engine therefore executes the query **level by level**: a field is resolved 
 A **batched** resolver (the "DataLoader" of GraphQL engines) receives all the accounts and makes a single read:
 
 ```csharp
-.ChampGroupe("operations", "[Operation!]!", (comptes, a) =>
+.BatchedField("operations", "[Operation!]!", (accounts, a) =>
 {
-    var parCompte = banque.DernieresOperations(comptes.Select(c => c.Numero).ToList(), a.LireOuDefaut<int?>("derniers") ?? 10);
-    return comptes.Select(c => (object?)parCompte[c.Numero]).ToList();
-}, new Arg("derniers", "Int", 10))
+    var byAccount = bank.LatestOperations(accounts.Select(c => c.Number).ToList(), a.GetOrDefault<int?>("latest") ?? 10);
+    return accounts.Select(c => (object?)byAccount[c.Number]).ToList();
+}, new Arg("latest", "Int", 10))
 ```
 
 | For Alice's screen | REST | GraphQL | gRPC |
@@ -253,8 +253,8 @@ The translation is written once, in [Traductions.cs](../../23-RestGrpcGraphQL/St
   (test `Une_erreur_sur_un_champ_n_empeche_pas_d_obtenir_les_autres`):
 
 ```json
-{"data":{"a":{"libelle":"Compte courant"},"b":null},
- "errors":[{"message":"Compte « 99999 » inconnu.","locations":[{"line":1,"column":42}],"path":["b"],"extensions":{"code":"COMPTE_INCONNU"}}]}
+{"data":{"a":{"label":"Current account"},"b":null},
+ "errors":[{"message":"Unknown account \"99999\".","locations":[{"line":1,"column":41}],"path":["b"],"extensions":{"code":"UNKNOWN_ACCOUNT"}}]}
 ```
 
 When the field in error is **non-null** (`!`), it cannot be `null`: its parent becomes `null`, and so on up to the first
@@ -271,8 +271,8 @@ Designing a schema also means choosing where these errors stop. Finally, an unex
 operation into it, one frame at a time.
 
 ```csharp
-await foreach (var operation in operations.ReadAllAsync(annulation))
-    await ecrire(Message(operation));
+await foreach (var operation in operations.ReadAllAsync(cancellation))
+    await write(Message(operation));
 ```
 
 The client sets a **deadline** (`grpc-timeout` header); the server enforces it too, and stops the work: the stream ends
@@ -318,7 +318,7 @@ All three styles let you add a field without breaking clients, each in its own w
   moving. No other style knows so precisely what its clients read.
 
 ```graphql
-soldeTexte: String! @deprecated(reason: "Utiliser « solde » (un nombre) et le formater à l'affichage.")
+balanceText: String! @deprecated(reason: "Use 'balance' (a number) and format it for display.")
 ```
 
 - **REST**: adding a JSON field is safe if clients ignore those they don't know (System.Text.Json's default behavior);

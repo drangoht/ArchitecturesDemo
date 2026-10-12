@@ -77,11 +77,11 @@ business ([Banque.cs](../../19-SpaceBased/Espace.Banque/Banque.cs)), which only 
 is quoted exactly as it is, French messages included):
 
 ```csharp
-private static object Mouvement(ContexteUnite unite, Guid id, decimal montant, bool debit, string libelle) =>
-    unite.Modifier<Compte>(id.ToString(), compte =>
-        compte is null ? (null, Introuvable(id))
-        : montant <= 0 ? (null, new Refus("Le montant doit être positif."))
-        : debit && montant > compte.Solde ? (null, new Refus($"Solde insuffisant ({compte.Solde:0.00} €)."))
+private static object Movement(UnitContext unit, Guid id, decimal amount, bool debit, string label) =>
+    unit.Modify<Account>(id.ToString(), account =>
+        account is null ? (null, NotFound(id))
+        : amount <= 0 ? (null, new Refusal("The amount must be positive."))
+        : debit && amount > account.Balance ? (null, new Refusal($"Insufficient balance ({account.Balance:0.00} €)."))
 ```
 
 In production: **Hazelcast**, **Apache Ignite**, **GigaSpaces** (which popularized the model), **Oracle Coherence** or
@@ -96,12 +96,12 @@ Each write is applied in the unit's replica, then **published**: to the other re
 waits for neither — the database is not on the request path.
 
 ```csharp
-private void Publier(string origine, Modification modification)
+private void Publish(string origin, Modification modification)
 {
-    Interlocked.Increment(ref _enVol);
-    _file.Writer.TryWrite((origine, modification, DateTimeOffset.UtcNow + LatenceReplication));
-    // La base n'est pas sur le chemin de la requête : l'écriture part dans la pompe, on n'attend pas.
-    _versLaPompe(modification);
+    Interlocked.Increment(ref _inFlight);
+    _queue.Writer.TryWrite((origin, modification, DateTimeOffset.UtcNow + ReplicationLatency));
+    // The database is not on the request path: the write goes into the pump, we do not wait.
+    _toThePump(modification);
 }
 ```
 
@@ -147,11 +147,11 @@ sequenceDiagram
 The replica detects the collision when a modification doesn't start from the version it holds:
 
 ```csharp
-var concurrente = locale != m.Precedente && locale.Unite != "" && locale.Unite != m.Version.Unite;
-if (m.Version > locale)
+var concurrent = local != m.Previous && local.Unit != "" && local.Unit != m.Version.Unit;
+if (m.Version > local)
 {
-    _entrees[m.Cle] = new Entree(m.Cle, m.Valeur, m.Version);
-    return new ResultatFusion(true, concurrente ? locale : null);
+    _entries[m.Key] = new Entry(m.Key, m.Value, m.Version);
+    return new MergeResult(true, concurrent ? local : null);
 }
 ```
 
@@ -159,17 +159,17 @@ The countermeasure lies in the **messaging grid**: **affinity routing** always s
 which is then the only one writing it. "Rendezvous" hashing limits movements when the number of units changes:
 
 ```csharp
-: _unites.MaxBy(u => Hachage($"{cle}/{u.Id}"))!;
+: _units.MaxBy(u => Hash($"{key}/{u.Id}"))!;
 ```
 
 **Real run**: 200 €1 withdrawals fired at the same time on Alice's account, depending on the routing.
 
 ```json
-POST /demo/retraits-concurrents  (affinité)
-{ "unitesSollicitees": ["u2"], "acceptes": 200, "soldeAttendu": 800, "soldeDansLaGrille": [800], "soldeDansLaBase": 800, "misesAJourPerdues": 0 }
+POST /demo/concurrent-withdrawals  (affinity)
+{ "unitsUsed": ["u2"], "accepted": 200, "expectedBalance": 800, "balanceInGrid": [800], "balanceInDatabase": 800, "lostUpdates": 0 }
 
-POST /demo/retraits-concurrents  (tourniquet)
-{ "unitesSollicitees": ["u5","u6"], "acceptes": 200, "soldeAttendu": 600, "soldeDansLaGrille": [700], "soldeDansLaBase": 700, "misesAJourPerdues": 199 }
+POST /demo/concurrent-withdrawals  (round robin)
+{ "unitsUsed": ["u5","u6"], "accepted": 200, "expectedBalance": 600, "balanceInGrid": [700], "balanceInDatabase": 700, "lostUpdates": 199 }
 ```
 
 With round robin (*tourniquet*), 200 withdrawals accepted but only €100 debited: the bank lost €100. Grid and database
@@ -194,10 +194,10 @@ The deployment manager assesses the load every 250 ms (requests in progress or w
 unit): above 75%, it adds a unit; below 25%, it removes one (2 minimum, 6 maximum).
 
 ```csharp
-if (charge >= options.SeuilHaut && unites.Count < options.UnitesMax)
+if (load >= options.HighThreshold && units.Count < options.MaxUnits)
 {
-    var unite = await Demarrer();
-    return $"charge {charge:P0} : {unite.Id} ajoutée";
+    var unit = await Start();
+    return $"load {load * 100:0}%: {unit.Id} added";
 }
 ```
 
@@ -205,8 +205,8 @@ A new unit receives a **copy of the grid from an existing unit**, without touchi
 simultaneous account openings.
 
 ```json
-POST /demo/charge  { "nombre": 600 }
-{ "dureeMs": 2373, "unitesAvant": 2, "unitesMax": 6, ... }
+POST /demo/load  { "count": 600 }
+{ "durationMs": 2373, "unitsBefore": 2, "maxUnits": 6, ... }
 ```
 
 ```text
@@ -232,8 +232,8 @@ new ones benefit from the added units.
   be loaded, and the late writes would then overwrite the new unit's ones in the database:
 
   ```csharp
-  // LECTEUR DE DONNÉES. Attendre d'abord que la pompe ait tout écrit : sinon on chargerait des valeurs périmées,
-  // et les écritures en retard viendraient ensuite écraser dans la base celles de la nouvelle unité.
+  // DATA READER. First wait for the pump to have written everything: otherwise we would load stale values,
+  // and the late writes would then overwrite in the database those of the new unit.
   ```
 
   If the database is down too, there is no way to restart: `503`. Real run: database down, 3 withdrawals accepted
@@ -249,11 +249,11 @@ where replication can be **held back by hand** to make a collision certain (each
 other's write), and API tests ([ApiTests.cs](../../19-SpaceBased/Espace.Tests/ApiTests.cs)).
 
 ```csharp
-_p.Messages.Mode = ModeRoutage.Tourniquet;
-_p.Donnees.Suspendre();  // chaque unité écrit avant d'avoir vu l'écriture de l'autre
+_p.Messages.Mode = RoutingMode.RoundRobin;
+_p.Data.Suspend();  // each unit writes before having seen the other's write
 
-var premier = await Envoyer(new Retirer(Alice, 100m));  // u2
-var second = await Envoyer(new Retirer(Alice, 50m));    // u1
+var first = await Send(new Withdraw(Alice, 100m));  // u2
+var second = await Send(new Withdraw(Alice, 50m));    // u1
 ```
 
 | Test | What is checked |

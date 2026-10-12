@@ -57,19 +57,19 @@ The code is quoted exactly as it is, French comments included.
 ([VirementsEndpoints.cs](../../../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs)):
 
 ```csharp
-// Appel synchrone à un autre module, uniquement par son contrat public.
-var debit = await comptes.Debiter(source.Id, requete.Montant);
+// Synchronous call to another module, only through its public contract.
+var debit = await accounts.Debit(source.Id, request.Amount);
 ```
 
 Microservices: an HTTP client armed against failures
 ([Micro.Virements/Program.cs](../../../08-Microservices/Micro.Virements/Program.cs)):
 
 ```csharp
-// Appels au service Comptes : le réseau peut échouer, on se protège.
-// Retry (y compris sur POST : sans danger, car les appels portent un operationId idempotent),
-// timeout par tentative et circuit breaker pour ne pas insister sur un service à terre.
-builder.Services.AddHttpClient("comptes", (sp, client) =>
-        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Comptes"]!))
+// Calls to the Accounts service: the network can fail, so we protect ourselves.
+// Retry (including on POST: safe, because the calls carry an idempotent operationId),
+// timeout per attempt and circuit breaker so as not to insist on a service that is down.
+builder.Services.AddHttpClient("accounts", (sp, client) =>
+        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Accounts"]!))
     .AddStandardResilienceHandler(options =>
     {
         options.Retry.MaxRetryAttempts = 3;
@@ -80,17 +80,17 @@ builder.Services.AddHttpClient("comptes", (sp, client) =>
 **The retry requires idempotency** on the Accounts side ([Micro.Comptes/Endpoints.cs](../../../08-Microservices/Micro.Comptes/Endpoints.cs)):
 
 ```csharp
-if (await db.OperationsTraitees.FindAsync(requete.OperationId) is { } dejaTraitee)
-    return Repondre(dejaTraitee);
+if (await db.ProcessedOperations.FindAsync(request.OperationId) is { } alreadyProcessed)
+    return Respond(alreadyProcessed);
 ```
 
 **The event.** Monolith: published on the bus after saving; if the process goes down between the two, the event is
 lost. Microservices: written **in the same transaction** as the data, then relayed:
 
 ```csharp
-// Modification ET événement enregistrés ensemble : soit les deux, soit aucun.
-db.Outbox.Add(MessageOutbox.Creer("retrait-effectue",
-    new { compteId = id, montant = requete.Montant, nouveauSolde = compte.Solde }));
+// Change AND event saved together: either both, or neither.
+db.Outbox.Add(OutboxMessage.Create("withdrawal-made",
+    new { accountId = id, amount = request.Amount, newBalance = account.Balance }));
 await db.SaveChangesAsync();
 ```
 

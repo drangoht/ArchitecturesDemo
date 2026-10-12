@@ -257,9 +257,9 @@ Shared demo data: **Alice** `11111111-1111-1111-1111-111111111111` (€1,000) an
 ## Running the demos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # les 489 tests
-dotnet run --project 01-Hexagonale\Hexa.Adapters.Web        # une API (ports 5100 à 5124)
-dotnet run --project 08-Microservices\Micro.Lanceur         # les 5 microservices
+dotnet test ArchitecturesDemo.slnx                          # the 489 tests
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5124)
+dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 
 Each API contains a **`Banque.http`** file with the scenario's requests, to run from Visual Studio, Rider or VS Code

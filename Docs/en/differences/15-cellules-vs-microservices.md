@@ -69,12 +69,12 @@ injoignable : seuls ses clients sont touchés" (cell c2 unreachable: only its cu
 ([Version.cs](../../../17-CellBased/Cell.Cellule/Version.cs)) (the code is quoted exactly as it is):
 
 ```csharp
-public (bool Sain, string Detail) Sonde()
+public (bool Healthy, string Detail) Probe()
 {
-    var resultat = Retirer(100m, 10m);
-    return resultat == 90m
-        ? (true, "retrait de contrôle correct")
-        : (false, $"retrait de contrôle incorrect : 100 - 10 = {resultat}");
+    var result = Withdraw(100m, 10m);
+    return result == 90m
+        ? (true, "check withdrawal correct")
+        : (false, $"check withdrawal incorrect: 100 - 10 = {result}");
 }
 ```
 

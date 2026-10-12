@@ -74,19 +74,19 @@ A rule that concerns **two** accounts naturally belongs to neither of them.
 ([ServiceVirement.cs](../../02-Onion/Onion.Domain/Services/ServiceVirement.cs))
 
 ```csharp
-public class ServiceVirement
+public class TransferService
 {
-    public const decimal PlafondParVirement = 5_000m;
+    public const decimal TransferLimit = 5_000m;
 
-    public void Virer(Compte source, Compte cible, decimal montant)
+    public void Transfer(Account source, Account target, decimal amount)
     {
-        if (source.Id == cible.Id)
-            throw new RegleMetierException("Impossible de virer vers le même compte.");
-        if (montant > PlafondParVirement)
-            throw new RegleMetierException($"Un virement ne peut pas dépasser {PlafondParVirement:0} €.");
+        if (source.Id == target.Id)
+            throw new BusinessRuleException("Cannot transfer to the same account.");
+        if (amount > TransferLimit)
+            throw new BusinessRuleException($"A transfer cannot exceed {TransferLimit:0} €.");
 
-        source.Retirer(montant);
-        cible.Deposer(montant);
+        source.Withdraw(amount);
+        target.Deposit(amount);
     }
 }
 ```
@@ -97,19 +97,19 @@ The infrastructure (outer layer) implements them: dependencies point inward.
 ([IComptesRepository.cs](../../02-Onion/Onion.Domain/Interfaces/IComptesRepository.cs))
 
 ```csharp
-// Les interfaces d'accès aux données sont déclarées au centre ;
-// l'infrastructure (couche externe) les implémente : les dépendances pointent vers l'intérieur.
-public interface IComptesRepository
+// The data access interfaces are declared at the center;
+// the infrastructure (outer layer) implements them: dependencies point inwards.
+public interface IAccountsRepository
 {
-    Task<Compte?> ParId(Guid id);
-    Task Ajouter(Compte compte);
-    Task<bool> EstVide();
+    Task<Account?> ById(Guid id);
+    Task Add(Account account);
+    Task<bool> IsEmpty();
 }
 
-/// <summary>Valide en une fois toutes les modifications faites pendant un cas d'utilisation.</summary>
+/// <summary>Commits at once all the changes made during a use case.</summary>
 public interface IUnitOfWork
 {
-    Task Enregistrer();
+    Task Save();
 }
 ```
 
@@ -119,19 +119,19 @@ The rule (limit, same account, balance…) lives in the domain service; a single
 ([VirementsAppService.cs](../../02-Onion/Onion.Application/VirementsAppService.cs))
 
 ```csharp
-public class VirementsAppService(IComptesRepository comptes, IUnitOfWork unitOfWork, ServiceVirement serviceVirement)
+public class TransfersAppService(IAccountsRepository accounts, IUnitOfWork unitOfWork, TransferService transferService)
 {
-    public async Task<VirementResultat> Virer(Guid sourceId, Guid cibleId, decimal montant)
+    public async Task<TransferResult> Transfer(Guid sourceId, Guid targetId, decimal amount)
     {
-        var source = await comptes.ObtenirOuEchouer(sourceId);
-        var cible = await comptes.ObtenirOuEchouer(cibleId);
+        var source = await accounts.GetOrThrow(sourceId);
+        var target = await accounts.GetOrThrow(targetId);
 
-        // La règle (plafond, même compte, solde…) vit dans le service de domaine.
-        serviceVirement.Virer(source, cible, montant);
+        // The rule (limit, same account, balance…) lives in the domain service.
+        transferService.Transfer(source, target, amount);
 
-        // Une seule validation pour les deux comptes : tout ou rien.
-        await unitOfWork.Enregistrer();
-        return new VirementResultat(CompteDto.Depuis(source), CompteDto.Depuis(cible));
+        // A single commit for both accounts: all or nothing.
+        await unitOfWork.Save();
+        return new TransferResult(AccountDto.From(source), AccountDto.From(target));
     }
 }
 ```
@@ -142,19 +142,19 @@ The `DbContext` **is** the unit of work; the mapping is described here, never th
 ([BanqueDbContext.cs](../../02-Onion/Onion.Infrastructure/BanqueDbContext.cs))
 
 ```csharp
-public class BanqueDbContext(DbContextOptions<BanqueDbContext> options) : DbContext(options), IUnitOfWork
+public class BankDbContext(DbContextOptions<BankDbContext> options) : DbContext(options), IUnitOfWork
 {
-    public DbSet<Compte> Comptes => Set<Compte>();
+    public DbSet<Account> Accounts => Set<Account>();
 
-    public Task Enregistrer() => SaveChangesAsync();
+    public Task Save() => SaveChangesAsync();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Le mapping est décrit ici, pas par des attributs dans le domaine : le domaine ignore EF Core.
-        modelBuilder.Entity<Compte>(compte =>
+        // The mapping is described here, not by attributes in the domain: the domain knows nothing of EF Core.
+        modelBuilder.Entity<Account>(account =>
         {
-            compte.HasKey(c => c.Id);
-            compte.Property(c => c.Titulaire).HasMaxLength(100);
+            account.HasKey(c => c.Id);
+            account.Property(c => c.Owner).HasMaxLength(100);
         });
     }
 }
@@ -165,12 +165,12 @@ public class BanqueDbContext(DbContextOptions<BanqueDbContext> options) : DbCont
 ([Program.cs](../../02-Onion/Onion.Api/Program.cs))
 
 ```csharp
-// Les erreurs du domaine sont traduites en HTTP une seule fois, par un middleware.
-app.Use(async (contexte, suivant) =>
+// Domain errors are translated into HTTP once, by a middleware.
+app.Use(async (context, next) =>
 {
-    try { await suivant(contexte); }
-    catch (CompteIntrouvableException e) { contexte.Response.StatusCode = 404; /* … */ }
-    catch (RegleMetierException e) { contexte.Response.StatusCode = 400; /* … */ }
+    try { await next(context); }
+    catch (AccountNotFoundException e) { context.Response.StatusCode = 404; /* … */ }
+    catch (BusinessRuleException e) { context.Response.StatusCode = 400; /* … */ }
 });
 ```
 
@@ -206,11 +206,11 @@ The central layers are tested **without any test double**; the application layer
 
 ```csharp
 [Fact]
-public async Task Un_virement_refuse_n_est_pas_enregistre()
+public async Task A_refused_transfer_is_not_saved()
 {
-    await Assert.ThrowsAsync<RegleMetierException>(() => Service.Virer(Alice, Bob, 1_000m));
+    await Assert.ThrowsAsync<BusinessRuleException>(() => Service.Transfer(Alice, Bob, 1_000m));
 
-    Assert.Equal(0, _unitOfWork.NombreEnregistrements);
+    Assert.Equal(0, _unitOfWork.SaveCount);
 }
 ```
 

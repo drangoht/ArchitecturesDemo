@@ -86,8 +86,8 @@ over stays with the legacy. ([Relais.cs](../../22-StranglerFig/Fig.Facade/Relais
 it is.)
 
 ```csharp
-var route = table.Trouver(http.Request.Method, chemin);
-var mode = route?.Mode ?? Mode.Ancien;   // ce que personne n'a repris reste à l'ancien : c'est le point de départ
+var route = table.Find(http.Request.Method, path);
+var mode = route?.Mode ?? Mode.Legacy;   // what nobody took over stays with the legacy system: that is the starting point
 ```
 
 Each response carries the header `X-Servi-Par: ancien` or `nouveau` (served by), and the façade counts, route by route,
@@ -132,16 +132,16 @@ sequenceDiagram
 Both calls leave at the same time; the client only waits for the legacy:
 
 ```csharp
-// Les deux appels partent en même temps ; le client n'attend que l'ancien.
-var budget = new CancellationTokenSource(options.BudgetOmbreMs);
-var ombre = Envoyer("nouveau", Message(http.Request, corps), budget.Token);
+// Both calls leave at the same time; the client only waits for the legacy system.
+var budget = new CancellationTokenSource(options.ShadowBudgetMs);
+var shadow = Send("modern", Message(http.Request, body), budget.Token);
 ```
 
 Compared AFTERWARDS, without being awaited: a slow or failing new service slows nobody down.
 
 ```csharp
-// Comparée APRÈS coup, sans être attendue : un nouveau service lent ou en panne ne ralentit personne.
-_ = comparateur.Comparer(route!.Nom, $"{http.Request.Method} {chemin}{http.Request.QueryString}", reponse, ombre, budget);
+// Compared AFTERWARDS, without being awaited: a slow or failed modern service slows nobody down.
+_ = comparer.Compare(route!.Name, $"{http.Request.Method} {path}{http.Request.QueryString}", response, shadow, budget);
 ```
 
 `GET /facade/comparaisons` gives the summary: identical responses, **divergences** (with both bodies, to investigate)
@@ -152,10 +152,10 @@ before handing it the load). The JSON is compared structurally: property order a
 put a write in shadow mode. ([TableDeRoutage.cs](../../22-StranglerFig/Fig.Facade/TableDeRoutage.cs))
 
 ```csharp
-// Une écriture n'a pas de mode « ombre » : l'exécuter des deux côtés ferait deux virements.
-private static void Verifier(Route route, Mode mode)
+// A write has no "shadow" mode: executing it on both sides would make two transfers.
+private static void Check(Route route, Mode mode)
 {
-    if (mode == Mode.Ombre && route.Methode != "GET")
+    if (mode == Mode.Shadow && route.Method != "GET")
 ```
 
 For writes, confidence comes from the contract tests, then a careful switchover, reversible at any moment.
@@ -191,13 +191,13 @@ is idempotent, a resent batch isn't counted twice.
 ([Synchronisation.cs](../../22-StranglerFig/Fig.Nouveau/Synchronisation.cs))
 
 ```csharp
-// ② Reporter nos écritures. Si l'ancien ne répond pas, elles restent dans la boîte d'envoi pour le cycle
-//    suivant ; l'import étant idempotent, un lot renvoyé n'est pas compté deux fois.
-var aReporter = depot.AReporter();
-if (aReporter.Count > 0)
+// ② Forward our writes. If the legacy system does not answer, they stay in the outbox for the next
+//    cycle; the import being idempotent, a batch sent again is not counted twice.
+var toForward = store.ToForward();
+if (toForward.Count > 0)
 {
-    await ancien.Importer(aReporter.Select(TraducteurAncien.VersAncien).ToList(), annulation);
-    depot.MarquerReportees(aReporter);
+    await legacy.Import(toForward.Select(LegacyTranslator.ToLegacy).ToList(), cancellation);
+    store.MarkForwarded(toForward);
 }
 ```
 
@@ -221,11 +221,11 @@ in the [DDD demo](11-ddd.md)). The legacy records Paris time without a time zone
 instant it means. ([CoucheAntiCorruption.cs](../../22-StranglerFig/Fig.Nouveau/CoucheAntiCorruption.cs))
 
 ```csharp
-/// <summary>L'ancien note l'heure de Paris sans fuseau : c'est ici qu'on décide de quel instant il s'agit.</summary>
-public static DateTimeOffset DateDepuisAncien(string texte)
+/// <summary>The legacy system notes Paris time without time zone: this is where we decide which instant it is.</summary>
+public static DateTimeOffset DateFromLegacy(string text)
 {
-    var locale = DateTime.ParseExact(texte, FormatDate, CultureInfo.InvariantCulture);
-    return new DateTimeOffset(locale, Paris.GetUtcOffset(locale));
+    var local = DateTime.ParseExact(text, DateFormat, CultureInfo.InvariantCulture);
+    return new DateTimeOffset(local, Paris.GetUtcOffset(local));
 }
 ```
 
@@ -250,8 +250,8 @@ The comment: the legacy computes in cents then divides by 100 — 950 and not 95
 is reproduced.
 
 ```csharp
-// L'ancien calcule en centimes puis divise par 100 : 950 et non 950.00 dans le JSON. On reproduit sa représentation.
-private static decimal Euros(decimal montant) => TraducteurAncien.Centimes(montant) / 100m;
+// The legacy system computes in cents then divides by 100: 950 and not 950.00 in the JSON. We reproduce its representation.
+private static decimal Euros(decimal amount) => LegacyTranslator.Cents(amount) / 100m;
 ```
 
 The **contract tests** ([EquivalenceTests.cs](../../22-StranglerFig/Fig.Tests/EquivalenceTests.cs)) build a varied
@@ -270,10 +270,10 @@ is opaque to clients, and two distinct numberings avoid any collision when a rou
 A problem in production on a migrated route? You give it back to the legacy, with the same request used to migrate it:
 
 ```http
-PUT {{facade}}/facade/routes/virements
-X-Cle-Admin: demo
+PUT {{facade}}/facade/routes/transfers
+X-Admin-Key: demo
 
-{ "mode": "Ancien" }
+{ "mode": "Legacy" }
 ```
 
 It is the **return** synchronization that makes this safe: the legacy knows the transfers made by the new system. The
@@ -289,8 +289,8 @@ All declared routes in `Nouveau` mode are not enough: there may still be calls n
 `GET /facade/progression` measures both:
 
 ```json
-{ "routesDeclarees": 4, "routesMigrees": 4, "pourcentage": 100,
-  "appelsNonDeclares": 0, "appelsAncienDepuisDerniereBascule": 0, "ancienRetirable": true }
+{ "declaredRoutes": 4, "migratedRoutes": 4, "percentage": 100,
+  "undeclaredCalls": 0, "legacyCallsSinceLastSwitch": 0, "legacyRemovable": true }
 ```
 
 `ancienRetirable` (legacy removable) requires every route migrated **and** no call to the legacy since the last

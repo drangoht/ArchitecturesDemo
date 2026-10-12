@@ -87,23 +87,23 @@ The code is quoted exactly as it is, French comments included.
 [PortsSortants.cs](../../01-Hexagonale/Hexa.Hexagone/Ports/Sortants/PortsSortants.cs))
 
 ```csharp
-// Ports entrants (« driving », primaires) : ce que l'application OFFRE au monde extérieur.
-public interface IRetirerArgent
+// Inbound ports ("driving", primary): what the application OFFERS to the outside world.
+public interface IWithdrawMoney
 {
-    Task Executer(Guid compteId, decimal montant);
+    Task Execute(Guid accountId, decimal amount);
 }
 
-// Ports sortants (« driven », secondaires) : ce dont l'application A BESOIN.
-public interface IComptes
+// Outbound ports ("driven", secondary): what the application NEEDS.
+public interface IAccounts
 {
-    Task<Compte?> Charger(Guid id);
-    Task Sauvegarder(Compte compte);
+    Task<Account?> Load(Guid id);
+    Task Save(Account account);
 }
 
 public interface INotifications
 {
-    Task RetraitEffectue(Guid compteId, decimal montant);
-    Task VirementEffectue(Guid sourceId, Guid cibleId, decimal montant);
+    Task WithdrawalMade(Guid accountId, decimal amount);
+    Task TransferMade(Guid sourceId, Guid targetId, decimal amount);
 }
 ```
 
@@ -112,14 +112,14 @@ public interface INotifications
 ([CasUtilisation.cs](../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs))
 
 ```csharp
-public class RetirerArgent(IComptes comptes, INotifications notifications) : IRetirerArgent
+public class WithdrawMoney(IAccounts accounts, INotifications notifications) : IWithdrawMoney
 {
-    public async Task Executer(Guid compteId, decimal montant)
+    public async Task Execute(Guid accountId, decimal amount)
     {
-        var compte = await comptes.Charger(compteId) ?? throw new CompteIntrouvableException(compteId);
-        compte.Retirer(montant);
-        await comptes.Sauvegarder(compte);
-        await notifications.RetraitEffectue(compteId, montant);
+        var account = await accounts.Load(accountId) ?? throw new AccountNotFoundException(accountId);
+        account.Withdraw(amount);
+        await accounts.Save(account);
+        await notifications.WithdrawalMade(accountId, amount);
     }
 }
 ```
@@ -133,14 +133,14 @@ The storage format belongs to the adapter: the domain doesn't know it is seriali
 ([ComptesFichierJson.cs](../../01-Hexagonale/Hexa.Adapters.Persistance/ComptesFichierJson.cs))
 
 ```csharp
-public class ComptesFichierJson : IComptes
+public class JsonFileAccounts : IAccounts
 {
     // …
-    // Format de stockage propre à l'adapter : le domaine ignore qu'il est sérialisé.
-    private record Ligne(Guid Id, string Titulaire, decimal Solde)
+    // Storage format specific to the adapter: the domain does not know it is serialized.
+    private record Row(Guid Id, string Owner, decimal Balance)
     {
-        public static Ligne Depuis(Compte compte) => new(compte.Id, compte.Titulaire, compte.Solde);
-        public Compte VersCompte() => new(Id, Titulaire, Solde);
+        public static Row From(Account account) => new(account.Id, account.Owner, account.Balance);
+        public Account ToAccount() => new(Id, Owner, Balance);
     }
 }
 ```
@@ -152,25 +152,25 @@ configuration: `--Persistance=Json` or `Memoire` (default).
 ([Program.cs](../../01-Hexagonale/Hexa.Adapters.Web/Program.cs))
 
 ```csharp
-// Adapters sortants, interchangeables par configuration : --Persistance=Json ou Memoire (défaut).
-builder.Services.AddSingleton<IComptes>(_ => builder.Configuration["Persistance"] switch
+// Outbound adapters, swappable by configuration: --Persistence=Json or Memory (default).
+builder.Services.AddSingleton<IAccounts>(_ => builder.Configuration["Persistence"] switch
 {
-    "Json" => new ComptesFichierJson(builder.Configuration["FichierComptes"] ?? "comptes.json", DonneesDeDemo.Comptes()),
-    _ => new ComptesEnMemoire(DonneesDeDemo.Comptes())
+    "Json" => new JsonFileAccounts(builder.Configuration["AccountsFile"] ?? "accounts.json", DemoData.Accounts()),
+    _ => new InMemoryAccounts(DemoData.Accounts())
 });
-builder.Services.AddSingleton<INotifications>(new NotificationsJournal(Console.Out));
+builder.Services.AddSingleton<INotifications>(new LogNotifications(Console.Out));
 
-// Ports entrants → leur implémentation dans l'hexagone.
-builder.Services.AddScoped<IRetirerArgent, RetirerArgent>();
+// Inbound ports → their implementation in the hexagon.
+builder.Services.AddScoped<IWithdrawMoney, WithdrawMoney>();
 ```
 
 The CLI does the same **without a dependency injection container**: the hexagon doesn't need one.
 ([Hexa.Adapters.Cli/Program.cs](../../01-Hexagonale/Hexa.Adapters.Cli/Program.cs))
 
 ```csharp
-IComptes comptes = new ComptesFichierJson("comptes.json", DonneesDeDemo.Comptes());
-INotifications notifications = new NotificationsJournal(Console.Out);
-IRetirerArgent retirer = new RetirerArgent(comptes, notifications);
+IAccounts accounts = new JsonFileAccounts("accounts.json", DemoData.Accounts());
+INotifications notifications = new LogNotifications(Console.Out);
+IWithdrawMoney withdraw = new WithdrawMoney(accounts, notifications);
 ```
 
 ### 5. The HTTP adapter translates, without any rules
@@ -179,12 +179,12 @@ Translating business errors into HTTP status codes is the adapter's job, not the
 ([ComptesEndpoints.cs](../../01-Hexagonale/Hexa.Adapters.Web/ComptesEndpoints.cs))
 
 ```csharp
-// Traduire les erreurs du métier en codes HTTP est le rôle de l'adapter, pas de l'hexagone.
-private static async Task<IResult> Traduire(Func<Task<IResult>> action)
+// Translating business errors into HTTP codes is the adapter's job, not the hexagon's.
+private static async Task<IResult> Translate(Func<Task<IResult>> action)
 {
     try { return await action(); }
-    catch (CompteIntrouvableException e) { return Results.NotFound(new { erreur = e.Message }); }
-    catch (RegleMetierException e) { return Results.BadRequest(new { erreur = e.Message }); }
+    catch (AccountNotFoundException e) { return Results.NotFound(new { error = e.Message }); }
+    catch (BusinessRuleException e) { return Results.BadRequest(new { error = e.Message }); }
 }
 ```
 
@@ -221,12 +221,12 @@ sequenceDiagram
 
 ```csharp
 [Fact]
-public async Task Un_retrait_valide_debite_le_compte_et_notifie()
+public async Task A_valid_withdrawal_debits_the_account_and_notifies()
 {
-    await new RetirerArgent(_comptes, _notifications).Executer(Alice, 30m);
+    await new WithdrawMoney(_accounts, _notifications).Execute(Alice, 30m);
 
-    Assert.Equal(70m, (await _comptes.Charger(Alice))!.Solde);
-    Assert.Equal([$"retrait 30 {Alice}"], _notifications.Envoyees);
+    Assert.Equal(70m, (await _accounts.Load(Alice))!.Balance);
+    Assert.Equal([$"withdrawal 30 {Alice}"], _notifications.Sent);
 }
 ```
 
@@ -235,20 +235,20 @@ one can replace the other without surprises.
 ([ContratIComptesTests.cs](../../01-Hexagonale/Hexa.Tests/Adapters/ContratIComptesTests.cs))
 
 ```csharp
-public abstract class ContratIComptes
+public abstract class IAccountsContract
 {
-    protected abstract IComptes Creer(params Compte[] comptesInitiaux);
+    protected abstract IAccounts Create(params Account[] initialAccounts);
 
     [Fact]
-    public async Task Une_modification_non_sauvegardee_n_est_pas_persistee() { /* … */ }
+    public async Task An_unsaved_change_is_not_persisted() { /* … */ }
 }
 
-public class ComptesEnMemoireTests : ContratIComptes
+public class InMemoryAccountsTests : IAccountsContract
 {
-    protected override IComptes Creer(params Compte[] comptesInitiaux) => new ComptesEnMemoire(comptesInitiaux);
+    protected override IAccounts Create(params Account[] initialAccounts) => new InMemoryAccounts(initialAccounts);
 }
 
-public class ComptesFichierJsonTests : ContratIComptes, IDisposable { /* même tests, sur un fichier temporaire */ }
+public class JsonFileAccountsTests : IAccountsContract, IDisposable { /* same tests, on a temporary file */ }
 ```
 
 ```mermaid

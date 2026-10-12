@@ -61,10 +61,10 @@ A service is a list of subscriptions. Here is everything Accounts listens to (tw
 quoted exactly as it is):
 
 ```csharp
-Bus.Abonner<VirementDemande>(Nom, Reserver);
-Bus.Abonner<ConformiteRefusee>(Nom, e => Liberer(e, e.Motif));  // compensation
-Bus.Abonner<ChangeEchoue>(Nom, e => Liberer(e, e.Motif));       // compensation
-Bus.Abonner<DevisesConverties>(Nom, Regler);
+Bus.Subscribe<TransferRequested>(Name, Reserve);
+Bus.Subscribe<ComplianceRefused>(Name, e => Release(e, e.Reason));  // compensation
+Bus.Subscribe<ExchangeFailed>(Name, e => Release(e, e.Reason));       // compensation
+Bus.Subscribe<CurrenciesConverted>(Name, Settle);
 ```
 
 In production: **RabbitMQ**, **Azure Service Bus** or **Kafka**, with **MassTransit**, **NServiceBus**, **Wolverine** or
@@ -78,9 +78,9 @@ Each event carries the **correlation** (the transfer) and its **cause** (the eve
 reaction to this one, has the same correlation and this one as its cause.
 
 ```csharp
-/// <summary>Un nouvel événement, en réaction à celui-ci : même corrélation, et celui-ci pour cause.</summary>
-public T Suite<T>(T suivant, string emetteur) where T : Evenement =>
-    suivant with { Correlation = Correlation, Cause = Id, Emetteur = emetteur };
+/// <summary>A new event, in reaction to this one: same correlation, and this one as cause.</summary>
+public T Next<T>(T next, string emitter) where T : Event =>
+    next with { Correlation = Correlation, Cause = Id, Emitter = emitter };
 ```
 
 It is the only thread that lets you tell what happened. **Real run**, `GET /virements/{id}` (each line: the event and
@@ -148,7 +148,7 @@ GET /virements/bloques           → le virement, sans activité récente
 The safety net is **local**: Accounts protects itself by giving its reservations a lifetime.
 
 ```csharp
-expirees = _reservations.Where(r => r.Value.ExpireLe <= maintenant).ToList()
+expired = _reservations.Where(r => r.Value.ExpiresAt <= now).ToList()
 ```
 
 And the other services must take it into account: Compliance listens to `ReservationExpiree` so as not to have an
@@ -165,13 +165,13 @@ identifiers of the events already handled (its "inbox"), and changes its state *
 single block:
 
 ```csharp
-lock (Verrou)
+lock (Lock)
 {
-    if (_traites.Contains(recu.Id))
+    if (_handled.Contains(received.Id))
         return;
-    if (reagir() is { } suite)
-        Bus.Publier(suite);
-    _traites.Add(recu.Id);
+    if (react() is { } next)
+        Bus.Publish(next);
+    _handled.Add(received.Id);
 }
 ```
 
@@ -186,7 +186,7 @@ database, "in a single block" requires the outbox of [demo 8](08-microservices.m
 The Loyalty service (points on every settled transfer) was added **afterwards**. It subscribes, that's all:
 
 ```csharp
-public void Inscrire() => Bus.Abonner<VirementRegle>(Nom, e => UneSeuleFois(e, () =>
+public void Register() => Bus.Subscribe<TransferSettled>(Name, e => Once(e, () =>
 ```
 
 No other service changed, none knows it exists: the test `Ajouter_un_abonne_ne_change_rien_pour_les_autres` runs the

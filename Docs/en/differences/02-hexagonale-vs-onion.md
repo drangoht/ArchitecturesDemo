@@ -58,22 +58,22 @@ The code is quoted exactly as it is, French comments and messages included.
 ([CasUtilisation.cs](../../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs)):
 
 ```csharp
-public class EffectuerVirement(IComptes comptes, INotifications notifications) : IEffectuerVirement
+public class MakeTransfer(IAccounts accounts, INotifications notifications) : IMakeTransfer
 {
-    public async Task Executer(Guid sourceId, Guid cibleId, decimal montant)
+    public async Task Execute(Guid sourceId, Guid targetId, decimal amount)
     {
-        if (sourceId == cibleId)
-            throw new RegleMetierException("Impossible de virer vers le même compte.");
+        if (sourceId == targetId)
+            throw new BusinessRuleException("Cannot transfer to the same account.");
 
-        var source = await comptes.Charger(sourceId) ?? throw new CompteIntrouvableException(sourceId);
-        var cible = await comptes.Charger(cibleId) ?? throw new CompteIntrouvableException(cibleId);
+        var source = await accounts.Load(sourceId) ?? throw new AccountNotFoundException(sourceId);
+        var target = await accounts.Load(targetId) ?? throw new AccountNotFoundException(targetId);
 
-        source.Retirer(montant);
-        cible.Deposer(montant);
+        source.Withdraw(amount);
+        target.Deposit(amount);
 
-        await comptes.Sauvegarder(source);
-        await comptes.Sauvegarder(cible);
-        await notifications.VirementEffectue(sourceId, cibleId, montant);
+        await accounts.Save(source);
+        await accounts.Save(target);
+        await notifications.TransferMade(sourceId, targetId, amount);
     }
 }
 ```
@@ -84,17 +84,17 @@ orchestrates, and saves **once** — all or nothing
 ([VirementsAppService.cs](../../../02-Onion/Onion.Application/VirementsAppService.cs)):
 
 ```csharp
-public async Task<VirementResultat> Virer(Guid sourceId, Guid cibleId, decimal montant)
+public async Task<TransferResult> Transfer(Guid sourceId, Guid targetId, decimal amount)
 {
-    var source = await comptes.ObtenirOuEchouer(sourceId);
-    var cible = await comptes.ObtenirOuEchouer(cibleId);
+    var source = await accounts.GetOrThrow(sourceId);
+    var target = await accounts.GetOrThrow(targetId);
 
-    // La règle (plafond, même compte, solde…) vit dans le service de domaine.
-    serviceVirement.Virer(source, cible, montant);
+    // The rule (limit, same account, balance…) lives in the domain service.
+    transferService.Transfer(source, target, amount);
 
-    // Une seule validation pour les deux comptes : tout ou rien.
-    await unitOfWork.Enregistrer();
-    return new VirementResultat(CompteDto.Depuis(source), CompteDto.Depuis(cible));
+    // A single commit for both accounts: all or nothing.
+    await unitOfWork.Save();
+    return new TransferResult(AccountDto.From(source), AccountDto.From(target));
 }
 ```
 

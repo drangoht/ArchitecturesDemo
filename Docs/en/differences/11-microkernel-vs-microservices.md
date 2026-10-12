@@ -58,14 +58,14 @@ The code is quoted exactly as it is, French comments and messages included.
 point: a single refusal is enough) ([NoyauBancaire.cs](../../../13-Microkernel/Mk.Noyau/NoyauBancaire.cs)):
 
 ```csharp
-// 1. Point d'extension « contrôle » : un seul refus suffit.
-foreach (var controle in plugins.Actifs<IControleOperation>())
+// 1. "Check" extension point: a single refusal is enough.
+foreach (var check in plugins.Active<IOperationCheck>())
 {
-    string? refus = null;
-    if (!Proteger(controle, () => refus = controle.Verifier(operation)))
-        return Resultat.Refus($"Le plugin {controle.Nom} est en erreur : opération refusée par sécurité.");
-    if (refus is not null)
-        return Resultat.Refus($"[{controle.Nom}] {refus}");
+    string? refusal = null;
+    if (!Protect(check, () => refusal = check.Check(operation)))
+        return Result.Refused($"The plugin {check.Name} is faulted: operation refused for safety.");
+    if (refusal is not null)
+        return Result.Refused($"[{check.Name}] {refusal}");
 }
 ```
 
@@ -73,16 +73,16 @@ A plug-in is a class loaded from a DLL, in its own context, but **in the same pr
 ([ChargeurPlugins.cs](../../../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs)):
 
 ```csharp
-internal sealed class ContexteChargement(string cheminDll)
-    : AssemblyLoadContext(Path.GetFileNameWithoutExtension(cheminDll), isCollectible: true)
+internal sealed class PluginLoadContext(string dllPath)
+    : AssemblyLoadContext(Path.GetFileNameWithoutExtension(dllPath), isCollectible: true)
 ```
 
 **Microservices**: Transfers calls Accounts **across the network**, with everything needed to survive its failures
 ([Micro.Virements/Program.cs](../../../08-Microservices/Micro.Virements/Program.cs)):
 
 ```csharp
-builder.Services.AddHttpClient("comptes", (sp, client) =>
-        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Comptes"]!))
+builder.Services.AddHttpClient("accounts", (sp, client) =>
+        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Accounts"]!))
     .AddStandardResilienceHandler(options =>
     {
         options.Retry.MaxRetryAttempts = 3;

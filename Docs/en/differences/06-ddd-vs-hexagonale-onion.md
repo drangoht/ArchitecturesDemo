@@ -63,11 +63,11 @@ The code is quoted exactly as it is, French comments and messages included.
 ([Compte.cs](../../../02-Onion/Onion.Domain/Model/Compte.cs)):
 
 ```csharp
-public class Compte
+public class Account
 {
     public Guid Id { get; private set; }
-    public string Titulaire { get; private set; }
-    public decimal Solde { get; private set; }
+    public string Owner { get; private set; }
+    public decimal Balance { get; private set; }
 ```
 
 Nothing prevents adding euros and dollars, or passing a malformed IBAN in a `string`.
@@ -76,26 +76,26 @@ Nothing prevents adding euros and dollars, or passing a malformed IBAN in a `str
 carried by the type itself ([Argent.cs](../../../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Argent.cs)):
 
 ```csharp
-// Les opérations refusent de mélanger les devises : c'est une règle du domaine, portée par le type lui-même.
-public static Argent operator +(Argent a, Argent b) => new(a.Montant + b.Montant, MemeDevise(a, b));
+// The operations refuse to mix currencies: it is a domain rule, carried by the type itself.
+public static Money operator +(Money a, Money b) => new(a.Amount + b.Amount, SameCurrency(a, b));
 ```
 
 And the **aggregate's boundary** is dictated by an invariant: to check the **daily** limit, the account contains its
 movements of the day ([Compte.cs](../../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Compte.cs)):
 
 ```csharp
-public void Retirer(Argent montant, DateTime date)
+public void Withdraw(Money amount, DateTime date)
 {
-    VerifierDebitPossible(montant);
+    CheckDebitPossible(amount);
 
-    var dejaRetire = RetraitsDuJour(date);
-    if (dejaRetire + montant > PlafondRetraitJournalier)
-        throw new RegleMetierException(
-            $"Plafond de retrait journalier de {PlafondRetraitJournalier} dépassé (déjà retiré aujourd'hui : {dejaRetire}).");
+    var alreadyWithdrawn = WithdrawalsOfTheDay(date);
+    if (alreadyWithdrawn + amount > DailyWithdrawalLimit)
+        throw new BusinessRuleException(
+            $"Daily withdrawal limit of {DailyWithdrawalLimit} exceeded (already withdrawn today: {alreadyWithdrawn}).");
 
-    Solde -= montant;
-    _mouvements.Add(new Mouvement(date, TypeMouvement.Retrait, montant, "Retrait"));
-    Lever(new RetraitEffectue(Id, montant, date));
+    Balance -= amount;
+    _movements.Add(new Movement(date, MovementType.Withdrawal, amount, "Withdrawal"));
+    Raise(new WithdrawalMade(Id, amount, date));
 }
 ```
 

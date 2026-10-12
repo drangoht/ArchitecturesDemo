@@ -76,8 +76,8 @@ flowchart TB
   it is a separate service.
 
 ```csharp
-if (placement.CelluleDe(client) is not { } id || registre.Trouver(id) is not { } cellule)
-    return Results.NotFound(new { erreur = $"Client « {client} » inconnu." });
+if (placement.CellOf(customer) is not { } id || registry.Find(id) is not { } cell)
+    return Results.NotFound(new { error = $"Unknown customer \"{customer}\"." });
 ```
 
 (The code is quoted exactly as it is, French comments and messages included.)
@@ -101,7 +101,7 @@ The comment in the router: blast radius, only the customers of THIS cell receive
 ```csharp
 catch (HttpRequestException)
 {
-    // Rayon d'impact : seuls les clients de CETTE cellule reçoivent cette erreur.
+    // Blast radius: only the customers of THIS cell get this error.
 ```
 
 ---
@@ -114,10 +114,10 @@ an unknown limit ("we don't know how a database 3 times bigger than anything we 
 The new customer goes into the least loaded open cell that still has room:
 
 ```csharp
-/// <summary>La cellule ouverte la moins chargée qui a encore de la place.</summary>
-public Cellule? ChoisirCellule() => registre.Toutes()
-    .Where(c => c.Ouverte && placement.Nombre(c.Id) < c.Capacite)
-    .OrderBy(c => placement.Nombre(c.Id)).ThenBy(c => c.Id)
+/// <summary>The least loaded open cell that still has room.</summary>
+public CellInfo? ChooseCell() => registry.All()
+    .Where(c => c.Open && placement.Count(c.Id) < c.Capacity)
+    .OrderBy(c => placement.Count(c.Id)).ThenBy(c => c.Id)
     .FirstOrDefault();
 ```
 
@@ -151,20 +151,20 @@ Version 1.1 contains a bug (a withdrawal debited twice) that only shows up at ru
 replays a control withdrawal ([Version.cs](../../17-CellBased/Cell.Cellule/Version.cs)):
 
 ```csharp
-public (bool Sain, string Detail) Sonde()
+public (bool Healthy, string Detail) Probe()
 {
-    var resultat = Retirer(100m, 10m);
-    return resultat == 90m
-        ? (true, "retrait de contrôle correct")
-        : (false, $"retrait de contrôle incorrect : 100 - 10 = {resultat}");
+    var result = Withdraw(100m, 10m);
+    return result == 90m
+        ? (true, "check withdrawal correct")
+        : (false, $"check withdrawal incorrect: 100 - 10 = {result}");
 }
 ```
 
 Actual result of `POST /plateforme/deploiements {"version":"1.1"}`:
 
 ```json
-{"version":"1.1","statut":"Annule","vagues":[{"vague":1,"cellules":["c1"],
- "resultat":"retour arrière : c1 : retrait de contrôle incorrect : 100 - 10 = 80"}]}
+{"version":"1.1","status":"Cancelled","waves":[{"wave":1,"cells":["c1"],
+ "result":"rollback: c1: check withdrawal incorrect: 100 - 10 = 80"}]}
 ```
 
 During the few moments when c1 ran version 1.1, its customers (alice, david) may have suffered the bug: that is the
@@ -179,13 +179,13 @@ A customer grows, a cell must be emptied, the load is badly spread: the control 
 ① no more writes during the copy, ② copy, ③ switch the routing, ④ clean up.
 
 ```csharp
-placement.DebuterMigration(clientId);   // ① plus aucune écriture pendant la copie
+placement.StartMigration(customerId);   // ① no more writes during the copy
 try
 {
-    var export = await Client(source).GetFromJsonAsync<ClientExport>(Url(source, $"/interne/clients/{clientId}/export"));
-    await Verifier(await Client(cible).PostAsJsonAsync(Url(cible, "/interne/clients"), export), cible);   // ② copier
-    placement.Placer(clientId, cible.Id);                                                                 // ③ basculer le routage
-    await Client(source).DeleteAsync(Url(source, $"/interne/clients/{clientId}"));                         // ④ nettoyer
+    var export = await Client(source).GetFromJsonAsync<CustomerExport>(Url(source, $"/internal/customers/{customerId}/export"));
+    await Check(await Client(target).PostAsJsonAsync(Url(target, "/internal/customers"), export), target);   // ② copy
+    placement.Place(customerId, target.Id);                                                                 // ③ switch the routing
+    await Client(source).DeleteAsync(Url(source, $"/internal/customers/{customerId}"));                       // ④ clean up
 ```
 
 During the copy, the router answers `503` with `Retry-After: 2` for **this** customer only. The identifiers of already

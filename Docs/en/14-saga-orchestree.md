@@ -74,22 +74,22 @@ exactly as it is.)
 ([DefinitionVirement.cs](../../14-SagaOrchestree/Saga.Orchestrateur/DefinitionVirement.cs))
 
 ```csharp
-new("ReserverFonds",
-    async s => { await comptes.Reserver(s.Id, s.Source, s.Montant); return Issue.Succes; },
-    Compenser: s => comptes.Liberer(s.Id, s.Source)),
+new("ReserveFunds",
+    async s => { await accounts.Reserve(s.Id, s.Source, s.Amount); return Outcome.Success; },
+    Compensate: s => accounts.Release(s.Id, s.Source)),
 
-new("ControlerConformite", async s =>
-    await conformite.Examiner(s.Id, ServiceChange.EnEuros(s.Montant, comptes.Devise(s.Source))) switch
+new("CheckCompliance", async s =>
+    await compliance.Examine(s.Id, ExchangeService.InEuros(s.Amount, accounts.Currency(s.Source))) switch
     {
-        AvisConformite.Approuve => Issue.Succes,
-        AvisConformite.EnAttenteAnalyste => new Issue.EnAttente(
-            TimeSpan.FromSeconds(options.DelaiDecisionConformiteSecondes), "en attente de la décision d'un analyste"),
-        _ => new Issue.Refusee("Refusé par la conformité.")
+        ComplianceOpinion.Approved => Outcome.Success,
+        ComplianceOpinion.AwaitingAnalyst => new Outcome.Waiting(
+            TimeSpan.FromSeconds(options.ComplianceDecisionTimeoutSeconds), "awaiting an analyst's decision"),
+        _ => new Outcome.Refused("Refused by compliance.")
     }),
 // …
-new("DebiterDefinitivement",
-    async s => { await comptes.Capturer(s.Id, s.Source); return Issue.Succes; },
-    PointDeNonRetour: true),
+new("CaptureFunds",
+    async s => { await accounts.Capture(s.Id, s.Source); return Outcome.Success; },
+    PointOfNoReturn: true),
 ```
 
 Each step returns an **outcome**: succeeded, waiting (with a timeout), or refused. An exception, on the other hand,
@@ -106,17 +106,17 @@ each transition.
 ([MoteurSaga.cs](../../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs))
 
 ```csharp
-/// Fait avancer d'un pas toutes les sagas prêtes. Renvoie le nombre de sagas traitées.
-public async Task<int> Traiter()
+/// Moves all the ready sagas forward by one step. Returns the number of sagas handled.
+public async Task<int> Process()
 {
     // …
-    var pretes = magasin.Toutes().Where(EstPrete).ToList();
-    foreach (var saga in pretes)
+    var ready = store.All().Where(IsReady).ToList();
+    foreach (var saga in ready)
     {
-        await Avancer(saga);
-        magasin.Enregistrer(saga);  // l'état est enregistré après CHAQUE pas
+        await Advance(saga);
+        store.Save(saga);  // the state is saved after EACH step
     }
-    return pretes.Count;
+    return ready.Count;
 }
 ```
 
@@ -145,23 +145,23 @@ After the point of no return, nothing can be undone anymore (the money has alrea
 saga goes to manual handling; before it, compensation starts.
 
 ```csharp
-private void EchecPassager(EtatSaga saga, Etape etape, string message)
+private void TransientFailure(SagaState saga, Step step, string message)
 {
-    saga.Tentatives++;
-    if (saga.Tentatives < options.TentativesMax)
+    saga.Attempts++;
+    if (saga.Attempts < options.MaxAttempts)
     {
-        var attente = Attente(saga.Tentatives);
-        saga.ProchainEssai = Maintenant + attente;
-        // … journal « tentative n/4, nouvel essai dans … ms »
+        var delay = Delay(saga.Attempts);
+        saga.NextAttempt = Now + delay;
+        // … log "attempt n/4, new attempt in … ms"
     }
-    else if (PointDeNonRetourPasse(saga))
+    else if (PointOfNoReturnPassed(saga))
     {
-        // On ne peut plus défaire : l'argent a déjà été débité définitivement.
-        ATraiterManuellement(saga, $"{etape.Nom} impossible après {options.TentativesMax} tentatives : {message}");
+        // Nothing can be undone any more: the money has already been debited for good.
+        RequireManualIntervention(saga, $"{step.Name} impossible after {options.MaxAttempts} attempts: {message}");
     }
     else
     {
-        DemarrerCompensation(saga, $"{etape.Nom} impossible après {options.TentativesMax} tentatives : {message}");
+        StartCompensation(saga, $"{step.Name} impossible after {options.MaxAttempts} attempts: {message}");
     }
 }
 ```
@@ -171,22 +171,22 @@ private void EchecPassager(EtatSaga saga, Etape etape, string message)
 A compensation **must eventually succeed**: on failure, it is retried indefinitely.
 
 ```csharp
-/// Défait la plus récente des étapes réussies. Une compensation doit finir par réussir : on réessaie sans fin.
-private async Task CompenserUnPas(EtatSaga saga)
+/// Undoes the most recent of the successful steps. A compensation must end up succeeding: it is retried endlessly.
+private async Task CompensateOneStep(SagaState saga)
 {
-    if (saga.EtapesFaites.Count == 0)
+    if (saga.CompletedSteps.Count == 0)
     {
-        saga.Statut = StatutSaga.Annulee;
-        Noter(saga, "■ Virement annulé : toutes les étapes ont été défaites");
+        saga.Status = SagaStatus.Cancelled;
+        Note(saga, "■ Transfer cancelled: all the steps were undone");
         return;
     }
 
-    var etape = Etapes.Single(e => e.Nom == saga.EtapesFaites[^1]);
-    if (etape.Compenser is not null)
+    var step = Steps.Single(e => e.Name == saga.CompletedSteps[^1]);
+    if (step.Compensate is not null)
     {
-        // … await etape.Compenser(saga), avec nouvel essai en cas d'échec
+        // … await step.Compensate(saga), with a new attempt on failure
     }
-    saga.EtapesFaites.RemoveAt(saga.EtapesFaites.Count - 1);
+    saga.CompletedSteps.RemoveAt(saga.CompletedSteps.Count - 1);
 }
 ```
 
@@ -196,18 +196,18 @@ Above €10,000, a **human analyst** must decide. The saga goes "waiting", the f
 the decision (`POST /sagas/{id}/conformite`):
 
 ```csharp
-/// Événement extérieur : la décision de l'analyste de conformité.
-public async Task<bool> Signaler(Guid id, bool approuve, string? commentaire)
+/// External event: the compliance analyst's decision.
+public async Task<bool> Signal(Guid id, bool approved, string? comment)
 {
     // …
-    if (approuve)
+    if (approved)
     {
-        Noter(saga, $"✉ Décision reçue : approuvé{Commentaire(commentaire)}");
-        TerminerEtape(saga, Etapes[saga.EtapeCourante]);
+        Note(saga, $"✉ Decision received: approved{Comment(comment)}");
+        CompleteStep(saga, Steps[saga.CurrentStep]);
     }
     else
     {
-        DemarrerCompensation(saga, $"Refusé par l'analyste de conformité{Commentaire(commentaire)}");
+        StartCompensation(saga, $"Refused by the compliance analyst{Comment(comment)}");
     }
     // …
 }
@@ -284,19 +284,19 @@ the store, finishes the saga.
 
 ```csharp
 [Fact]
-public async Task Un_nouveau_moteur_reprend_les_sagas_la_ou_l_ancien_les_avait_laissees()
+public async Task A_new_engine_resumes_the_sagas_where_the_old_one_left_them()
 {
-    var premier = NouveauMoteur();
-    var id = premier.Demarrer(Alice, Carla, 100m).Id;
-    await premier.Traiter();
-    await premier.Traiter();  // ReserverFonds et ControlerConformite faites… puis « plantage »
+    var first = NewEngine();
+    var id = first.Start(Alice, Carla, 100m).Id;
+    await first.Process();
+    await first.Process();  // ReserveFunds and CheckCompliance done… then "crash"
 
-    var second = NouveauMoteur();  // aucun état partagé avec le premier, sauf le magasin
-    Assert.Equal(["ReserverFonds", "ControlerConformite"], _magasin.Charger(id)!.EtapesFaites);
-    var saga = await Executer(second, id);
+    var second = NewEngine();  // no state shared with the first one, except the store
+    Assert.Equal(["ReserveFunds", "CheckCompliance"], _store.Load(id)!.CompletedSteps);
+    var saga = await Run(second, id);
 
-    Assert.Equal(StatutSaga.Terminee, saga.Statut);
-    Assert.Equal(1_108.32m, Solde(Carla));
+    Assert.Equal(SagaStatus.Completed, saga.Status);
+    Assert.Equal(1_108.32m, Balance(Carla));
 }
 ```
 

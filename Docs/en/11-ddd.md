@@ -153,13 +153,13 @@ An invalid `Iban` **cannot exist**: receiving an `Iban` is enough to know it is 
 ([Iban.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Iban.cs))
 
 ```csharp
-public static Iban Depuis(string saisie)
+public static Iban From(string input)
 {
-    var valeur = new string((saisie ?? "").Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
-    // … contrôle de forme
-    if (Modulo97(valeur[4..] + valeur[..4]) != 1)
-        throw new RegleMetierException($"IBAN invalide (clé de contrôle incorrecte) : « {saisie} ».");
-    return new Iban(valeur);
+    var value = new string((input ?? "").Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
+    // … format check
+    if (Modulo97(value[4..] + value[..4]) != 1)
+        throw new BusinessRuleException($"Invalid IBAN (wrong check digits): \"{input}\".");
+    return new Iban(value);
 }
 ```
 
@@ -168,13 +168,13 @@ rule, carried by the type itself.
 ([Argent.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/ObjetsValeurs/Argent.cs))
 
 ```csharp
-// Les opérations refusent de mélanger les devises : c'est une règle du domaine, portée par le type lui-même.
-public static Argent operator +(Argent a, Argent b) => new(a.Montant + b.Montant, MemeDevise(a, b));
-public static bool operator >(Argent a, Argent b) => MemeDevise(a, b) is not null && a.Montant > b.Montant;
+// The operations refuse to mix currencies: it is a domain rule, carried by the type itself.
+public static Money operator +(Money a, Money b) => new(a.Amount + b.Amount, SameCurrency(a, b));
+public static bool operator >(Money a, Money b) => SameCurrency(a, b) is not null && a.Amount > b.Amount;
 
-private static Devise MemeDevise(Argent a, Argent b) =>
-    a.Devise == b.Devise ? a.Devise
-        : throw new RegleMetierException($"Impossible de combiner {a.Devise} et {b.Devise} sans conversion.");
+private static Currency SameCurrency(Money a, Money b) =>
+    a.Currency == b.Currency ? a.Currency
+        : throw new BusinessRuleException($"Cannot combine {a.Currency} and {b.Currency} without conversion.");
 ```
 
 Compare with the bare `decimal` and `string` of the other demos (*primitive obsession*).
@@ -186,18 +186,18 @@ aggregate's **boundary**. A movement is never loaded or saved alone.
 ([Compte.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/Compte.cs))
 
 ```csharp
-public void Retirer(Argent montant, DateTime date)
+public void Withdraw(Money amount, DateTime date)
 {
-    VerifierDebitPossible(montant);
+    CheckDebitPossible(amount);
 
-    var dejaRetire = RetraitsDuJour(date);
-    if (dejaRetire + montant > PlafondRetraitJournalier)
-        throw new RegleMetierException(
-            $"Plafond de retrait journalier de {PlafondRetraitJournalier} dépassé (déjà retiré aujourd'hui : {dejaRetire}).");
+    var alreadyWithdrawn = WithdrawalsOfTheDay(date);
+    if (alreadyWithdrawn + amount > DailyWithdrawalLimit)
+        throw new BusinessRuleException(
+            $"Daily withdrawal limit of {DailyWithdrawalLimit} exceeded (already withdrawn today: {alreadyWithdrawn}).");
 
-    Solde -= montant;
-    _mouvements.Add(new Mouvement(date, TypeMouvement.Retrait, montant, "Retrait"));
-    Lever(new RetraitEffectue(Id, montant, date));
+    Balance -= amount;
+    _movements.Add(new Movement(date, MovementType.Withdrawal, amount, "Withdrawal"));
+    Raise(new WithdrawalMade(Id, amount, date));
 }
 ```
 
@@ -208,13 +208,13 @@ the **domain service** carries the transfer, which touches two aggregates and an
 ([ServiceDeVirement.cs](../../11-DDD/Ddd.TenueDeCompte.Domaine/Comptes/ServiceDeVirement.cs)):
 
 ```csharp
-var montantCredite = cible.Devise == montant.Devise ? montant : await convertisseur.Convertir(montant, cible.Devise);
+var creditedAmount = target.Currency == amount.Currency ? amount : await converter.Convert(amount, target.Currency);
 
-source.Debiter(montant, $"Virement vers {cible.Titulaire}", date);
-cible.Crediter(montantCredite, $"Virement de {source.Titulaire}", date);
+source.Debit(amount, $"Transfer to {target.Owner}", date);
+target.Credit(creditedAmount, $"Transfer from {source.Owner}", date);
 
-source.Signaler(new VirementEffectue(Guid.NewGuid(), source.Id, source.Iban, source.Titulaire,
-    cible.Iban, montant, montantCredite, date));
+source.Report(new TransferMade(Guid.NewGuid(), source.Id, source.Iban, source.Owner,
+    target.Iban, amount, creditedAmount, date));
 ```
 
 ### 5. The anti-corruption layer
@@ -224,22 +224,22 @@ from the euro, every cross rate (USD → CHF…) goes through the euro.
 ([CoucheAntiCorruption.cs](../../11-DDD/Ddd.TenueDeCompte.Infrastructure/CoucheAntiCorruption.cs))
 
 ```csharp
-public class SystemeDeCotationsHerite
+public class LegacyQuoteSystem
 {
-    public virtual string CotationsDuJour() => "EURUSD=10832;EURCHF=9415;EURGBP=8571;EURJPY=1612300";
+    public virtual string TodaysQuotes() => "EURUSD=10832;EURCHF=9415;EURGBP=8571;EURJPY=1612300";
 }
 
-/// COUCHE ANTI-CORRUPTION : elle traduit le modèle du système hérité vers notre langage (Argent, Devise).
-public class AdaptateurTauxDeChange(SystemeDeCotationsHerite systemeHerite) : IConvertisseurDevises
+/// ANTI-CORRUPTION LAYER: it translates the model of the legacy system into our language (Money, Currency).
+public class ExchangeRateAdapter(LegacyQuoteSystem legacySystem) : ICurrencyConverter
 {
-    public Task<Argent> Convertir(Argent montant, Devise devise)
+    public Task<Money> Convert(Money amount, Currency currency)
     {
-        var tauxDepuisEuro = LireCotations(systemeHerite.CotationsDuJour());
+        var ratesFromEuro = ReadQuotes(legacySystem.TodaysQuotes());
 
-        // Le système hérité ne cote que depuis l'euro : on passe par l'euro pour tout croisement (USD → CHF…).
-        var montantEnEuros = montant.Montant / tauxDepuisEuro[montant.Devise];
-        var converti = decimal.Round(montantEnEuros * tauxDepuisEuro[devise], 2, MidpointRounding.ToEven);
-        return Task.FromResult(new Argent(converti, devise));
+        // The legacy system only quotes from the euro: any cross rate goes through the euro (USD → CHF…).
+        var amountInEuros = amount.Amount / ratesFromEuro[amount.Currency];
+        var converted = decimal.Round(amountInEuros * ratesFromEuro[currency], 2, MidpointRounding.ToEven);
+        return Task.FromResult(new Money(converted, currency));
     }
 }
 ```
@@ -249,12 +249,12 @@ public class AdaptateurTauxDeChange(SystemeDeCotationsHerite systemeHerite) : IC
 ([Integration.cs](../../11-DDD/Ddd.TenueDeCompte.Application/Integration.cs))
 
 ```csharp
-var integration = new VirementEmis(
-    v.VirementId, v.Source.Valeur, v.IbanSource.Valeur, v.TitulaireSource.Valeur, v.IbanCible.Valeur,
-    v.MontantDebite.Montant, v.MontantDebite.Devise.Code, enEuros.Montant, v.Date);
+var integration = new TransferSent(
+    v.TransferId, v.Source.Value, v.SourceIban.Value, v.SourceOwner.Value, v.TargetIban.Value,
+    v.DebitedAmount.Amount, v.DebitedAmount.Currency.Code, inEuros.Amount, v.Date);
 
-foreach (var abonne in abonnes())
-    await abonne.SurVirementEmis(integration);
+foreach (var subscriber in subscribers())
+    await subscriber.OnTransferSent(integration);
 ```
 
 ### The structuring scenario: two contexts cooperate
@@ -295,9 +295,9 @@ sequenceDiagram
 
 ```csharp
 [Fact]
-public void La_conformite_ne_connait_que_le_langage_publie_de_la_tenue_de_compte()
+public void Compliance_only_knows_the_published_language_of_account_keeping()
 {
-    Assert.Equal(["Ddd.TenueDeCompte.Contrats"], DependancesInternes(typeof(DossierDeVigilance).Assembly));
+    Assert.Equal(["Ddd.AccountKeeping.Contracts"], InternalDependencies(typeof(VigilanceFile).Assembly));
 }
 ```
 
