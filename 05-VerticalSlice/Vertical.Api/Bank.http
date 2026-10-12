@@ -1,0 +1,30 @@
+@base = http://localhost:5105
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Open an account (201)
+POST {{base}}/accounts
+Content-Type: application/json
+
+{ "owner": "Chloe", "initialDeposit": 50 }
+
+### Validation specific to the slice (400, ValidationProblem)
+POST {{base}}/accounts
+Content-Type: application/json
+
+{ "owner": "", "initialDeposit": 1 }
+
+### Withdraw 100 €
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 100 }
+
+### Transfer from Alice to Bob
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 250 }
+
+### Get Alice, with her latest operations
+GET {{base}}/accounts/{{alice}}

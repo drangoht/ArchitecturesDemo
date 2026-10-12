@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Web layer, separate from the components (unlike Vertical Slice).
+    It references the components, but only sees their public interfaces.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Components.Accounts\Components.Accounts.csproj" />
+    <ProjectReference Include="..\Components.Transfers\Components.Transfers.csproj" />
+  </ItemGroup>
+
+</Project>

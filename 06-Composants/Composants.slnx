@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="Composants.Api/Composants.Api.csproj" />
-  <Project Path="Composants.Comptes/Composants.Comptes.csproj" />
-  <Project Path="Composants.Tests/Composants.Tests.csproj" />
-  <Project Path="Composants.Virements/Composants.Virements.csproj" />
-</Solution>

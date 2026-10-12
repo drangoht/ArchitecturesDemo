@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="Fonctionnel.Coeur/Fonctionnel.Coeur.csproj" />
-  <Project Path="Fonctionnel.Coquille/Fonctionnel.Coquille.csproj" />
-  <Project Path="Fonctionnel.Tests/Fonctionnel.Tests.csproj" />
-</Solution>

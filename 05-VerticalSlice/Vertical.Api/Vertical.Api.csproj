@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <!--
-    Un seul projet, organisé par fonctionnalité (Features/) et non par couche technique.
-    Chaque fichier de Features/ est une tranche complète : route, validation, logique, accès aux données.
+    A single project, organized by feature (Features/) and not by technical layer.
+    Each file in Features/ is a complete slice: route, validation, logic, data access.
   -->
 
   <ItemGroup>

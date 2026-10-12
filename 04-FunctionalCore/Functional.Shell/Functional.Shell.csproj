@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Imperative shell: all the I/O (HTTP, database, clock, log), but no business decision.
+    Every endpoint follows the same pattern: read → decide (call to the core) → apply.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Functional.Core\Functional.Core.csproj" />
+  </ItemGroup>
+
+</Project>

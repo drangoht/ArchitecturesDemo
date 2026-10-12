@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    Cœur fonctionnel : des valeurs immuables et des fonctions pures.
-    Pas d'async, pas d'interface, pas d'I/O, pas d'horloge : uniquement des entrées → une décision.
-  -->
-
-</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    "Accounts" component: business logic + data access behind ONE public interface.
+    Everything else is internal: the compiler forbids other projects from bypassing the component.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Only the test project can see inside (to test the Account entity directly). -->
+    <InternalsVisibleTo Include="Components.Tests" />
+  </ItemGroup>
+
+</Project>

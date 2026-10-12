@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Functional.Core/Functional.Core.csproj" />
+  <Project Path="Functional.Shell/Functional.Shell.csproj" />
+  <Project Path="Functional.Tests/Functional.Tests.csproj" />
+</Solution>

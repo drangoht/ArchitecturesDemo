@@ -1,26 +1,26 @@
 using Microsoft.EntityFrameworkCore;
 using Vertical.Api.Data;
-using Vertical.Api.Features.Comptes;
-using Vertical.Api.Features.Virements;
+using Vertical.Api.Features.Accounts;
+using Vertical.Api.Features.Transfers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Le nom de la base est lu à la demande : les tests d'intégration en donnent un différent à chaque application.
-builder.Services.AddDbContext<BanqueDbContext>((services, options) =>
-    options.UseInMemoryDatabase(services.GetRequiredService<IConfiguration>()["NomBase"] ?? "Banque"));
+// The database name is read on demand: the integration tests give a different one to each application.
+builder.Services.AddDbContext<BankDbContext>((services, options) =>
+    options.UseInMemoryDatabase(services.GetRequiredService<IConfiguration>()["DatabaseName"] ?? "Bank"));
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
-    scope.ServiceProvider.GetRequiredService<BanqueDbContext>().InitialiserDonneesDeDemo();
+    scope.ServiceProvider.GetRequiredService<BankDbContext>().SeedDemoData();
 
-// Chaque tranche déclare elle-même sa route. Ajouter une fonctionnalité = un fichier + une ligne ici.
-OuvrirCompte.Map(app);
-ConsulterCompte.Map(app);
-RetirerArgent.Map(app);
-EffectuerVirement.Map(app);
+// Each slice declares its own route. Adding a feature = one file + one line here.
+OpenAccount.Map(app);
+GetAccount.Map(app);
+WithdrawMoney.Map(app);
+MakeTransfer.Map(app);
 
 app.Run();
 
-// Rend Program visible pour WebApplicationFactory dans les tests d'intégration.
+// Makes Program visible to WebApplicationFactory in the integration tests.
 public partial class Program;

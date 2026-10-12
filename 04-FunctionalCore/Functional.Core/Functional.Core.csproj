@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Functional core: immutable values and pure functions.
+    No async, no interface, no I/O, no clock: only inputs → a decision.
+  -->
+
+</Project>

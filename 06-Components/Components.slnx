@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Components.Api/Components.Api.csproj" />
+  <Project Path="Components.Accounts/Components.Accounts.csproj" />
+  <Project Path="Components.Tests/Components.Tests.csproj" />
+  <Project Path="Components.Transfers/Components.Transfers.csproj" />
+</Solution>

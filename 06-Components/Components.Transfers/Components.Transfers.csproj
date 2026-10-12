@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    "Transfers" component: it uses the Accounts component, but only through IAccountsComponent.
+    It owns its own database (the transfer history) and never reads the accounts' one.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Components.Accounts\Components.Accounts.csproj" />
+  </ItemGroup>
+
+</Project>
