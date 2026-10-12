@@ -64,7 +64,7 @@ flowchart TB
 ([Micro.Passerelle/Program.cs](../../08-Microservices/Micro.Passerelle/Program.cs)) :
 
 ```csharp
-// Table de routage : préfixe public → service. Tout ce qui n'y figure pas (ex. /interne/…) reste invisible.
+// Routing table: public prefix → service. Anything not listed (e.g. /internal/…) stays invisible.
 var routes = app.Configuration.GetSection("Routes").Get<Dictionary<string, string>>() ?? [];
 ```
 
@@ -72,12 +72,12 @@ var routes = app.Configuration.GetSection("Routes").Get<Dictionary<string, strin
 ([TableauDeBord.cs](../../16-BFF/Bff.Web/TableauDeBord.cs)) :
 
 ```csharp
-// ② Puis tout le reste EN PARALLÈLE : la durée totale est celle de l'appel le plus lent, pas la somme.
-var conseiller = services.Conseiller(profil.ConseillerId, jeton);
-var offres = Facultatif(annulation => services.Offres(profil.Segment, jeton, annulation), BudgetOffres);
-var comptes = profil.Comptes.Select(id => CompteAvecOperations(id, jeton)).ToList();
-Task[] appels = [conseiller, offres, .. comptes];
-await Task.WhenAll(appels);
+// ② Then all the rest IN PARALLEL: the total duration is that of the slowest call, not the sum.
+var advisor = services.Advisor(profile.AdvisorId, token);
+var offers = Optional(cancellation => services.Offers(profile.Segment, token, cancellation), OffersBudget);
+var accounts = profile.Accounts.Select(id => AccountWithOperations(id, token)).ToList();
+Task[] calls = [advisor, offers, .. accounts];
+await Task.WhenAll(calls);
 ```
 
 Mesuré : 7 appels aux services, ≈ 300 ms au lieu de ≈ 900 ms s'ils étaient enchaînés.
@@ -86,10 +86,10 @@ Mesuré : 7 appels aux services, ≈ 300 ms au lieu de ≈ 900 ms s'ils étaient
 exactement cette forme ([démo 23](../23-rest-grpc-graphql.md)) :
 
 ```graphql
-query EcranAccueil($id: ID!, $n: Int) {
-  client(id: $id) {
-    nom
-    comptes { numero libelle solde operations(derniers: $n) { date libelle montant } }
+query HomeScreen($id: ID!, $n: Int) {
+  customer(id: $id) {
+    name
+    accounts { number label balance operations(latest: $n) { date label amount } }
   }
 }
 ```
@@ -101,8 +101,8 @@ gain, mais avec **une route écrite pour cet écran** ; GraphQL l'obtient sans r
 pas déclaré reste à l'ancien ([Relais.cs](../../22-StranglerFig/Fig.Facade/Relais.cs)) :
 
 ```csharp
-var route = table.Trouver(http.Request.Method, chemin);
-var mode = route?.Mode ?? Mode.Ancien;   // ce que personne n'a repris reste à l'ancien : c'est le point de départ
+var route = table.Find(http.Request.Method, path);
+var mode = route?.Mode ?? Mode.Legacy;   // what nobody took over stays with the legacy system: that is the starting point
 ```
 
 ## Comment choisir

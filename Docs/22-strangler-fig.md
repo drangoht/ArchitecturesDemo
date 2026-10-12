@@ -82,8 +82,8 @@ Et surtout : **ce qui n'est pas déclaré va à l'ancien**. C'est le point de d�
 tout), et la protection contre ce qu'on n'a pas recensé. ([Relais.cs](../22-StranglerFig/Fig.Facade/Relais.cs))
 
 ```csharp
-var route = table.Trouver(http.Request.Method, chemin);
-var mode = route?.Mode ?? Mode.Ancien;   // ce que personne n'a repris reste à l'ancien : c'est le point de départ
+var route = table.Find(http.Request.Method, path);
+var mode = route?.Mode ?? Mode.Legacy;   // what nobody took over stays with the legacy system: that is the starting point
 ```
 
 Chaque réponse porte l'en-tête `X-Servi-Par: ancien` ou `nouveau`, et la façade compte, route par route, combien
@@ -126,14 +126,14 @@ sequenceDiagram
 ```
 
 ```csharp
-// Les deux appels partent en même temps ; le client n'attend que l'ancien.
-var budget = new CancellationTokenSource(options.BudgetOmbreMs);
-var ombre = Envoyer("nouveau", Message(http.Request, corps), budget.Token);
+// Both calls leave at the same time; the client only waits for the legacy system.
+var budget = new CancellationTokenSource(options.ShadowBudgetMs);
+var shadow = Send("modern", Message(http.Request, body), budget.Token);
 ```
 
 ```csharp
-// Comparée APRÈS coup, sans être attendue : un nouveau service lent ou en panne ne ralentit personne.
-_ = comparateur.Comparer(route!.Nom, $"{http.Request.Method} {chemin}{http.Request.QueryString}", reponse, ombre, budget);
+// Compared AFTERWARDS, without being awaited: a slow or failed modern service slows nobody down.
+_ = comparer.Compare(route!.Name, $"{http.Request.Method} {path}{http.Request.QueryString}", response, shadow, budget);
 ```
 
 `GET /facade/comparaisons` donne le bilan : réponses identiques, **divergences** (avec les deux corps, pour enquêter) et
@@ -145,10 +145,10 @@ comptent pas, les valeurs si.
 (`400`) de passer une écriture en mode ombre. ([TableDeRoutage.cs](../22-StranglerFig/Fig.Facade/TableDeRoutage.cs))
 
 ```csharp
-// Une écriture n'a pas de mode « ombre » : l'exécuter des deux côtés ferait deux virements.
-private static void Verifier(Route route, Mode mode)
+// A write has no "shadow" mode: executing it on both sides would make two transfers.
+private static void Check(Route route, Mode mode)
 {
-    if (mode == Mode.Ombre && route.Methode != "GET")
+    if (mode == Mode.Shadow && route.Method != "GET")
 ```
 
 Pour les écritures, la confiance vient des tests de contrat, puis d'une bascule prudente, réversible à tout instant.
@@ -182,13 +182,13 @@ sequenceDiagram
 ([Synchronisation.cs](../22-StranglerFig/Fig.Nouveau/Synchronisation.cs))
 
 ```csharp
-// ② Reporter nos écritures. Si l'ancien ne répond pas, elles restent dans la boîte d'envoi pour le cycle
-//    suivant ; l'import étant idempotent, un lot renvoyé n'est pas compté deux fois.
-var aReporter = depot.AReporter();
-if (aReporter.Count > 0)
+// ② Forward our writes. If the legacy system does not answer, they stay in the outbox for the next
+//    cycle; the import being idempotent, a batch sent again is not counted twice.
+var toForward = store.ToForward();
+if (toForward.Count > 0)
 {
-    await ancien.Importer(aReporter.Select(TraducteurAncien.VersAncien).ToList(), annulation);
-    depot.MarquerReportees(aReporter);
+    await legacy.Import(toForward.Select(LegacyTranslator.ToLegacy).ToList(), cancellation);
+    store.MarkForwarded(toForward);
 }
 ```
 
@@ -212,11 +212,11 @@ sans fuseau. Une seule classe la traduit, dans les deux sens, et le modèle du n
 dans la [démo DDD](11-ddd.md)). ([CoucheAntiCorruption.cs](../22-StranglerFig/Fig.Nouveau/CoucheAntiCorruption.cs))
 
 ```csharp
-/// <summary>L'ancien note l'heure de Paris sans fuseau : c'est ici qu'on décide de quel instant il s'agit.</summary>
-public static DateTimeOffset DateDepuisAncien(string texte)
+/// <summary>The legacy system notes Paris time without time zone: this is where we decide which instant it is.</summary>
+public static DateTimeOffset DateFromLegacy(string text)
 {
-    var locale = DateTime.ParseExact(texte, FormatDate, CultureInfo.InvariantCulture);
-    return new DateTimeOffset(locale, Paris.GetUtcOffset(locale));
+    var local = DateTime.ParseExact(text, DateFormat, CultureInfo.InvariantCulture);
+    return new DateTimeOffset(local, Paris.GetUtcOffset(local));
 }
 ```
 
@@ -238,8 +238,8 @@ prévenir personne. ([Contrat.cs](../22-StranglerFig/Fig.Nouveau/Contrat.cs))
 | Relevé en texte, colonnes alignées, fins de ligne `\r\n`, montants à virgule (« 1000,00 ») | le même texte, au caractère près |
 
 ```csharp
-// L'ancien calcule en centimes puis divise par 100 : 950 et non 950.00 dans le JSON. On reproduit sa représentation.
-private static decimal Euros(decimal montant) => TraducteurAncien.Centimes(montant) / 100m;
+// The legacy system computes in cents then divides by 100: 950 and not 950.00 in the JSON. We reproduce its representation.
+private static decimal Euros(decimal amount) => LegacyTranslator.Cents(amount) / 100m;
 ```
 
 Les **tests de contrat** ([EquivalenceTests.cs](../22-StranglerFig/Fig.Tests/EquivalenceTests.cs)) construisent un
@@ -258,10 +258,10 @@ est opaque pour les clients, et deux numérotations distinctes évitent toute co
 Un problème en production sur une route migrée ? On la rend à l'ancien, par la même requête que pour la migrer :
 
 ```http
-PUT {{facade}}/facade/routes/virements
-X-Cle-Admin: demo
+PUT {{facade}}/facade/routes/transfers
+X-Admin-Key: demo
 
-{ "mode": "Ancien" }
+{ "mode": "Legacy" }
 ```
 
 C'est la synchronisation **retour** qui rend ce geste sûr : l'ancien connaît les virements faits par le nouveau. Le test
@@ -277,8 +277,8 @@ Toutes les routes déclarées en mode `Nouveau` ne suffisent pas : il reste peut
 `GET /facade/progression` mesure les deux :
 
 ```json
-{ "routesDeclarees": 4, "routesMigrees": 4, "pourcentage": 100,
-  "appelsNonDeclares": 0, "appelsAncienDepuisDerniereBascule": 0, "ancienRetirable": true }
+{ "declaredRoutes": 4, "migratedRoutes": 4, "percentage": 100,
+  "undeclaredCalls": 0, "legacyCallsSinceLastSwitch": 0, "legacyRemovable": true }
 ```
 
 `ancienRetirable` exige toutes les routes migrées **et** aucun appel à l'ancien depuis la dernière bascule. Dans la démo,

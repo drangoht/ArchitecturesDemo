@@ -60,11 +60,11 @@ volontairement dupliqué dans Comptes et Virements.
 ([Micro.Virements/Program.cs](../08-Microservices/Micro.Virements/Program.cs))
 
 ```csharp
-// Appels au service Comptes : le réseau peut échouer, on se protège.
-// Retry (y compris sur POST : sans danger, car les appels portent un operationId idempotent),
-// timeout par tentative et circuit breaker pour ne pas insister sur un service à terre.
-builder.Services.AddHttpClient("comptes", (sp, client) =>
-        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Comptes"]!))
+// Calls to the Accounts service: the network can fail, so we protect ourselves.
+// Retry (including on POST: safe, because the calls carry an idempotent operationId),
+// timeout per attempt and circuit breaker so as not to insist on a service that is down.
+builder.Services.AddHttpClient("accounts", (sp, client) =>
+        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Accounts"]!))
     .AddStandardResilienceHandler(options =>
     {
         options.Retry.MaxRetryAttempts = 3;
@@ -75,9 +75,9 @@ builder.Services.AddHttpClient("comptes", (sp, client) =>
 Le client a sa **propre copie** du modèle distant ([ClientComptes.cs](../08-Microservices/Micro.Virements/ClientComptes.cs)) :
 
 ```csharp
-// Représentation LOCALE d'un compte : pas de bibliothèque partagée avec le service Comptes,
-// le contrat entre les deux, c'est le JSON échangé.
-internal record CompteDistant(Guid Id, string Titulaire, decimal Solde);
+// LOCAL representation of an account: no library shared with the Accounts service,
+// the contract between the two is the JSON they exchange.
+internal record RemoteAccount(Guid Id, string Owner, decimal Balance);
 ```
 
 ### 2. Rendre l'appel rejouable : l'idempotence
@@ -86,13 +86,13 @@ Si la réponse se perd, le retry renvoie le même débit. Sans précaution : dou
 ([Micro.Comptes/Endpoints.cs](../08-Microservices/Micro.Comptes/Endpoints.cs))
 
 ```csharp
-/// API interne, appelée par les autres services (la passerelle ne l'expose pas).
-/// Idempotente : un appel rejoué avec le même operationId (retry après une coupure réseau) ne débite pas deux fois.
-private static async Task<IResult> Appliquer(Guid id, MouvementRequete requete, ComptesDb db, Func<Compte, decimal, string?> mouvement)
+/// Internal API, called by the other services (the gateway does not expose it).
+/// Idempotent: a call replayed with the same operationId (retry after a network cut) does not debit twice.
+private static async Task<IResult> Apply(Guid id, MovementRequest request, AccountsDb db, Func<Account, decimal, string?> movement)
 {
-    if (await db.OperationsTraitees.FindAsync(requete.OperationId) is { } dejaTraitee)
-        return Repondre(dejaTraitee);
-    // … appliquer le mouvement, mémoriser l'opération et sa réponse, enregistrer
+    if (await db.ProcessedOperations.FindAsync(request.OperationId) is { } alreadyProcessed)
+        return Respond(alreadyProcessed);
+    // … apply the movement, remember the operation and its response, save
 }
 ```
 
@@ -118,18 +118,18 @@ Le virement est enregistré **avant** les appels ; son statut dit où il en est 
 ([Micro.Virements/Endpoints.cs](../08-Microservices/Micro.Virements/Endpoints.cs))
 
 ```csharp
-// Étape 2 : créditer la cible. En cas d'échec : compensation (on recrédite la source).
-if (echecCredit is not null)
+// Step 2: credit the target. On failure: compensation (the source is credited back).
+if (creditFailure is not null)
 {
     try
     {
-        await comptes.Crediter(source.Id, requete.Montant, $"{virement.Id}-compensation");
-        return await Terminer(db, virement, StatutVirement.Annule, $"{echecCredit} Débit annulé.", 400);
+        await accounts.Credit(source.Id, request.Amount, $"{transfer.Id}-compensation");
+        return await Finish(db, transfer, TransferStatus.Cancelled, $"{creditFailure} Debit cancelled.", 400);
     }
-    catch (Exception e) when (EstUnePanneReseau(e))
+    catch (Exception e) when (IsNetworkFailure(e))
     {
-        return await Terminer(db, virement, StatutVirement.AReprendre,
-            "Crédit et compensation impossibles : virement à reprendre.", 503);
+        return await Finish(db, transfer, TransferStatus.ToResume,
+            "Credit and compensation impossible: transfer to resume.", 503);
     }
 }
 ```
@@ -154,21 +154,21 @@ La donnée et le message sont enregistrés dans **la même transaction** ; un re
 ([Micro.Comptes/Endpoints.cs](../08-Microservices/Micro.Comptes/Endpoints.cs), [RelaisOutbox.cs](../08-Microservices/Micro.Comptes/RelaisOutbox.cs))
 
 ```csharp
-// Modification ET événement enregistrés ensemble : soit les deux, soit aucun.
-db.Outbox.Add(MessageOutbox.Creer("retrait-effectue",
-    new { compteId = id, montant = requete.Montant, nouveauSolde = compte.Solde }));
+// Change AND event saved together: either both, or neither.
+db.Outbox.Add(OutboxMessage.Create("withdrawal-made",
+    new { accountId = id, amount = request.Amount, newBalance = account.Balance }));
 await db.SaveChangesAsync();
 ```
 
 ```csharp
-// Dans RelaisOutbox, en boucle :
-var enAttente = await db.Outbox.Where(m => m.EnvoyeLe == null).OrderBy(m => m.CreeLe).Take(20).ToListAsync(arret);
-foreach (var message in enAttente)
+// In OutboxRelay, in a loop:
+var pending = await db.Outbox.Where(m => m.SentAt == null).OrderBy(m => m.CreatedAt).Take(20).ToListAsync(stopping);
+foreach (var message in pending)
 {
-    // … POST /sujets/{sujet} avec l'en-tête Message-Id
-    (await courtier.SendAsync(requete, arret)).EnsureSuccessStatusCode();
-    message.EnvoyeLe = DateTime.UtcNow;
-    await db.SaveChangesAsync(arret);
+    // … POST /topics/{topic} with the Message-Id header
+    (await broker.SendAsync(request, stopping)).EnsureSuccessStatusCode();
+    message.SentAt = DateTime.UtcNow;
+    await db.SaveChangesAsync(stopping);
 }
 ```
 
@@ -177,14 +177,14 @@ foreach (var message in enAttente)
 ([Courtier.cs](../08-Microservices/Micro.Courtier/Courtier.cs))
 
 ```csharp
-// Attente exponentielle : 0,25 s, 0,5 s, 1 s, 2 s… plafonnée à 30 s.
-var attente = Math.Min(0.25 * Math.Pow(2, livraison.Tentatives - 1), 30);
-livraison.ProchainEssai = DateTime.UtcNow.AddSeconds(attente);
+// Exponential backoff: 0.25 s, 0.5 s, 1 s, 2 s… capped at 30 s.
+var wait = Math.Min(0.25 * Math.Pow(2, delivery.Attempts - 1), 30);
+delivery.NextAttempt = DateTime.UtcNow.AddSeconds(wait);
 
-if (livraison.Tentatives >= TentativesMax)
+if (delivery.Attempts >= MaxAttempts)
 {
-    _enAttente.Remove(livraison);
-    _lettresMortes.Add(livraison);
+    _pending.Remove(delivery);
+    _deadLetters.Add(delivery);
 }
 ```
 
@@ -193,11 +193,11 @@ if (livraison.Tentatives >= TentativesMax)
 ([Micro.Notifications/Program.cs](../08-Microservices/Micro.Notifications/Program.cs))
 
 ```csharp
-// Le courtier livre « au moins une fois » : un même message peut arriver deux fois. On l'ignore alors.
-static async Task<IResult> Traiter(NotificationsDb db, Guid messageId, params Notification[] notifications)
+// The broker delivers "at least once": the same message can arrive twice. It is then ignored.
+static async Task<IResult> Handle(NotificationsDb db, Guid messageId, params Notification[] notifications)
 {
-    if (await db.MessagesTraites.FindAsync(messageId) is not null)
-        return Results.Ok(new { doublon = true });
+    if (await db.ProcessedMessages.FindAsync(messageId) is not null)
+        return Results.Ok(new { duplicate = true });
     // …
 }
 ```
@@ -240,20 +240,20 @@ Chaque service est testé **seul** : les autres sont remplacés par de **faux se
 
 ```csharp
 [Fact]
-public async Task Une_panne_passagere_est_absorbee_par_le_retry_sans_double_debit()
+public async Task A_transient_failure_is_absorbed_by_the_retry_without_double_debit()
 {
-    // Le 1er appel de débit échoue (503), le retry automatique réussit.
-    var comptes = FauxComptes(debits: numero => new HttpResponseMessage(
-        numero == 1 ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK));
-    await using var service = new ServiceEnTest<Marqueur>(new() { ["comptes"] = comptes });
+    // The 1st debit call fails (503), the automatic retry succeeds.
+    var accounts = FakeAccounts(debits: number => new HttpResponseMessage(
+        number == 1 ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK));
+    await using var service = new ServiceUnderTest<Marker>(new() { ["accounts"] = accounts });
 
-    var (_, statut) = await Virer(service);
+    var (_, status) = await Transfer(service);
 
-    Assert.Equal("Effectue", statut);
-    // Deux appels de débit… avec le MÊME operationId : Comptes ne débitera qu'une fois.
-    var debits = comptes.Appels.Where(a => a.Chemin.EndsWith("/debits")).ToList();
+    Assert.Equal("Done", status);
+    // Two debit calls… with the SAME operationId: Accounts will debit only once.
+    var debits = accounts.Calls.Where(a => a.Path.EndsWith("/debits")).ToList();
     Assert.Equal(2, debits.Count);
-    Assert.Single(debits.Select(a => JsonDocument.Parse(a.Corps!).RootElement.GetProperty("operationId").GetString()).Distinct());
+    Assert.Single(debits.Select(a => JsonDocument.Parse(a.Body!).RootElement.GetProperty("operationId").GetString()).Distinct());
 }
 ```
 

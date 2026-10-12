@@ -58,10 +58,10 @@ attente humaine, compensations et pannes. C'est là qu'on voit ses forces et ses
 Un service, c'est une liste d'abonnements. Voici tout ce que Comptes écoute :
 
 ```csharp
-Bus.Abonner<VirementDemande>(Nom, Reserver);
-Bus.Abonner<ConformiteRefusee>(Nom, e => Liberer(e, e.Motif));  // compensation
-Bus.Abonner<ChangeEchoue>(Nom, e => Liberer(e, e.Motif));       // compensation
-Bus.Abonner<DevisesConverties>(Nom, Regler);
+Bus.Subscribe<TransferRequested>(Name, Reserve);
+Bus.Subscribe<ComplianceRefused>(Name, e => Release(e, e.Reason));  // compensation
+Bus.Subscribe<ExchangeFailed>(Name, e => Release(e, e.Reason));       // compensation
+Bus.Subscribe<CurrenciesConverted>(Name, Settle);
 ```
 
 En production : **RabbitMQ**, **Azure Service Bus** ou **Kafka**, avec **MassTransit**, **NServiceBus**, **Wolverine**
@@ -74,9 +74,9 @@ ou **Dapr** pour les abonnements, les nouveaux essais et les boîtes de récepti
 Chaque événement porte la **corrélation** (le virement) et sa **cause** (l'événement auquel il répond) :
 
 ```csharp
-/// <summary>Un nouvel événement, en réaction à celui-ci : même corrélation, et celui-ci pour cause.</summary>
-public T Suite<T>(T suivant, string emetteur) where T : Evenement =>
-    suivant with { Correlation = Correlation, Cause = Id, Emetteur = emetteur };
+/// <summary>A new event, in reaction to this one: same correlation, and this one as cause.</summary>
+public T Next<T>(T next, string emitter) where T : Event =>
+    next with { Correlation = Correlation, Cause = Id, Emitter = emitter };
 ```
 
 C'est le seul fil qui permet de raconter ce qui s'est passé. **Essai réel**, `GET /virements/{id}` :
@@ -141,7 +141,7 @@ GET /virements/bloques           → le virement, sans activité récente
 Le filet de sécurité est **local** : Comptes se protège lui-même en donnant une durée de vie à ses réservations.
 
 ```csharp
-expirees = _reservations.Where(r => r.Value.ExpireLe <= maintenant).ToList()
+expired = _reservations.Where(r => r.Value.ExpiresAt <= now).ToList()
 ```
 
 Et les autres services doivent en tenir compte : la Conformité écoute `ReservationExpiree` pour ne plus faire décider
@@ -158,13 +158,13 @@ garde donc les identifiants des événements déjà traités (sa « boîte de r�
 la suite d'un seul tenant :
 
 ```csharp
-lock (Verrou)
+lock (Lock)
 {
-    if (_traites.Contains(recu.Id))
+    if (_handled.Contains(received.Id))
         return;
-    if (reagir() is { } suite)
-        Bus.Publier(suite);
-    _traites.Add(recu.Id);
+    if (react() is { } next)
+        Bus.Publish(next);
+    _handled.Add(received.Id);
 }
 ```
 
@@ -179,7 +179,7 @@ Test `Des_evenements_livres_deux_fois_ne_produisent_leur_effet_qu_une_fois` : av
 Le service Fidélité (des points sur chaque virement réglé) a été ajouté **après coup**. Il s'abonne, c'est tout :
 
 ```csharp
-public void Inscrire() => Bus.Abonner<VirementRegle>(Nom, e => UneSeuleFois(e, () =>
+public void Register() => Bus.Subscribe<TransferSettled>(Name, e => Once(e, () =>
 ```
 
 Aucun autre service n'a changé, aucun ne sait qu'il existe : le test `Ajouter_un_abonne_ne_change_rien_pour_les_autres`

@@ -81,32 +81,32 @@ Pour comprendre ou modifier « retirer de l'argent », on n'ouvre **que ce fichi
 ([RetirerArgent.cs](../05-VerticalSlice/Vertical.Api/Features/Comptes/RetirerArgent.cs))
 
 ```csharp
-public static class RetirerArgent
+public static class WithdrawMoney
 {
-    public record Requete(decimal Montant);
-    public record Reponse(Guid CompteId, decimal NouveauSolde);
+    public record Request(decimal Amount);
+    public record Response(Guid AccountId, decimal NewBalance);
 
-    public static void Map(IEndpointRouteBuilder app) => app.MapPost("/comptes/{id:guid}/retrait", Executer);
+    public static void Map(IEndpointRouteBuilder app) => app.MapPost("/accounts/{id:guid}/withdrawal", Execute);
 
-    private static async Task<IResult> Executer(Guid id, Requete requete, BanqueDbContext db)
+    private static async Task<IResult> Execute(Guid id, Request request, BankDbContext db)
     {
-        if (requete.Montant <= 0)
+        if (request.Amount <= 0)
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
-                [nameof(Requete.Montant)] = ["Le montant doit être strictement positif."]
+                [nameof(Request.Amount)] = ["The amount must be strictly positive."]
             });
 
-        var compte = await db.Comptes.FindAsync(id);
-        if (compte is null)
+        var account = await db.Accounts.FindAsync(id);
+        if (account is null)
             return Results.NotFound();
 
-        if (compte.Retirer(requete.Montant) is { } refus)
-            return Results.BadRequest(new { erreur = refus });
+        if (account.Withdraw(request.Amount) is { } refusal)
+            return Results.BadRequest(new { error = refusal });
 
-        db.Operations.Add(new Operation { CompteId = id, Libelle = "Retrait", Montant = -requete.Montant });
+        db.Operations.Add(new Operation { AccountId = id, Label = "Withdrawal", Amount = -request.Amount });
         await db.SaveChangesAsync();
 
-        return Results.Ok(new Reponse(id, compte.Solde));
+        return Results.Ok(new Response(id, account.Balance));
     }
 }
 ```
@@ -117,18 +117,18 @@ Projection directe vers la réponse, en lecture seule, sans passer par le domain
 ([ConsulterCompte.cs](../05-VerticalSlice/Vertical.Api/Features/Comptes/ConsulterCompte.cs))
 
 ```csharp
-var compte = await db.Comptes
+var account = await db.Accounts
     .AsNoTracking()
     .Where(c => c.Id == id)
-    .Select(c => new { c.Id, c.Titulaire, c.Solde })
+    .Select(c => new { c.Id, c.Owner, c.Balance })
     .FirstOrDefaultAsync();
 
 var operations = await db.Operations
     .AsNoTracking()
-    .Where(o => o.CompteId == id)
+    .Where(o => o.AccountId == id)
     .OrderByDescending(o => o.DateUtc)
     .Take(5)
-    .Select(o => new OperationVue(o.Libelle, o.Montant, o.DateUtc))
+    .Select(o => new OperationView(o.Label, o.Amount, o.DateUtc))
     .ToListAsync();
 ```
 
@@ -139,12 +139,12 @@ La règle « solde suffisant » était d'abord dans `RetirerArgent`. Quand `Effe
 ([Compte.cs](../05-VerticalSlice/Vertical.Api/Domain/Compte.cs))
 
 ```csharp
-/// <returns>null si le retrait est fait, sinon la raison du refus.</returns>
-public string? Retirer(decimal montant)
+/// <returns>null if the withdrawal is done, otherwise the reason for the refusal.</returns>
+public string? Withdraw(decimal amount)
 {
-    if (montant > Solde)
-        return "Solde insuffisant.";
-    Solde -= montant;
+    if (amount > Balance)
+        return "Insufficient balance.";
+    Balance -= amount;
     return null;
 }
 ```
@@ -154,11 +154,11 @@ public string? Retirer(decimal montant)
 ([Program.cs](../05-VerticalSlice/Vertical.Api/Program.cs))
 
 ```csharp
-// Chaque tranche déclare elle-même sa route. Ajouter une fonctionnalité = un fichier + une ligne ici.
-OuvrirCompte.Map(app);
-ConsulterCompte.Map(app);
-RetirerArgent.Map(app);
-EffectuerVirement.Map(app);
+// Each slice declares its own route. Adding a feature = one file + one line here.
+OpenAccount.Map(app);
+GetAccount.Map(app);
+WithdrawMoney.Map(app);
+MakeTransfer.Map(app);
 ```
 
 ---
@@ -171,16 +171,16 @@ avec l'API démarrée en mémoire et une base neuve par test.
 
 ```csharp
 [Theory]
-[InlineData(0, HttpStatusCode.BadRequest)]       // validation de la tranche
-[InlineData(99_999, HttpStatusCode.BadRequest)]  // règle du domaine (solde insuffisant)
-public async Task Un_retrait_invalide_est_refuse(int montant, HttpStatusCode attendu)
+[InlineData(0, HttpStatusCode.BadRequest)]       // validation of the slice
+[InlineData(99_999, HttpStatusCode.BadRequest)]  // domain rule (insufficient balance)
+public async Task An_invalid_withdrawal_is_refused(int amount, HttpStatusCode expected)
 {
-    await using var app = new BanqueApplication();
+    await using var app = new BankApplication();
 
-    var reponse = await app.CreateClient()
-        .PostAsJsonAsync($"/comptes/{BanqueDbContext.Alice}/retrait", new RetirerArgent.Requete(montant));
+    var response = await app.CreateClient()
+        .PostAsJsonAsync($"/accounts/{BankDbContext.Alice}/withdrawal", new WithdrawMoney.Request(amount));
 
-    Assert.Equal(attendu, reponse.StatusCode);
+    Assert.Equal(expected, response.StatusCode);
 }
 ```
 

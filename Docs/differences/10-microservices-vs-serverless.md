@@ -63,32 +63,32 @@ avec le statut final ([Micro.Virements/Endpoints.cs](../../08-Microservices/Micr
 ([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs)) :
 
 ```csharp
-/// <summary>HTTP : on ne fait PAS le virement ici. On l'accepte (202) et on le confie à une file : réponse immédiate.</summary>
-public static async Task<ReponseHttp> Demander(RequeteHttp requete, ContexteFonction contexte)
+/// <summary>HTTP: the transfer is NOT made here. It is accepted (202) and handed to a queue: immediate response.</summary>
+public static async Task<HttpResponseData> Request(HttpRequestData request, FunctionContext context)
 ```
 
 Il n'y a ni contrôleur ni `Program.cs` de service : un **manifeste** déclare qui réagit à quoi
 ([Deploiement.cs](../../12-Serverless/Sls.Fonctions/Deploiement.cs)) :
 
 ```csharp
-.Http("DemanderVirement", "POST", "/virements", VirementsFonctions.Demander)
+.Http("RequestTransfer", "POST", "/transfers", TransfersFunctions.Request)
 // …
-.File("ExecuterVirement", Files.Virements, VirementsFonctions.Executer, memoireMo: 256)
-.Stockage("TraiterImport", "imports/", ImportsFonctions.Traiter, memoireMo: 512)
-.Minuterie("ProduireRapport", TimeSpan.FromSeconds(30), RapportsFonctions.Produire);
+.Queue("ExecuteTransfer", Queues.Transfers, TransfersFunctions.Execute, memoryMb: 256)
+.Storage("ProcessImport", "imports/", ImportsFunctions.Process, memoryMb: 512)
+.Timer("ProduceReport", TimeSpan.FromSeconds(30), ReportsFunctions.Produce);
 ```
 
 **L'état** : un microservice peut garder ce qu'il veut en mémoire tant qu'il tourne. Une fonction non, et la démo le
 montre côte à côte ([Fonctions.cs](../../12-Serverless/Sls.Fonctions/Fonctions.cs)) :
 
 ```csharp
-// ✗ Mémoire de l'instance : propre à CETTE instance, remise à zéro à chaque démarrage à froid.
-var compteurDeLInstance = (contexte.MemoireInstance.TryGetValue("visites", out var v) ? (long)v : 0) + 1;
-contexte.MemoireInstance["visites"] = compteurDeLInstance;
+// ✗ Instance memory: specific to THIS instance, reset at each cold start.
+var instanceCounter = (context.InstanceMemory.TryGetValue("visits", out var v) ? (long)v : 0) + 1;
+context.InstanceMemory["visits"] = instanceCounter;
 
-// ✓ Service géré : partagé par toutes les instances, durable.
-var global = await Concurrence.ModifierOuCreer(contexte.Table(Tables.Compteurs), "visites",
-    new Compteur(0), c => c with { Valeur = c.Valeur + 1 });
+// ✓ Managed service: shared by all the instances, durable.
+var global = await Concurrency.ModifyOrCreate(context.Table(Tables.Counters), "visits",
+    new Counter(0), c => c with { Value = c.Value + 1 });
 ```
 
 **La concurrence** : dans les microservices, chaque service a sa base et ses transactions. En serverless, des dizaines

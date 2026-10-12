@@ -60,17 +60,17 @@ flowchart LR
 du fichier ([Etage.cs](../../20-Pipeline/Pipeline.Noyau/Etage.cs)) :
 
 ```csharp
-/// <summary>Écrire dans un tuyau plein BLOQUE : l'étage attend que le suivant ait de la place. C'est la contre-pression.</summary>
-private async Task Ecrire(ChannelWriter<Element<TSortie>> sortie, Element<TSortie> element, ContexteExecution contexte)
+/// <summary>Writing into a full pipe BLOCKS: the stage waits for the next one to have room. That is the back-pressure.</summary>
+private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput> element, RunContext context)
 ```
 
 Et le premier étage en échec arrête tous les autres
 ([Pipeline.cs](../../20-Pipeline/Pipeline.Noyau/Pipeline.cs)) :
 
 ```csharp
-// Le premier étage qui échoue arrête tous les autres.
-foreach (var tache in taches)
-    _ = tache.ContinueWith(_ => arret.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
+// The first stage that fails stops all the others.
+foreach (var task in tasks)
+    _ = task.ContinueWith(_ => stopping.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
 ```
 
 **Chorégraphie** : chaque service garde les identifiants déjà traités, et réagit en publiant la suite ; rien ne le
@@ -78,13 +78,13 @@ ralentit si le suivant est lent, rien ne l'arrête si le suivant tombe
 ([Autres.cs](../../21-Choregraphie/Choreo.Services/Autres.cs)) :
 
 ```csharp
-lock (Verrou)
+lock (Lock)
 {
-    if (_traites.Contains(recu.Id))
+    if (_handled.Contains(received.Id))
         return;
-    if (reagir() is { } suite)
-        Bus.Publier(suite);
-    _traites.Add(recu.Id);
+    if (react() is { } next)
+        Bus.Publish(next);
+    _handled.Add(received.Id);
 }
 ```
 

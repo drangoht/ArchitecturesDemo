@@ -57,8 +57,8 @@ qui la paient (volumétrie, exigence réglementaire, sauvegarde et restauration 
 car une seule classe connaît la différence. ([FabriqueBanque.cs](../15-MultiTenant/Mt.Banque/FabriqueBanque.cs))
 
 ```csharp
-public static string NomBase(Locataire locataire) =>
-    locataire.Isolation == Isolation.BaseDediee ? $"banque-{locataire.Id}" : BasePartagee;
+public static string DatabaseName(Tenant tenant) =>
+    tenant.Isolation == Isolation.DedicatedDatabase ? $"bank-{tenant.Id}" : SharedDatabase;
 ```
 
 ---
@@ -107,15 +107,15 @@ Le locataire se reconnaît au **sous-domaine** (`beta.localhost:5114`, le choix 
 et **contradictoire → 400**. ([MiddlewareLocataire.cs](../15-MultiTenant/Mt.Locataires/MiddlewareLocataire.cs))
 
 ```csharp
-if (identifiants.Count > 1)
+if (identifiers.Count > 1)
 {
-    // Sous-domaine « alpha » et en-tête « beta » : on ne choisit pas, on refuse.
-    await Refuser(http, StatusCodes.Status400BadRequest,
-        "Locataire ambigu : " + string.Join(", ", trouves.Select(r => $"{r.Nom} = {r.Id}")));
+    // Subdomain "alpha" and header "beta": we don't pick one, we refuse.
+    await Refuse(http, StatusCodes.Status400BadRequest,
+        "Ambiguous tenant: " + string.Join(", ", found.Select(r => $"{r.Name} = {r.Id}")));
     return;
 }
 // …
-contexte.Definir(locataire);
+context.Set(tenant);
 ```
 
 > ⚠️ **En production**, un en-tête est déclaratif : n'importe qui peut écrire `X-Locataire: gamma`. Le locataire doit venir
@@ -128,15 +128,15 @@ Pas un seul `where LocataireId = …` dans le service. Le locataire n'y sert qu'
 différents. ([ServiceBancaire.cs](../15-MultiTenant/Mt.Banque/ServiceBancaire.cs))
 
 ```csharp
-// Même code pour toutes les banques, avec les paramètres de chacune.
-if (montant > Regles.PlafondVirement)
-    throw new RegleMetierException($"Plafond de virement de {Locataire.Nom} : {Regles.PlafondVirement:0.00} €.");
+// Same code for all the banks, with each one's parameters.
+if (amount > Rules.TransferLimit)
+    throw new BusinessRuleException($"Transfer limit of {Tenant.Name}: {Rules.TransferLimit:0.00} €.");
 
-// La cible est cherchée chez le locataire courant seulement : un virement vers un client d'une autre banque
-// de la plateforme est impossible par construction (ce serait un virement interbancaire, un autre processus).
-var source = await Charger(sourceId);
-var cible = await Charger(cibleId);
-var frais = Regles.FraisVirement;
+// The target is looked up at the current tenant only: a transfer to a customer of another bank
+// of the platform is impossible by construction (it would be an interbank transfer, another process).
+var source = await Load(sourceId);
+var target = await Load(targetId);
+var fee = Rules.TransferFee;
 ```
 
 | Banque | Formule | Base | Plafond de virement | Frais de virement | Frais mensuels | Comptes max |
@@ -155,12 +155,12 @@ C'est ici que l'isolation se joue. Trois protections, appliquées automatiquemen
 `IAppartientAUnLocataire`. ([BanqueDbContext.cs](../15-MultiTenant/Mt.Banque/BanqueDbContext.cs))
 
 ```csharp
-private void Isoler<T>(ModelBuilder modele) where T : class, IAppartientAUnLocataire
+private void Isolate<T>(ModelBuilder model) where T : class, IBelongsToTenant
 {
-    // Clé composite : deux locataires peuvent avoir un compte de même identifiant (ici, Alice et Bob existent partout)
-    // sans conflit dans la base partagée.
-    modele.Entity<T>().HasKey(nameof(IAppartientAUnLocataire.LocataireId), "Id");
-    modele.Entity<T>().HasQueryFilter(e => e.LocataireId == LocataireCourant);
+    // Composite key: two tenants can have an account with the same identifier (here, Alice and Bob exist everywhere)
+    // without conflict in the shared database.
+    model.Entity<T>().HasKey(nameof(IBelongsToTenant.TenantId), "Id");
+    model.Entity<T>().HasQueryFilter(e => e.TenantId == CurrentTenant);
 }
 ```
 
@@ -182,8 +182,8 @@ flowchart TD
   légitimement besoin de tout voir, doit l'écrire explicitement :
 
   ```csharp
-  // Sans IgnoreQueryFilters(), ces requêtes lèveraient AucunLocataireException.
-  var comptes = await db.Comptes.IgnoreQueryFilters().Select(c => c.LocataireId).ToListAsync();
+  // Without IgnoreQueryFilters(), these queries would throw NoTenantException.
+  var accounts = await db.Accounts.IgnoreQueryFilters().Select(c => c.TenantId).ToListAsync();
   ```
 - **② Estampillage** : le métier crée `new Compte(...)` sans jamais renseigner `LocataireId`.
 - **③ Écriture croisée** : une entité d'Alpha arrivée par erreur dans le DbContext de Bêta (cache partagé, variable
@@ -198,16 +198,16 @@ limitation de débit se fait **par locataire**, avec le quota de sa formule (60 
 ([Installation.cs](../15-MultiTenant/Mt.Locataires/Installation.cs))
 
 ```csharp
-// Le quota fait partie de la clé : après un changement de formule, une nouvelle partition
-// est créée avec le nouveau quota (sinon l'ancienne, mise en cache, resterait en vigueur).
-return RateLimitPartition.GetFixedWindowLimiter($"{locataire.Id}:{locataire.Quotas.RequetesParMinute}", _ =>
+// The quota is part of the key: after a plan change, a new partition
+// is created with the new quota (otherwise the old one, cached, would stay in force).
+return RateLimitPartition.GetFixedWindowLimiter($"{tenant.Id}:{tenant.Quotas.RequestsPerMinute}", _ =>
 ```
 
 D'où l'ordre des middlewares dans `Program.cs` : **d'abord** savoir qui appelle, **ensuite** appliquer son quota.
 
 ```csharp
-// L'ordre compte : d'abord savoir QUI appelle, ensuite appliquer SON quota.
-app.UseLocataires("/plateforme");
+// Order matters: first know WHO is calling, then apply THEIR quota.
+app.UseTenants("/platform");
 app.UseRateLimiter();
 ```
 
@@ -254,8 +254,8 @@ banque, chacune dans son propre scope d'injection (son DbContext, ses règles) :
 
 ```csharp
 await using var scope = scopes.CreateAsyncScope();
-scope.ServiceProvider.GetRequiredService<ContexteLocataire>().Definir(locataire);
-var preleves = await scope.ServiceProvider.GetRequiredService<ServiceBancaire>().PreleverFraisMensuels(mois);
+scope.ServiceProvider.GetRequiredService<TenantContext>().Set(tenant);
+var charged = await scope.ServiceProvider.GetRequiredService<BankingService>().ChargeMonthlyFees(month);
 ```
 
 Si elle l'oubliait, le DbContext lèverait `AucunLocataireException` : mieux vaut une tâche qui plante qu'une tâche qui

@@ -60,34 +60,34 @@ flowchart LR
 ([Program.cs](../../06-Composants/Composants.Api/Program.cs)) :
 
 ```csharp
-// Essayez d'écrire « new ComptesDbContext(...) » ou « new Compte(...) » ici : ça ne compile pas.
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete requete, IComptesComposant comptes) =>
-    EnHttp(await comptes.Retirer(id, requete.Montant)));
+// Try writing "new AccountsDbContext(...)" or "new Account(...)" here: it does not compile.
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest request, IAccountsComponent accounts) =>
+    ToHttp(await accounts.Withdraw(id, request.Amount)));
 ```
 
 **Monolithe modulaire** : l'hôte ne connaît que des modules, chacun apporte ses routes, sa base, ses abonnements
 ([Program.cs](../../07-MonolitheModulaire/Modulaire.Hote/Program.cs)) :
 
 ```csharp
-// La liste des modules : retirer une ligne retire une fonctionnalité entière (routes, base, abonnements).
-IModule[] modules = [new ComptesModule(), new VirementsModule(), new NotificationsModule()];
+// The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
+IModule[] modules = [new AccountsModule(), new TransfersModule(), new NotificationsModule()];
 ```
 
 Le contrat d'un module contient aussi **ses événements**
 ([Contrats.cs](../../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs)) :
 
 ```csharp
-// ─── Communication asynchrone : les événements que le module publie ───
-public record RetraitEffectue(Guid CompteId, decimal Montant, decimal NouveauSolde) : IEvenementIntegration;
+// ─── Asynchronous communication: the events the module publishes ───
+public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance) : IIntegrationEvent;
 ```
 
 Et un module peut être **ajouté sans toucher aux autres** : Notifications ne fait que s'abonner
 ([NotificationsModule.cs](../../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs)) :
 
 ```csharp
-// Abonnements aux événements des autres modules.
-services.AddScoped<IGestionnaireEvenement<RetraitEffectue>, SurRetraitEffectue>();
-services.AddScoped<IGestionnaireEvenement<VirementEffectue>, SurVirementEffectue>();
+// Subscriptions to the other modules' events.
+services.AddScoped<IEventHandler<WithdrawalMade>, OnWithdrawalMade>();
+services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 ```
 
 Dans la démo Composants, prévenir Bob d'un virement obligerait à modifier `VirementsComposant` (ou la couche web)

@@ -55,13 +55,13 @@ La flèche entre le métier et les données **change de sens** : c'est l'inversi
 ([ComptesDao.cs](../../00-Couches/Couches.Donnees/ComptesDao.cs)) :
 
 ```csharp
-// L'interface est définie PAR la couche données, dans SON vocabulaire (CompteEntite).
-public interface IComptesDao
+// The interface is defined BY the data layer, in ITS vocabulary (AccountEntity).
+public interface IAccountsDao
 {
-    Task<CompteEntite?> ParId(Guid id);
-    Task Ajouter(CompteEntite compte);
-    Task<bool> EstVide();
-    Task Enregistrer();
+    Task<AccountEntity?> ById(Guid id);
+    Task Add(AccountEntity account);
+    Task<bool> IsEmpty();
+    Task Save();
 }
 ```
 
@@ -69,10 +69,10 @@ Dans l'hexagonale, c'est le métier, qui dit ce dont il a besoin
 ([PortsSortants.cs](../../01-Hexagonale/Hexa.Hexagone/Ports/Sortants/PortsSortants.cs)) :
 
 ```csharp
-public interface IComptes
+public interface IAccounts
 {
-    Task<Compte?> Charger(Guid id);
-    Task Sauvegarder(Compte compte);
+    Task<Account?> Load(Guid id);
+    Task Save(Account account);
 }
 ```
 
@@ -80,23 +80,23 @@ public interface IComptes
 ([ComptesService.cs](../../00-Couches/Couches.Metier/ComptesService.cs)) :
 
 ```csharp
-// L'entité étant anémique, rien n'empêche une autre classe de faire « compte.Solde -= x »
-// sans passer par cette vérification : la règle n'est protégée que par la discipline.
-private static void VerifierRetraitPossible(CompteEntite compte, decimal montant)
+// Since the entity is anemic, nothing stops another class from doing "account.Balance -= x"
+// without going through this check: the rule is protected by discipline alone.
+private static void CheckWithdrawalAllowed(AccountEntity account, decimal amount)
 ```
 
 Hexagonale : dans l'entité elle-même, dont le solde n'a pas de setter public
 ([Compte.cs](../../01-Hexagonale/Hexa.Hexagone/Domaine/Compte.cs)) :
 
 ```csharp
-public decimal Solde { get; private set; }
+public decimal Balance { get; private set; }
 
-public void Retirer(decimal montant)
+public void Withdraw(decimal amount)
 {
-    VerifierMontant(montant);
-    if (montant > Solde)
-        throw new RegleMetierException("Solde insuffisant.");
-    Solde -= montant;
+    CheckAmount(amount);
+    if (amount > Balance)
+        throw new BusinessRuleException("Insufficient balance.");
+    Balance -= amount;
 }
 ```
 

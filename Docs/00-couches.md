@@ -64,11 +64,11 @@ L'entité est **anémique** : uniquement des données, avec des setters publics.
 ([CompteEntite.cs](../00-Couches/Couches.Donnees/CompteEntite.cs))
 
 ```csharp
-public class CompteEntite
+public class AccountEntity
 {
     public Guid Id { get; set; }
-    public string Titulaire { get; set; } = "";
-    public decimal Solde { get; set; }
+    public string Owner { get; set; } = "";
+    public decimal Balance { get; set; }
 }
 ```
 
@@ -76,14 +76,14 @@ L'interface d'accès est définie **par la couche données**, dans **son** vocab
 ([ComptesDao.cs](../00-Couches/Couches.Donnees/ComptesDao.cs))
 
 ```csharp
-// L'interface est définie PAR la couche données, dans SON vocabulaire (CompteEntite).
-// Différence clé avec Onion/Hexagonale : là-bas, c'est le métier qui définit l'interface dont il a besoin.
-public interface IComptesDao
+// The interface is defined BY the data layer, in ITS vocabulary (AccountEntity).
+// Key difference with Onion/Hexagonal: there, the business code defines the interface it needs.
+public interface IAccountsDao
 {
-    Task<CompteEntite?> ParId(Guid id);
-    Task Ajouter(CompteEntite compte);
-    Task<bool> EstVide();
-    Task Enregistrer();
+    Task<AccountEntity?> ById(Guid id);
+    Task Add(AccountEntity account);
+    Task<bool> IsEmpty();
+    Task Save();
 }
 ```
 
@@ -93,26 +93,26 @@ Une méthode = un cas d'utilisation, du début à la fin.
 ([ComptesService.cs](../00-Couches/Couches.Metier/ComptesService.cs))
 
 ```csharp
-public class ComptesService(IComptesDao dao)
+public class AccountsService(IAccountsDao dao)
 {
-    public async Task<CompteDto> Retirer(Guid id, decimal montant)
+    public async Task<AccountDto> Withdraw(Guid id, decimal amount)
     {
-        var compte = await Charger(id);
-        VerifierRetraitPossible(compte, montant);
+        var account = await Load(id);
+        CheckWithdrawalAllowed(account, amount);
 
-        compte.Solde -= montant;
-        await dao.Enregistrer();
-        return VersDto(compte);
+        account.Balance -= amount;
+        await dao.Save();
+        return ToDto(account);
     }
 
-    // L'entité étant anémique, rien n'empêche une autre classe de faire « compte.Solde -= x »
-    // sans passer par cette vérification : la règle n'est protégée que par la discipline.
-    private static void VerifierRetraitPossible(CompteEntite compte, decimal montant)
+    // Since the entity is anemic, nothing stops another class from doing "account.Balance -= x"
+    // without going through this check: the rule is protected by discipline alone.
+    private static void CheckWithdrawalAllowed(AccountEntity account, decimal amount)
     {
-        if (montant <= 0)
-            throw new RegleMetierException("Le montant doit être strictement positif.");
-        if (montant > compte.Solde)
-            throw new RegleMetierException("Solde insuffisant.");
+        if (amount <= 0)
+            throw new BusinessRuleException("The amount must be strictly positive.");
+        if (amount > account.Balance)
+            throw new BusinessRuleException("Insufficient balance.");
     }
 }
 ```
@@ -123,9 +123,9 @@ Un contrôleur MVC classique traduit HTTP ⇄ métier.
 ([ComptesController.cs](../00-Couches/Couches.Presentation/Controllers/ComptesController.cs))
 
 ```csharp
-[HttpPost("comptes/{id:guid}/retrait")]
-public Task<IActionResult> Retirer(Guid id, RetraitRequete requete) =>
-    Executer(async () => Ok(await comptes.Retirer(id, requete.Montant)));
+[HttpPost("accounts/{id:guid}/withdrawal")]
+public Task<IActionResult> Withdraw(Guid id, WithdrawalRequest request) =>
+    Execute(async () => Ok(await accounts.Withdraw(id, request.Amount)));
 ```
 
 Les **couches strictes** sont imposées par le compilateur : sans ce réglage, la présentation pourrait utiliser
@@ -141,10 +141,10 @@ C'est la couche métier qui branche elle-même la couche du dessous
 ([MetierExtensions.cs](../00-Couches/Couches.Metier/MetierExtensions.cs)) :
 
 ```csharp
-public static IServiceCollection AddCoucheMetier(this IServiceCollection services, string nomBase = "Banque")
+public static IServiceCollection AddBusinessLayer(this IServiceCollection services, string databaseName = "Bank")
 {
-    services.AddCoucheDonnees(nomBase);
-    services.AddScoped<ComptesService>();
+    services.AddDataLayer(databaseName);
+    services.AddScoped<AccountsService>();
     return services;
 }
 ```
@@ -180,9 +180,9 @@ Tester le métier oblige à manipuler la couche données : même le faux DAO ren
 ([ComptesServiceTests.cs](../00-Couches/Couches.Tests/ComptesServiceTests.cs))
 
 ```csharp
-private readonly FauxDao _dao = new(
-    new CompteEntite { Id = Alice, Titulaire = "Alice", Solde = 100m },
-    new CompteEntite { Id = Bob, Titulaire = "Bob", Solde = 0m });
+private readonly FakeDao _dao = new(
+    new AccountEntity { Id = Alice, Owner = "Alice", Balance = 100m },
+    new AccountEntity { Id = Bob, Owner = "Bob", Balance = 0m });
 ```
 
 Les tests d'architecture vérifient le sens des dépendances
@@ -190,15 +190,15 @@ Les tests d'architecture vérifient le sens des dépendances
 
 ```csharp
 [Fact]
-public void Le_metier_depend_de_la_couche_donnees()
+public void The_business_layer_depends_on_the_data_layer()
 {
-    Assert.Equal(["Couches.Donnees"], DependancesInternes(typeof(ComptesService).Assembly));
+    Assert.Equal(["Layered.Data"], InternalDependencies(typeof(AccountsService).Assembly));
 }
 
 [Fact]
-public void La_presentation_ne_voit_que_la_couche_juste_en_dessous()
+public void The_presentation_only_sees_the_layer_right_below()
 {
-    Assert.Equal(["Couches.Metier"], DependancesInternes(typeof(ComptesController).Assembly));
+    Assert.Equal(["Layered.Business"], InternalDependencies(typeof(AccountsController).Assembly));
 }
 ```
 

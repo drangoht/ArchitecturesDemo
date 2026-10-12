@@ -58,14 +58,14 @@ flowchart LR
 ([NoyauBancaire.cs](../../13-Microkernel/Mk.Noyau/NoyauBancaire.cs)) :
 
 ```csharp
-// 1. Point d'extension « contrôle » : un seul refus suffit.
-foreach (var controle in plugins.Actifs<IControleOperation>())
+// 1. "Check" extension point: a single refusal is enough.
+foreach (var check in plugins.Active<IOperationCheck>())
 {
-    string? refus = null;
-    if (!Proteger(controle, () => refus = controle.Verifier(operation)))
-        return Resultat.Refus($"Le plugin {controle.Nom} est en erreur : opération refusée par sécurité.");
-    if (refus is not null)
-        return Resultat.Refus($"[{controle.Nom}] {refus}");
+    string? refusal = null;
+    if (!Protect(check, () => refusal = check.Check(operation)))
+        return Result.Refused($"The plugin {check.Name} is faulted: operation refused for safety.");
+    if (refusal is not null)
+        return Result.Refused($"[{check.Name}] {refusal}");
 }
 ```
 
@@ -73,16 +73,16 @@ Un plugin est une classe chargée depuis une DLL, dans son propre contexte, mais
 ([ChargeurPlugins.cs](../../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs)) :
 
 ```csharp
-internal sealed class ContexteChargement(string cheminDll)
-    : AssemblyLoadContext(Path.GetFileNameWithoutExtension(cheminDll), isCollectible: true)
+internal sealed class PluginLoadContext(string dllPath)
+    : AssemblyLoadContext(Path.GetFileNameWithoutExtension(dllPath), isCollectible: true)
 ```
 
 **Microservices** : Virements appelle Comptes **à travers le réseau**, avec tout ce qu'il faut pour survivre à ses
 pannes ([Micro.Virements/Program.cs](../../08-Microservices/Micro.Virements/Program.cs)) :
 
 ```csharp
-builder.Services.AddHttpClient("comptes", (sp, client) =>
-        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Comptes"]!))
+builder.Services.AddHttpClient("accounts", (sp, client) =>
+        client.BaseAddress = new Uri(sp.GetRequiredService<IConfiguration>()["Services:Accounts"]!))
     .AddStandardResilienceHandler(options =>
     {
         options.Retry.MaxRetryAttempts = 3;

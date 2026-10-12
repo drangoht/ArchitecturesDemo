@@ -78,14 +78,14 @@ flowchart LR
 ([IModule.cs](../07-MonolitheModulaire/Modulaire.Partage/IModule.cs))
 
 ```csharp
-/// Ce que chaque module implémente pour se brancher dans l'hôte.
-/// L'hôte ne connaît que cette interface : il ignore tout du contenu des modules.
+/// What each module implements to plug itself into the host.
+/// The host only knows this interface: it knows nothing about what the modules contain.
 public interface IModule
 {
-    string Nom { get; }
-    void Enregistrer(IServiceCollection services, IConfiguration configuration);
+    string Name { get; }
+    void Register(IServiceCollection services, IConfiguration configuration);
     void MapEndpoints(IEndpointRouteBuilder app);
-    Task Initialiser(IServiceProvider services) => Task.CompletedTask;
+    Task Initialize(IServiceProvider services) => Task.CompletedTask;
 }
 ```
 
@@ -94,18 +94,18 @@ public interface IModule
 ([Program.cs](../07-MonolitheModulaire/Modulaire.Hote/Program.cs))
 
 ```csharp
-// La liste des modules : retirer une ligne retire une fonctionnalité entière (routes, base, abonnements).
-IModule[] modules = [new ComptesModule(), new VirementsModule(), new NotificationsModule()];
+// The list of modules: removing a line removes a whole feature (routes, database, subscriptions).
+IModule[] modules = [new AccountsModule(), new TransfersModule(), new NotificationsModule()];
 
-builder.Services.AddBusEvenements();
+builder.Services.AddEventBus();
 foreach (var module in modules)
-    module.Enregistrer(builder.Services, builder.Configuration);
+    module.Register(builder.Services, builder.Configuration);
 
 var app = builder.Build();
 
 foreach (var module in modules)
 {
-    await module.Initialiser(app.Services);
+    await module.Initialize(app.Services);
     module.MapEndpoints(app);
 }
 ```
@@ -115,16 +115,16 @@ foreach (var module in modules)
 ([Comptes.Contrats/Contrats.cs](../07-MonolitheModulaire/Modulaire.Comptes.Contrats/Contrats.cs))
 
 ```csharp
-// ─── Communication synchrone : une API que les autres modules peuvent appeler ───
-public interface IComptesApi
+// ─── Synchronous communication: an API the other modules can call ───
+public interface IAccountsApi
 {
-    Task<CompteInfo?> Consulter(Guid compteId);
-    Task<ResultatOperation> Debiter(Guid compteId, decimal montant);
-    Task<ResultatOperation> Crediter(Guid compteId, decimal montant);
+    Task<AccountInfo?> Get(Guid accountId);
+    Task<OperationResult> Debit(Guid accountId, decimal amount);
+    Task<OperationResult> Credit(Guid accountId, decimal amount);
 }
 
-// ─── Communication asynchrone : les événements que le module publie ───
-public record RetraitEffectue(Guid CompteId, decimal Montant, decimal NouveauSolde) : IEvenementIntegration;
+// ─── Asynchronous communication: the events the module publishes ───
+public record WithdrawalMade(Guid AccountId, decimal Amount, decimal NewBalance) : IIntegrationEvent;
 ```
 
 ### 4. Un module utilise un autre module… et publie un événement
@@ -132,24 +132,24 @@ public record RetraitEffectue(Guid CompteId, decimal Montant, decimal NouveauSol
 ([VirementsEndpoints.cs](../07-MonolitheModulaire/Modulaire.Virements/Interne/VirementsEndpoints.cs))
 
 ```csharp
-// Appel synchrone à un autre module, uniquement par son contrat public.
-var debit = await comptes.Debiter(source.Id, requete.Montant);
-if (!debit.Succes)
-    return Results.BadRequest(new { erreur = debit.Erreur });
+// Synchronous call to another module, only through its public contract.
+var debit = await accounts.Debit(source.Id, request.Amount);
+if (!debit.Success)
+    return Results.BadRequest(new { error = debit.Error });
 
-var credit = await comptes.Crediter(cible.Id, requete.Montant);
-if (!credit.Succes)
+var credit = await accounts.Credit(target.Id, request.Amount);
+if (!credit.Success)
 {
-    // Chaque module a sa base : pas de transaction commune, donc on compense le débit.
-    await comptes.Crediter(source.Id, requete.Montant);
-    return Results.BadRequest(new { erreur = credit.Erreur });
+    // Each module has its own database: no shared transaction, so the debit is compensated.
+    await accounts.Credit(source.Id, request.Amount);
+    return Results.BadRequest(new { error = credit.Error });
 }
 
-db.Virements.Add(new Virement { SourceId = source.Id, CibleId = cible.Id, Montant = requete.Montant });
+db.Transfers.Add(new Transfer { SourceId = source.Id, TargetId = target.Id, Amount = request.Amount });
 await db.SaveChangesAsync();
 
-// Communication asynchrone : on annonce le virement à qui veut l'entendre.
-await bus.Publier(new VirementEffectue(source.Id, source.Titulaire, cible.Id, cible.Titulaire, requete.Montant));
+// Asynchronous communication: the transfer is announced to whoever wants to hear it.
+await bus.Publish(new TransferMade(source.Id, source.Owner, target.Id, target.Owner, request.Amount));
 ```
 
 ### 5. Un module ajouté sans toucher aux autres
@@ -158,9 +158,9 @@ Notifications ne fait qu'**écouter**. Il a été ajouté sans modifier une lign
 ([NotificationsModule.cs](../07-MonolitheModulaire/Modulaire.Notifications/NotificationsModule.cs))
 
 ```csharp
-// Abonnements aux événements des autres modules.
-services.AddScoped<IGestionnaireEvenement<RetraitEffectue>, SurRetraitEffectue>();
-services.AddScoped<IGestionnaireEvenement<VirementEffectue>, SurVirementEffectue>();
+// Subscriptions to the other modules' events.
+services.AddScoped<IEventHandler<WithdrawalMade>, OnWithdrawalMade>();
+services.AddScoped<IEventHandler<TransferMade>, OnTransferMade>();
 ```
 
 ### 6. Le bus isole les pannes
@@ -169,16 +169,16 @@ services.AddScoped<IGestionnaireEvenement<VirementEffectue>, SurVirementEffectue
 scope, et une erreur chez un abonné ne fait pas échouer le module qui publie.
 
 ```csharp
-foreach (var gestionnaire in scope.ServiceProvider.GetServices<IGestionnaireEvenement<T>>())
+foreach (var handler in scope.ServiceProvider.GetServices<IEventHandler<T>>())
 {
     try
     {
-        await gestionnaire.Traiter(evenement);
+        await handler.Handle(@event);
     }
     catch (Exception e)
     {
-        journal.LogError(e, "Le gestionnaire {Gestionnaire} a échoué sur {Evenement}",
-            gestionnaire.GetType().Name, typeof(T).Name);
+        logger.LogError(e, "Handler {Handler} failed on {Event}",
+            handler.GetType().Name, typeof(T).Name);
     }
 }
 ```
@@ -223,12 +223,12 @@ rappeler Comptes.
 ```csharp
 [Theory]
 [MemberData(nameof(Modules))]
-public void Un_module_ne_reference_que_des_contrats_et_le_projet_partage(string module)
+public void A_module_only_references_contracts_and_the_shared_project(string module)
 {
-    var interdites = DependancesInternes(Assembly.Load(module))
-        .Where(nom => nom != "Modulaire.Partage" && !nom.EndsWith(".Contrats"));
+    var forbidden = InternalDependencies(Assembly.Load(module))
+        .Where(name => name != "Modular.Shared" && !name.EndsWith(".Contracts"));
 
-    Assert.Empty(interdites);
+    Assert.Empty(forbidden);
 }
 ```
 

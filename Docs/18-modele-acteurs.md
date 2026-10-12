@@ -82,8 +82,8 @@ flowchart TB
   envoie **un** message à **un** acteur et traduit sa réponse en code HTTP.
 
 ```csharp
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, MontantRequete r, SystemeActeurs systeme) =>
-    Http(await systeme.Compte(id).Demander(new Retirer(r.Montant))));
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, AmountRequest r, ActorSystem system) =>
+    Http(await system.Account(id).Ask(new Withdraw(r.Amount))));
 ```
 
 En production, on n'écrit pas ce runtime : **Orleans** (Microsoft, acteurs *virtuels*, le modèle suivi ici),
@@ -98,29 +98,29 @@ Tout le modèle tient dans cette boucle : un seul lecteur par boîte aux lettres
 avant de prendre le suivant ([SystemeActeurs.cs](../18-ModeleActeurs/Acteurs.Noyau/SystemeActeurs.cs)).
 
 ```csharp
-await foreach (var enveloppe in activation.BoiteAuxLettres.Reader.ReadAllAsync())
+await foreach (var envelope in activation.Mailbox.Reader.ReadAllAsync())
 {
     ...
-        // LE point clé du modèle : un seul message à la fois, chacun traité jusqu'au bout avant le suivant.
-        reponse = await activation.Instance!.Recevoir(enveloppe.Message);
+        // THE key point of the model: only one message at a time, each handled to the end before the next one.
+        response = await activation.Instance!.Receive(envelope.Message);
 ```
 
 Le compte peut alors écrire le code le plus naïf qui soit : lire le solde, vérifier, modifier. Pas de `lock`, pas de
 transaction, pas de version optimiste ([CompteActeur.cs](../18-ModeleActeurs/Acteurs.Banque/CompteActeur.cs)) :
 
 ```csharp
-if (debit && montant > etat.Solde)
-    return new Refus($"Solde insuffisant ({etat.Solde:0.00} €).");
+if (debit && amount > state.Balance)
+    return new Refusal($"Insufficient balance ({state.Balance:0.00} €).");
 
-var signe = debit ? -montant : montant;
-etat.Solde += signe;
+var signed = debit ? -amount : amount;
+state.Balance += signed;
 ```
 
 **Essai réel** : 1 000 retraits de 3 € lancés **en même temps** sur le compte d'Alice (1 000 €) :
 
 ```json
-POST /demo/retraits-simultanes  { "compte": "1111…", "nombre": 1000, "montant": 3 }
-{ "soldeAvant": 1000, "demandes": 1000, "acceptes": 333, "refuses": 667, "soldeFinal": 1, "soldeMinimumObserve": 1, "dureeMs": 231 }
+POST /demo/simultaneous-withdrawals  { "account": "1111…", "count": 1000, "amount": 3 }
+{ "balanceBefore": 1000, "requests": 1000, "accepted": 333, "refused": 667, "finalBalance": 1, "minimumObservedBalance": 1, "durationMs": 231 }
 ```
 
 Exactement 333 retraits acceptés (333 × 3 = 999 €), aucun en double, jamais de solde négatif. Le même code sans acteur,
@@ -167,8 +167,8 @@ Trois propriétés découlent du modèle, sans code dédié :
   Essai réel : 500 virements dans chaque sens, en même temps.
 
   ```json
-  POST /demo/virements-croises  { "nombre": 500, "montant": 1 }
-  { "virements": 1000, "termines": 572, "refuses": 428, "totalAvant": 501, "totalApres": 501, "dureeMs": 518 }
+  POST /demo/crossed-transfers  { "count": 500, "amount": 1 }
+  { "transfers": 1000, "completed": 572, "refused": 428, "totalBefore": 501, "totalAfter": 501, "durationMs": 518 }
   ```
 
   (Alice n'avait plus qu'1 € après l'essai précédent, d'où les refus ; le total, lui, est conservé.)
@@ -176,16 +176,16 @@ Trois propriétés découlent du modèle, sans code dédié :
   réponse ; un virement fini (terminé, refusé ou annulé) ne recommence jamais :
 
   ```csharp
-  if (_etat is { Statut: StatutVirement.Termine or StatutVirement.Refuse or StatutVirement.Annule })
-      return Vue();  // déjà fini : même réponse, aucun effet
+  if (_state is { Status: TransferStatus.Completed or TransferStatus.Refused or TransferStatus.Cancelled })
+      return View();  // already finished: same response, no effect
   ```
 
 - **Une reprise sans double débit.** Si le virement plante après le débit, son état stocké dit `DebitFait` : rejoué,
   il saute le débit et reprend au crédit. Et même refait, le débit porte la clé `virement-v-42`, que le compte reconnaît :
 
   ```csharp
-  if (cle is not null && etat.Operations.Any(o => o.Cle == cle))
-      return Vue();
+  if (key is not null && state.Operations.Any(o => o.Key == key))
+      return View();
   ```
 
 ⚠ Le piège du modèle : un acteur qui **attend** une réponse ne traite rien d'autre pendant ce temps. Si
@@ -212,14 +212,14 @@ flowchart LR
 ```
 
 ```csharp
-if (activation.Pannes.Count > strategie.MaxRedemarrages)
+if (activation.Failures.Count > strategy.MaxRestarts)
 {
-    await Arreter(activation, $"{activation.Pannes.Count} pannes en {strategie.Fenetre.TotalSeconds:0} s ({panne.Message})");
+    await StopActivation(activation, $"{activation.Failures.Count} failures in {strategy.Window.TotalSeconds:0} s ({failure.Message})");
     return false;
 }
 
-await Desincarner(activation);
-if (!await Incarner(activation))
+await Deincarnate(activation);
+if (!await Incarnate(activation))
 ```
 
 Le cas le plus parlant : une panne **au pire moment**, après la modification du solde en mémoire mais avant son
@@ -272,10 +272,10 @@ est un message qui arrive pendant qu'une passivation est en train d'arrêter l'a
 l'attend avant de démarrer.
 
 ```csharp
-// Si une incarnation précédente finit encore de s'arrêter (passivation), la nouvelle l'attend avant de démarrer :
-// jamais deux incarnations du même acteur en même temps, même pendant une fraction de seconde.
-_incarnationsFinissantes.Remove(chemin, out var precedente);
-activation.Boucle = Task.Run(() => Executer(activation, precedente));
+// If a previous incarnation is still finishing stopping (passivation), the new one waits for it before starting:
+// never two incarnations of the same actor at the same time, not even for a fraction of a second.
+_finishingIncarnations.Remove(path, out var previous);
+activation.Loop = Task.Run(() => Run(activation, previous));
 ```
 
 (Sur plusieurs machines, garantir cette unicité est le vrai travail d'Orleans : un annuaire réparti dit quel serveur
@@ -308,11 +308,11 @@ Deux niveaux : le runtime seul, avec un acteur-jouet instrumenté
 passivation et la quarantaine. L'acteur-jouet incrémente son compteur de la façon la plus dangereuse qui soit :
 
 ```csharp
-case Incrementer:
-    var lu = _compteur;
+case Increment:
+    var read = _counter;
     await Task.Yield();
-    _compteur = lu + 1;
-    return _compteur;
+    _counter = read + 1;
+    return _counter;
 ```
 
 | Test | Ce qui est vérifié |

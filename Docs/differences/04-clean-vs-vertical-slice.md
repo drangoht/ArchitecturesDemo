@@ -51,22 +51,22 @@ flowchart LR
 ([RetirerArgent.cs](../../05-VerticalSlice/Vertical.Api/Features/Comptes/RetirerArgent.cs)) :
 
 ```csharp
-public static void Map(IEndpointRouteBuilder app) => app.MapPost("/comptes/{id:guid}/retrait", Executer);
+public static void Map(IEndpointRouteBuilder app) => app.MapPost("/accounts/{id:guid}/withdrawal", Execute);
 
-private static async Task<IResult> Executer(Guid id, Requete requete, BanqueDbContext db)
+private static async Task<IResult> Execute(Guid id, Request request, BankDbContext db)
 {
-    // … validation du montant …
-    var compte = await db.Comptes.FindAsync(id);
-    if (compte is null)
+    // … validation of the amount …
+    var account = await db.Accounts.FindAsync(id);
+    if (account is null)
         return Results.NotFound();
 
-    if (compte.Retirer(requete.Montant) is { } refus)
-        return Results.BadRequest(new { erreur = refus });
+    if (account.Withdraw(request.Amount) is { } refusal)
+        return Results.BadRequest(new { error = refusal });
 
-    db.Operations.Add(new Operation { CompteId = id, Libelle = "Retrait", Montant = -requete.Montant });
+    db.Operations.Add(new Operation { AccountId = id, Label = "Withdrawal", Amount = -request.Amount });
     await db.SaveChangesAsync();
 
-    return Results.Ok(new Reponse(id, compte.Solde));
+    return Results.Ok(new Response(id, account.Balance));
 }
 ```
 
@@ -75,12 +75,12 @@ l'interacteur ([Retrait.cs](../../03-Clean/Clean.CasUtilisation/Retrait/Retrait.
 ([PresentersHttp.cs](../../03-Clean/Clean.AdaptateursInterface/Presenters/PresentersHttp.cs)) et la passerelle :
 
 ```csharp
-public class RetraitInteracteur(IComptesPasserelle comptes) : IRetraitEntree
+public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
 {
-    public async Task Executer(DemandeRetrait demande, IRetraitSortie sortie)
+    public async Task Execute(WithdrawalRequest request, IWithdrawalOutput output)
     {
-        var compte = await comptes.Charger(demande.CompteId);
-        // … Refus, CompteIntrouvable ou Succes, poussés vers le presenter …
+        var account = await accounts.Load(request.AccountId);
+        // … Refusal, AccountNotFound or Success, pushed to the presenter …
     }
 }
 ```
@@ -89,10 +89,10 @@ public class RetraitInteracteur(IComptesPasserelle comptes) : IRetraitEntree
 passer par le domaine ([ConsulterCompte.cs](../../05-VerticalSlice/Vertical.Api/Features/Comptes/ConsulterCompte.cs)) :
 
 ```csharp
-var compte = await db.Comptes
+var account = await db.Accounts
     .AsNoTracking()
     .Where(c => c.Id == id)
-    .Select(c => new { c.Id, c.Titulaire, c.Solde })
+    .Select(c => new { c.Id, c.Owner, c.Balance })
     .FirstOrDefaultAsync();
 ```
 

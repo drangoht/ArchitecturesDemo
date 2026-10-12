@@ -49,14 +49,14 @@ flowchart LR
 ([Compte.cs](../04-CoeurFonctionnel/Fonctionnel.Coeur/Compte.cs), [Decisions.cs](../04-CoeurFonctionnel/Fonctionnel.Coeur/Decisions.cs))
 
 ```csharp
-/// Valeur immuable : un compte n'est jamais modifié, on en produit une nouvelle version.
-public sealed record Compte(Guid Id, string Titulaire, decimal Solde);
+/// Immutable value: an account is never modified, a new version of it is produced.
+public sealed record Account(Guid Id, string Owner, decimal Balance);
 
-// Les règles ne FONT rien : elles renvoient une décision que la coquille appliquera.
-public abstract record DecisionVirement
+// The rules DO nothing: they return a decision that the shell will apply.
+public abstract record TransferDecision
 {
-    public sealed record Accepte(Compte Source, Compte Cible, decimal Montant) : DecisionVirement;
-    public sealed record Refuse(string Raison) : DecisionVirement;
+    public sealed record Accepted(Account Source, Account Target, decimal Amount) : TransferDecision;
+    public sealed record Refused(string Reason) : TransferDecision;
 }
 ```
 
@@ -66,27 +66,27 @@ Le **temps** est une donnée d'entrée : le cumul viré aujourd'hui est calculé
 ([Regles.cs](../04-CoeurFonctionnel/Fonctionnel.Coeur/Regles.cs))
 
 ```csharp
-public static DecisionRetrait Retirer(Compte compte, decimal montant) => montant switch
+public static WithdrawalDecision Withdraw(Account account, decimal amount) => amount switch
 {
-    <= 0 => new DecisionRetrait.Refuse("Le montant doit être strictement positif."),
-    _ when montant > compte.Solde => new DecisionRetrait.Refuse("Solde insuffisant."),
-    _ => new DecisionRetrait.Accepte(compte with { Solde = compte.Solde - montant }, montant)
+    <= 0 => new WithdrawalDecision.Refused("The amount must be strictly positive."),
+    _ when amount > account.Balance => new WithdrawalDecision.Refused("Insufficient balance."),
+    _ => new WithdrawalDecision.Accepted(account with { Balance = account.Balance - amount }, amount)
 };
 
-public static DecisionVirement Virer(Compte source, Compte cible, decimal montant, decimal dejaVireAujourdhui)
+public static TransferDecision Transfer(Account source, Account target, decimal amount, decimal alreadyTransferredToday)
 {
-    if (source.Id == cible.Id)
-        return new DecisionVirement.Refuse("Impossible de virer vers le même compte.");
+    if (source.Id == target.Id)
+        return new TransferDecision.Refused("Cannot transfer to the same account.");
 
-    if (dejaVireAujourdhui + montant > PlafondVirementJournalier)
-        return new DecisionVirement.Refuse(/* « Plafond journalier de 2000 € dépassé… » */);
+    if (alreadyTransferredToday + amount > DailyTransferLimit)
+        return new TransferDecision.Refused(/* "Daily limit of 2000 € exceeded…" */);
 
-    // On réutilise la règle de retrait : des fonctions pures se composent naturellement.
-    return Retirer(source, montant) switch
+    // The withdrawal rule is reused: pure functions compose naturally.
+    return Withdraw(source, amount) switch
     {
-        DecisionRetrait.Accepte retrait => new DecisionVirement.Accepte(
-            retrait.CompteMisAJour, cible with { Solde = cible.Solde + montant }, montant),
-        DecisionRetrait.Refuse refus => new DecisionVirement.Refuse(refus.Raison),
+        WithdrawalDecision.Accepted withdrawal => new TransferDecision.Accepted(
+            withdrawal.UpdatedAccount, target with { Balance = target.Balance + amount }, amount),
+        WithdrawalDecision.Refused refusal => new TransferDecision.Refused(refusal.Reason),
         _ => throw new UnreachableException()
     };
 }
@@ -97,35 +97,35 @@ public static DecisionVirement Virer(Compte source, Compte cible, decimal montan
 ([Endpoints.cs](../04-CoeurFonctionnel/Fonctionnel.Coquille/Endpoints.cs))
 
 ```csharp
-private static async Task<IResult> Virer(VirementRequete requete, BanqueDbContext db, TimeProvider horloge, ILoggerFactory journaux)
+private static async Task<IResult> Transfer(TransferRequest request, BankDbContext db, TimeProvider clock, ILoggerFactory loggers)
 {
-    // 1. LIRE (I/O) : les comptes ET tout ce dont la règle a besoin (ici, le cumul du jour).
-    var source = await db.Comptes.FindAsync(requete.Source);
-    var cible = await db.Comptes.FindAsync(requete.Cible);
-    if (source is null || cible is null)
+    // 1. READ (I/O): the accounts AND everything the rule needs (here, the day's total).
+    var source = await db.Accounts.FindAsync(request.Source);
+    var target = await db.Accounts.FindAsync(request.Target);
+    if (source is null || target is null)
         return Results.NotFound();
 
-    var debutDuJour = horloge.GetUtcNow().UtcDateTime.Date;
-    var dejaVire = await db.Operations
-        .Where(o => o.CompteId == source.Id && o.Type == "VirementEmis" && o.DateUtc >= debutDuJour)
-        .SumAsync(o => o.Montant);
+    var startOfDay = clock.GetUtcNow().UtcDateTime.Date;
+    var alreadyTransferred = await db.Operations
+        .Where(o => o.AccountId == source.Id && o.Type == "TransferSent" && o.DateUtc >= startOfDay)
+        .SumAsync(o => o.Amount);
 
-    // 2. DÉCIDER (pur)
-    var decision = Regles.Virer(source.VersCoeur(), cible.VersCoeur(), requete.Montant, dejaVire);
+    // 2. DECIDE (pure)
+    var decision = Rules.Transfer(source.ToCore(), target.ToCore(), request.Amount, alreadyTransferred);
 
-    // 3. APPLIQUER (I/O)
+    // 3. APPLY (I/O)
     switch (decision)
     {
-        case DecisionVirement.Accepte ok:
-            source.Solde = ok.Source.Solde;
-            cible.Solde = ok.Cible.Solde;
-            db.Operations.Add(Operation(source.Id, "VirementEmis", ok.Montant, horloge));
-            db.Operations.Add(Operation(cible.Id, "VirementRecu", ok.Montant, horloge));
+        case TransferDecision.Accepted ok:
+            source.Balance = ok.Source.Balance;
+            target.Balance = ok.Target.Balance;
+            db.Operations.Add(Operation(source.Id, "TransferSent", ok.Amount, clock));
+            db.Operations.Add(Operation(target.Id, "TransferReceived", ok.Amount, clock));
             await db.SaveChangesAsync();
-            return Results.Ok(new { source = ok.Source, cible = ok.Cible });
+            return Results.Ok(new { source = ok.Source, target = ok.Target });
 
-        case DecisionVirement.Refuse refus:
-            return Results.BadRequest(new { erreur = refus.Raison });
+        case TransferDecision.Refused refusal:
+            return Results.BadRequest(new { error = refusal.Reason });
 
         default:
             throw new UnreachableException();
@@ -161,20 +161,20 @@ Tester une fonction pure : des valeurs en entrée, une valeur attendue en sortie
 
 ```csharp
 [Fact]
-public void Le_plafond_journalier_tient_compte_de_ce_qui_a_deja_ete_vire()
+public void The_daily_limit_takes_into_account_what_was_already_transferred()
 {
-    // Le « temps » est une simple donnée : pas besoin de simuler une horloge.
-    var decision = Regles.Virer(Alice with { Solde = 10_000m }, Bob, 600m, dejaVireAujourdhui: 1_500m);
+    // "Time" is a mere piece of data: no need to fake a clock.
+    var decision = Rules.Transfer(Alice with { Balance = 10_000m }, Bob, 600m, alreadyTransferredToday: 1_500m);
 
-    Assert.IsType<DecisionVirement.Refuse>(decision);
+    Assert.IsType<TransferDecision.Refused>(decision);
 }
 
 [Fact]
-public void Une_decision_ne_modifie_jamais_le_compte_d_origine()
+public void A_decision_never_modifies_the_original_account()
 {
-    Regles.Retirer(Alice, 100m);
+    Rules.Withdraw(Alice, 100m);
 
-    Assert.Equal(1000m, Alice.Solde);
+    Assert.Equal(1000m, Alice.Balance);
 }
 ```
 

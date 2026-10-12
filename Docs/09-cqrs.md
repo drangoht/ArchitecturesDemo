@@ -60,29 +60,29 @@ L'identifiant est fourni par l'appelant : la commande n'a rien à renvoyer.
 ([OuvrirCompte.cs](../09-CQRS/Cqrs.Ecriture/Commandes/OuvrirCompte.cs))
 
 ```csharp
-public record OuvrirCompte(Guid CompteId, string Titulaire, decimal DepotInitial) : ICommande;
+public record OpenAccount(Guid AccountId, string Owner, decimal InitialDeposit) : ICommand;
 
-public class OuvrirCompteValidateur : IValidateur<OuvrirCompte>
+public class OpenAccountValidator : IValidator<OpenAccount>
 {
-    public IEnumerable<string> Valider(OuvrirCompte commande)
+    public IEnumerable<string> Validate(OpenAccount command)
     {
-        if (string.IsNullOrWhiteSpace(commande.Titulaire))
-            yield return "Le titulaire est obligatoire.";
-        if (commande.DepotInitial < 10)
-            yield return "Le dépôt initial doit être d'au moins 10 €.";
+        if (string.IsNullOrWhiteSpace(command.Owner))
+            yield return "The owner is required.";
+        if (command.InitialDeposit < 10)
+            yield return "The initial deposit must be at least 10 €.";
     }
 }
 
-public class OuvrirCompteGestionnaire(EcritureDb db, TimeProvider horloge) : IGestionnaireCommande<OuvrirCompte>
+public class OpenAccountHandler(WriteDb db, TimeProvider clock) : ICommandHandler<OpenAccount>
 {
-    public async Task Traiter(OuvrirCompte commande)
+    public async Task Handle(OpenAccount command)
     {
-        if (await db.Comptes.FindAsync(commande.CompteId) is not null)
-            throw new RegleMetierException("Ce compte existe déjà.");
+        if (await db.Accounts.FindAsync(command.AccountId) is not null)
+            throw new BusinessRuleException("This account already exists.");
 
-        db.Comptes.Add(Compte.Ouvrir(commande.CompteId, commande.Titulaire.Trim(), commande.DepotInitial,
-            horloge.GetUtcNow().UtcDateTime));
-        await db.Enregistrer();
+        db.Accounts.Add(Account.Open(command.AccountId, command.Owner.Trim(), command.InitialDeposit,
+            clock.GetUtcNow().UtcDateTime));
+        await db.Save();
     }
 }
 ```
@@ -93,16 +93,16 @@ C'est le rôle qu'on confie souvent à MediatR, écrit ici en quelques lignes.
 ([BusCommandes.cs](../09-CQRS/Cqrs.Ecriture/Commandes/BusCommandes.cs))
 
 ```csharp
-public async Task Envoyer<TCommande>(TCommande commande) where TCommande : ICommande
+public async Task Send<TCommand>(TCommand command) where TCommand : ICommand
 {
-    var erreurs = services.GetServices<IValidateur<TCommande>>()
-        .SelectMany(validateur => validateur.Valider(commande))
+    var errors = services.GetServices<IValidator<TCommand>>()
+        .SelectMany(validator => validator.Validate(command))
         .ToList();
-    if (erreurs.Count > 0)
-        throw new CommandeInvalideException(erreurs);
+    if (errors.Count > 0)
+        throw new InvalidCommandException(errors);
 
-    journal.LogInformation("Commande {Commande} : {Contenu}", typeof(TCommande).Name, commande);
-    await services.GetRequiredService<IGestionnaireCommande<TCommande>>().Traiter(commande);
+    logger.LogInformation("Command {Command}: {Content}", typeof(TCommand).Name, command);
+    await services.GetRequiredService<ICommandHandler<TCommand>>().Handle(command);
 }
 ```
 
@@ -111,20 +111,20 @@ public async Task Envoyer<TCommande>(TCommande commande) where TCommande : IComm
 ([EcritureDb.cs](../09-CQRS/Cqrs.Ecriture/Persistance/EcritureDb.cs))
 
 ```csharp
-/// Enregistre les modifications et ajoute au journal les événements produits par les agrégats.
-public async Task Enregistrer(params IEvenementDomaine[] evenementsSupplementaires)
+/// Saves the changes and adds to the log the events produced by the aggregates.
+public async Task Save(params IDomainEvent[] extraEvents)
 {
-    var evenements = ChangeTracker.Entries<Compte>()
-        .SelectMany(entree => entree.Entity.ExtraireEvenements())
-        .Concat(evenementsSupplementaires)
+    var events = ChangeTracker.Entries<Account>()
+        .SelectMany(entry => entry.Entity.ExtractEvents())
+        .Concat(extraEvents)
         .ToList();
 
-    foreach (var evenement in evenements)
-        Evenements.Add(new EvenementStocke
+    foreach (var @event in events)
+        Events.Add(new StoredEvent
         {
-            Type = evenement.GetType().Name,
-            Donnees = CatalogueEvenements.Serialiser(evenement),
-            Date = evenement.Date
+            Type = @event.GetType().Name,
+            Data = EventCatalog.Serialize(@event),
+            Date = @event.Date
         });
 
     await SaveChangesAsync();
@@ -137,27 +137,27 @@ Seul code qui écrit côté lecture. Le **point de reprise** le rend idempotent.
 ([Projecteur.cs](../09-CQRS/Cqrs.Lecture/Projections/Projecteur.cs))
 
 ```csharp
-public async Task Appliquer(EvenementEnregistre enregistre)
+public async Task Apply(RecordedEvent recorded)
 {
-    var point = await ObtenirPointDeReprise();
-    if (enregistre.Sequence <= point.DerniereSequence)
-        return;  // déjà projeté : rejouer un événement n'a pas d'effet
+    var checkpoint = await GetCheckpoint();
+    if (recorded.Sequence <= checkpoint.LastSequence)
+        return;  // already projected: replaying an event has no effect
 
-    switch (enregistre.Evenement)
+    switch (recorded.Event)
     {
-        case VirementEffectue e:
-            var source = await MettreAJour(e.SourceId, e.SoldeSource, e.Date);
-            var cible = await MettreAJour(e.CibleId, e.SoldeCible, e.Date);
-            // Le libellé est rédigé une fois pour toutes, avec le nom de l'autre titulaire.
-            AjouterLigne(e.SourceId, $"Virement vers {cible.Titulaire}", -e.Montant, e.SoldeSource, e.Date);
-            AjouterLigne(e.CibleId, $"Virement reçu de {source.Titulaire}", e.Montant, e.SoldeCible, e.Date);
-            stats.NombreVirements++;
-            stats.MontantTotalVire += e.Montant;
+        case TransferMade e:
+            var source = await Update(e.SourceId, e.SourceBalance, e.Date);
+            var target = await Update(e.TargetId, e.TargetBalance, e.Date);
+            // The label is written once and for all, with the other owner's name.
+            AddLine(e.SourceId, $"Transfer to {target.Owner}", -e.Amount, e.SourceBalance, e.Date);
+            AddLine(e.TargetId, $"Transfer received from {source.Owner}", e.Amount, e.TargetBalance, e.Date);
+            stats.TransferCount++;
+            stats.TotalTransferredAmount += e.Amount;
             break;
-        // … CompteOuvert, ArgentRetire
+        // … AccountOpened, MoneyWithdrawn
     }
 
-    point.DerniereSequence = enregistre.Sequence;
+    checkpoint.LastSequence = recorded.Sequence;
     await db.SaveChangesAsync();
 }
 ```
@@ -167,12 +167,12 @@ public async Task Appliquer(EvenementEnregistre enregistre)
 ([Requetes.cs](../09-CQRS/Cqrs.Lecture/Requetes/Requetes.cs))
 
 ```csharp
-public class ConsulterTableauDeBordGestionnaire(LectureDb db) : IGestionnaireRequete<ConsulterTableauDeBord, TableauDeBordVue>
+public class GetDashboardHandler(ReadDb db) : IQueryHandler<GetDashboard, DashboardView>
 {
-    public async Task<TableauDeBordVue> Traiter(ConsulterTableauDeBord requete)
+    public async Task<DashboardView> Handle(GetDashboard query)
     {
-        var s = await db.Statistiques.AsNoTracking().FirstOrDefaultAsync() ?? new Statistiques();
-        return new TableauDeBordVue(s.NombreComptes, s.EncoursTotal, s.NombreVirements, s.MontantTotalVire);
+        var s = await db.Statistics.AsNoTracking().FirstOrDefaultAsync() ?? new Statistics();
+        return new DashboardView(s.AccountCount, s.TotalOutstanding, s.TransferCount, s.TotalTransferredAmount);
     }
 }
 ```
@@ -184,10 +184,10 @@ Le tableau de bord n'est **jamais recalculé** : il est maintenu au fil des év�
 ([Program.cs](../09-CQRS/Cqrs.Api/Program.cs))
 
 ```csharp
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete r, BusCommandes bus) =>
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalRequest r, CommandBus bus) =>
 {
-    await bus.Envoyer(new RetirerArgent(id, r.Montant));
-    return Results.Accepted($"/comptes/{id}");
+    await bus.Send(new WithdrawMoney(id, r.Amount));
+    return Results.Accepted($"/accounts/{id}");
 });
 ```
 
@@ -228,24 +228,24 @@ sequenceDiagram
   ([LectureTests.cs](../09-CQRS/Cqrs.Tests/LectureTests.cs)) :
 
 ```csharp
-private static readonly EvenementEnregistre[] Historique =
+private static readonly RecordedEvent[] History =
 [
-    new(1, new CompteOuvert(Alice, "Alice", 1000m, T0)),
-    new(2, new CompteOuvert(Bob, "Bob", 500m, T0.AddMinutes(1))),
-    new(3, new ArgentRetire(Alice, 100m, 900m, T0.AddMinutes(2))),
-    new(4, new VirementEffectue(Guid.NewGuid(), Alice, Bob, 250m, 650m, 750m, T0.AddMinutes(3)))
+    new(1, new AccountOpened(Alice, "Alice", 1000m, T0)),
+    new(2, new AccountOpened(Bob, "Bob", 500m, T0.AddMinutes(1))),
+    new(3, new MoneyWithdrawn(Alice, 100m, 900m, T0.AddMinutes(2))),
+    new(4, new TransferMade(Guid.NewGuid(), Alice, Bob, 250m, 650m, 750m, T0.AddMinutes(3)))
 ];
 
 [Fact]
-public async Task Le_releve_est_pret_a_afficher()
+public async Task The_statement_is_ready_to_display()
 {
-    var services = await ProjeterHistorique();
+    var services = await ProjectHistory();
 
-    var releve = await Demander(services, new ConsulterReleve(Alice));
+    var statement = await Ask(services, new GetStatement(Alice));
 
-    Assert.Equal(650m, releve!.Solde);
-    Assert.Equal(3, releve.NombreOperations);
-    Assert.Equal(["Virement vers Bob", "Retrait", "Ouverture du compte"], releve.DernieresOperations.Select(o => o.Libelle));
+    Assert.Equal(650m, statement!.Balance);
+    Assert.Equal(3, statement.OperationCount);
+    Assert.Equal(["Transfer to Bob", "Withdrawal", "Account opening"], statement.LatestOperations.Select(o => o.Label));
 }
 ```
 

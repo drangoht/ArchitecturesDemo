@@ -126,7 +126,7 @@ avec les messages et ce que l'utilisateur avait tapé :
 
 ```csharp
         if (!ModelState.IsValid)
-            return await Reafficher(formulaire, annulation);
+            return await Redisplay(form, cancellation);
 ```
 
 S'il n'y en a pas, le virement est fait, puis le contrôleur **redirige** (« Post/Redirect/Get ») : la page d'arrivée
@@ -134,10 +134,10 @@ s'obtient par un GET, qu'on peut actualiser sans refaire le virement. Le message
 **TempData** (un cookie), qui s'efface dès qu'on l'a lu :
 
 ```csharp
-            var virement = await banque.VirerAsync(source, cible, montant, annulation);
-            // TempData survit à UNE redirection (cookie), puis disparaît : le message s'affiche une seule fois.
-            TempData["Message"] = $"Virement de {Format.Euros(virement.Montant)} effectué. Nouveau solde : {Format.Euros(virement.SoldeSource)}.";
-            return RedirectToAction(nameof(ComptesController.Detail), "Comptes", new { id = source });
+            var transfer = await bank.TransferAsync(source, target, amount, cancellation);
+            // TempData survives ONE redirection (cookie), then disappears: the message is displayed only once.
+            TempData["Message"] = $"Transfer of {Format.Euros(transfer.Amount)} done. New balance: {Format.Euros(transfer.SourceBalance)}.";
+            return RedirectToAction(nameof(AccountsController.Detail), "Accounts", new { id = source });
 ```
 
 Un refus de la banque (solde insuffisant) devient une erreur du formulaire, sans champ, affichée en tête
@@ -149,10 +149,10 @@ page [Confirmer.cshtml](../24-MvcMvvm/Ihm.Mvc/Views/Virements/Confirmer.cshtml) 
 `Confirme=true` :
 
 ```csharp
-        if (montant >= ReglesVirement.SeuilConfirmation && !formulaire.Confirme)
+        if (amount >= TransferRules.ConfirmationThreshold && !form.Confirmed)
         {
-            await ChargerComptes(formulaire, annulation);
-            return View("Confirmer", formulaire);
+            await LoadAccounts(form, cancellation);
+            return View("Confirm", form);
         }
 ```
 
@@ -172,12 +172,12 @@ quand une propriété change, par `INotifyPropertyChanged`
 ([Outillage.cs](../24-MvcMvvm/Ihm.Presentation/Outillage.cs)) :
 
 ```csharp
-    protected bool Definir<T>(ref T champ, T valeur, [CallerMemberName] string? propriete = null)
+    protected bool Set<T>(ref T storage, T value, [CallerMemberName] string? property = null)
     {
-        if (EqualityComparer<T>.Default.Equals(champ, valeur))
+        if (EqualityComparer<T>.Default.Equals(storage, value))
             return false;
-        champ = valeur;
-        Signaler(propriete!);
+        storage = value;
+        Notify(property!);
         return true;
     }
 ```
@@ -187,10 +187,10 @@ une propriété et s'abonne à ses changements ; dans l'autre sens, une frappe o
 `Command` relie un bouton à une commande, dont `CanExecute` grise ou active le bouton :
 
 ```xml
-                <TextBox Text="{Binding MontantSaisi, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,2" Padding="2" />
-                <TextBlock Text="{Binding ErreurMontant}" Foreground="#B42318" TextWrapping="Wrap" />
+                <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,2" Padding="2" />
+                <TextBlock Text="{Binding AmountError}" Foreground="#B42318" TextWrapping="Wrap" />
 
-                <Button Content="Virer" Command="{Binding VirerCommande}" Padding="16,6" Margin="0,12,0,8" HorizontalAlignment="Left" />
+                <Button Content="Transfer" Command="{Binding TransferCommand}" Padding="16,6" Margin="0,12,0,8" HorizontalAlignment="Left" />
 ```
 
 ```mermaid
@@ -252,11 +252,11 @@ Livret, l'écran afficherait les opérations de Bob sous le titre du Livret. Cha
 réponse du dernier est gardée ([ComptesViewModel.cs](../24-MvcMvvm/Ihm.Presentation/ComptesViewModel.cs)) :
 
 ```csharp
-        var demande = ++_derniereDemande;
+        var request = ++_lastRequest;
 ```
 ```csharp
-            var operations = await banque.OperationsAsync(compte.Id);
-            if (demande != _derniereDemande)
+            var operations = await bank.OperationsAsync(account.Id);
+            if (request != _lastRequest)
                 return;
 ```
 
@@ -274,10 +274,10 @@ une interface, `IConfirmation`, que chaque vue implémente à sa façon : boîte
 console, réponse programmée dans les tests.
 
 ```csharp
-        if (montant >= ReglesVirement.SeuilConfirmation
-            && !await _confirmation.DemanderAsync($"Virer {Format.Euros(montant)} de {source.Affichage} vers {cible.Affichage} ?"))
+        if (amount >= TransferRules.ConfirmationThreshold
+            && !await _confirmation.AskAsync($"Transfer {Format.Euros(amount)} from {source.Display} to {target.Display}?"))
         {
-            Informer("Virement annulé.", erreur: false);
+            Inform("Transfer cancelled.", error: false);
             return;
         }
 ```
@@ -294,11 +294,11 @@ Ses liaisons sont faites à la main par [Liaison.cs](../24-MvcMvvm/Ihm.Console/L
 de WPF sans la machinerie : lire la propriété, s'abonner à `PropertyChanged`, recopier à chaque changement.
 
 ```csharp
-    private void Changement(object? emetteur, PropertyChangedEventArgs e)
+    private void Changed(object? sender, PropertyChangedEventArgs e)
     {
-        // Un nom vide signifie « tout a pu changer ».
-        if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == _propriete.Name)
-            Pousser();
+        // An empty name means "everything may have changed".
+        if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == _property.Name)
+            Push();
     }
 ```
 

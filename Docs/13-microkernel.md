@@ -76,21 +76,21 @@ ne se rencontrent qu'à l'exécution.
 ```csharp
 public interface IPlugin
 {
-    string Nom { get; }
+    string Name { get; }
     string Description { get; }
 
-    /// <summary>Version minimale du noyau dont le plugin a besoin. Un plugin trop récent est refusé au chargement.</summary>
-    Version VersionNoyauMinimale => new(1, 0);
+    /// <summary>Minimum version of the kernel the plugin needs. A plugin that is too recent is refused at load time.</summary>
+    Version MinimumKernelVersion => new(1, 0);
 
-    /// <summary>Appelé une fois au chargement, avec les réglages lus dans le plugin.json du plugin.</summary>
-    void Initialiser(ContextePlugin contexte) { }
+    /// <summary>Called once at load time, with the settings read from the plugin's plugin.json.</summary>
+    void Initialize(PluginContext context) { }
 }
 
-/// <summary>Peut refuser une opération avant qu'elle ait lieu.</summary>
-public interface IControleOperation : IPlugin
+/// <summary>Can refuse an operation before it takes place.</summary>
+public interface IOperationCheck : IPlugin
 {
-    /// <returns>null si l'opération est permise, sinon la raison du refus.</returns>
-    string? Verifier(OperationProposee operation);
+    /// <returns>null if the operation is allowed, otherwise the reason for the refusal.</returns>
+    string? Check(ProposedOperation operation);
 }
 ```
 
@@ -101,23 +101,23 @@ Les plugins reçoivent des **valeurs** (`OperationProposee`, `ReleveCompte`), ja
 ([PlafondNocturne.cs](../13-Microkernel/Mk.Plugins.PlafondNocturne/PlafondNocturne.cs))
 
 ```csharp
-public sealed class PlafondNocturne : IControleOperation
+public sealed class NightLimit : IOperationCheck
 {
-    private decimal _plafond = 200m;
-    private TimeOnly _debut = new(22, 0), _fin = new(6, 0);
+    private decimal _limit = 200m;
+    private TimeOnly _start = new(22, 0), _end = new(6, 0);
 
-    public string Nom => "PlafondNocturne";
+    public string Name => "NightLimit";
 
-    public string? Verifier(OperationProposee operation)
+    public string? Check(ProposedOperation operation)
     {
-        if (operation.Type != TypeOperation.Retrait || operation.Montant <= _plafond)
+        if (operation.Type != OperationType.Withdrawal || operation.Amount <= _limit)
             return null;
 
-        var heure = TimeOnly.FromDateTime(operation.Date);
-        var laNuit = _debut <= _fin
-            ? heure >= _debut && heure < _fin
-            : heure >= _debut || heure < _fin;  // plage à cheval sur minuit
-        return laNuit ? $"Retrait limité à {_plafond} € entre {_debut:HH\\:mm} et {_fin:HH\\:mm}." : null;
+        var time = TimeOnly.FromDateTime(operation.Date);
+        var atNight = _start <= _end
+            ? time >= _start && time < _end
+            : time >= _start || time < _end;  // range spanning midnight
+        return atNight ? $"Withdrawal limited to {_limit} € between {_start:HH\\:mm} and {_end:HH\\:mm}." : null;
     }
 }
 ```
@@ -125,7 +125,7 @@ public sealed class PlafondNocturne : IControleOperation
 Ses réglages viennent de son propre `plugin.json`, à côté de sa DLL :
 
 ```json
-{ "plafond": "200", "debut": "22:00", "fin": "06:00" }
+{ "limit": "200", "start": "22:00", "end": "06:00" }
 ```
 
 ### 3. Compiler un plugin… sans embarquer le SDK
@@ -138,7 +138,7 @@ Ses réglages viennent de son propre `plugin.json`, à côté de sa DLL :
   <OutputPath>$(MSBuildThisFileDirectory)plugins\$(MSBuildProjectName)\</OutputPath>
 </PropertyGroup>
 <ItemGroup>
-  <ProjectReference Include="$(MSBuildThisFileDirectory)Mk.Contrats\Mk.Contrats.csproj" Private="false" ExcludeAssets="runtime" />
+  <ProjectReference Include="$(MSBuildThisFileDirectory)Mk.Contracts\Mk.Contracts.csproj" Private="false" ExcludeAssets="runtime" />
 </ItemGroup>
 ```
 
@@ -149,25 +149,25 @@ Ses réglages viennent de son propre `plugin.json`, à côté de sa DLL :
 ([ChargeurPlugins.cs](../13-Microkernel/Mk.Noyau/ChargeurPlugins.cs))
 
 ```csharp
-internal sealed class ContexteChargement(string cheminDll)
-    : AssemblyLoadContext(Path.GetFileNameWithoutExtension(cheminDll), isCollectible: true)
+internal sealed class PluginLoadContext(string dllPath)
+    : AssemblyLoadContext(Path.GetFileNameWithoutExtension(dllPath), isCollectible: true)
 {
-    private readonly AssemblyDependencyResolver _resolveur = new(cheminDll);
+    private readonly AssemblyDependencyResolver _resolver = new(dllPath);
 
-    /// Chargé depuis la MÉMOIRE et non depuis le fichier : la DLL n'est pas verrouillée,
-    /// on peut la recompiler, la remplacer ou la supprimer pendant que l'application tourne.
-    public Assembly Charger() => LoadFromStream(new MemoryStream(File.ReadAllBytes(cheminDll)));
+    /// Loaded from MEMORY and not from the file: the DLL is not locked,
+    /// it can be rebuilt, replaced or deleted while the application is running.
+    public Assembly LoadPlugin() => LoadFromStream(new MemoryStream(File.ReadAllBytes(dllPath)));
 
-    protected override Assembly? Load(AssemblyName nom)
+    protected override Assembly? Load(AssemblyName name)
     {
-        // Point crucial : les contrats doivent venir du NOYAU (contexte par défaut).
-        // Si le plugin chargeait sa propre copie de Mk.Contrats, son IPlugin serait un AUTRE type
-        // que l'IPlugin du noyau (même nom, assemblies différentes), et rien ne fonctionnerait.
-        if (nom.Name == typeof(IPlugin).Assembly.GetName().Name)
+        // Crucial point: the contracts must come from the KERNEL (default context).
+        // If the plugin loaded its own copy of Mk.Contracts, its IPlugin would be ANOTHER type
+        // than the kernel's IPlugin (same name, different assemblies), and nothing would work.
+        if (name.Name == typeof(IPlugin).Assembly.GetName().Name)
             return null;
 
-        var chemin = _resolveur.ResolveAssemblyToPath(nom);
-        return chemin is null ? null : LoadFromStream(new MemoryStream(File.ReadAllBytes(chemin)));
+        var path = _resolver.ResolveAssemblyToPath(name);
+        return path is null ? null : LoadFromStream(new MemoryStream(File.ReadAllBytes(path)));
     }
 }
 ```
@@ -194,7 +194,7 @@ Un test le vérifie : après chargement, `Mk.Contrats` n'est présent **qu'une f
 ```csharp
 return assembly.GetExportedTypes()
     .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IPlugin).IsAssignableFrom(t))
-    .Select(t => RegistrePlugins.Preparer((IPlugin)Activator.CreateInstance(t)!, nom, reglages, journal))
+    .Select(t => PluginRegistry.Prepare((IPlugin)Activator.CreateInstance(t)!, name, settings, log))
     .ToList();
 ```
 
@@ -216,23 +216,23 @@ stateDiagram-v2
 ([NoyauBancaire.cs](../13-Microkernel/Mk.Noyau/NoyauBancaire.cs))
 
 ```csharp
-// 1. Point d'extension « contrôle » : un seul refus suffit.
-foreach (var controle in plugins.Actifs<IControleOperation>())
+// 1. "Check" extension point: a single refusal is enough.
+foreach (var check in plugins.Active<IOperationCheck>())
 {
-    string? refus = null;
-    if (!Proteger(controle, () => refus = controle.Verifier(operation)))
-        return Resultat.Refus($"Le plugin {controle.Nom} est en erreur : opération refusée par sécurité.");
-    if (refus is not null)
-        return Resultat.Refus($"[{controle.Nom}] {refus}");
+    string? refusal = null;
+    if (!Protect(check, () => refusal = check.Check(operation)))
+        return Result.Refused($"The plugin {check.Name} is faulted: operation refused for safety.");
+    if (refusal is not null)
+        return Result.Refused($"[{check.Name}] {refusal}");
 }
 
-// 2. Point d'extension « frais » : chaque règle peut ajouter les siens.
+// 2. "Fees" extension point: each rule can add its own.
 // …
 
-// 3. Le cœur du métier, qui n'appartient qu'au noyau.
-var totalFrais = frais.Sum(f => f.Montant);
-if (montant + totalFrais > compte.Solde)
-    return Resultat.Refus($"Solde insuffisant (frais compris : {totalFrais:0.00} €).");
+// 3. The heart of the business, which belongs to the kernel alone.
+var totalFees = fees.Sum(f => f.Amount);
+if (amount + totalFees > account.Balance)
+    return Result.Refused($"Insufficient balance (fees included: {totalFees:0.00} €).");
 ```
 
 ```mermaid
@@ -256,19 +256,19 @@ sequenceDiagram
 ### 7. Un plugin défaillant ne fait pas tomber le noyau
 
 ```csharp
-/// Un plugin ne doit jamais faire tomber le noyau : son exception est capturée, et le plugin est mis « en erreur »
-/// (donc désactivé) jusqu'à ce qu'on le réactive ou qu'on le recharge.
-private bool Proteger(IPlugin plugin, Action appel)
+/// A plugin must never bring the kernel down: its exception is caught, and the plugin is marked "faulted"
+/// (hence disabled) until it is enabled again or reloaded.
+private bool Protect(IPlugin plugin, Action call)
 {
     try
     {
-        appel();
+        call();
         return true;
     }
     catch (Exception e)
     {
-        plugins.SignalerErreur(plugin, e);
-        journal($"[{plugin.Nom}] exception, plugin désactivé : {e.Message}");
+        plugins.ReportError(plugin, e);
+        log($"[{plugin.Name}] exception, plugin disabled: {e.Message}");
         return false;
     }
 }
@@ -313,15 +313,15 @@ sequenceDiagram
 
 ```csharp
 [Fact]
-public void Un_plugin_supprime_du_dossier_disparait_et_son_contexte_est_decharge()
+public void A_plugin_deleted_from_the_folder_disappears_and_its_context_is_unloaded()
 {
     // …
-    // Possible pendant que le plugin est chargé : la DLL a été lue en mémoire, le fichier n'est pas verrouillé.
-    Directory.Delete(Path.Combine(dossier, "Mk.Plugins.ListeNoire"), recursive: true);
-    var decharges = chargeur.Recharger(dossier);
+    // Possible while the plugin is loaded: the DLL was read into memory, the file is not locked.
+    Directory.Delete(Path.Combine(folder, "Mk.Plugins.Blocklist"), recursive: true);
+    var unloaded = loader.Reload(folder);
 
-    Assert.DoesNotContain("ListeNoire", Noms(registre));
-    Assert.True(AttendreDechargement(decharges), "Les anciens contextes de chargement n'ont pas été libérés.");
+    Assert.DoesNotContain("Blocklist", Names(registry));
+    Assert.True(WaitForUnloading(unloaded), "The old load contexts were not released.");
 }
 ```
 

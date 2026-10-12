@@ -94,18 +94,18 @@ L'application mobile affiche, pour chaque compte, son libellé, son solde et ses
 dernières partent en parallèle, mais ce sont trois vagues d'allers-retours, et une requête par compte :
 
 ```csharp
-var client = await http.GetFromJsonAsync<JsonObject>($"/clients/{clientId}");
-var comptes = await http.GetFromJsonAsync<JsonArray>($"/clients/{clientId}/comptes");
-// 1 + 1 + N : une requête par compte pour ses opérations (en parallèle, mais une requête chacune).
+var customer = await http.GetFromJsonAsync<JsonObject>($"/customers/{customerId}");
+var accounts = await http.GetFromJsonAsync<JsonArray>($"/customers/{customerId}/accounts");
+// 1 + 1 + N: one request per account for its operations (in parallel, but one request each).
 ```
 
 **GraphQL** envoie la description de l'écran ; la réponse a exactement sa forme :
 
 ```graphql
-query EcranAccueil($id: ID!, $n: Int) {
-  client(id: $id) {
-    nom
-    comptes { numero libelle solde operations(derniers: $n) { date libelle montant } }
+query HomeScreen($id: ID!, $n: Int) {
+  customer(id: $id) {
+    name
+    accounts { number label balance operations(latest: $n) { date label amount } }
   }
 }
 ```
@@ -113,7 +113,7 @@ query EcranAccueil($id: ID!, $n: Int) {
 **gRPC** a une procédure taillée pour cet écran, déclarée dans le contrat :
 
 ```protobuf
-rpc ObtenirTableauDeBord (DemandeTableauDeBord) returns (TableauDeBord);
+rpc GetDashboard (DashboardRequest) returns (Dashboard);
 ```
 
 ```mermaid
@@ -147,9 +147,9 @@ Pour le même écran, REST reçoit **2,3 fois** plus que GraphQL et **5 fois** p
 champs ; il en reçoit dix (sur-récupération, test `La_representation_d_un_compte_est_complete_et_la_meme_pour_tous_les_clients`) :
 
 ```json
-{"numero":"10001","libelle":"Compte courant","type":"courant","iban":"FR76 3000 4000 0110 0010 0010 001","solde":1626.05,
- "devise":"EUR","dateOuverture":"2015-03-02","plafondDecouvert":500,"titulaire":{"id":"alice","nom":"Alice Martin"},
- "_links":{"self":"/comptes/10001","operations":"/comptes/10001/operations","titulaire":"/clients/alice"}}
+{"number":"10001","label":"Current account","type":"current","iban":"FR76 3000 4000 0110 0010 0010 001","balance":1626.05,
+ "currency":"EUR","openingDate":"2015-03-02","overdraftLimit":500,"owner":{"id":"alice","name":"Alice Martin"},
+ "_links":{"self":"/accounts/10001","operations":"/accounts/10001/operations","owner":"/customers/alice"}}
 ```
 
 **GraphQL** ne renvoie que les champs demandés, mais en JSON : chaque nom de champ est répété dans chaque objet. Et
@@ -169,13 +169,13 @@ Deux conséquences visibles dans le contrat : une valeur par défaut (0, chaîne
 n'y a **pas de type décimal**, d'où des montants en centimes :
 
 ```protobuf
-// Pas de type décimal en Protobuf : les montants circulent en centimes, sur des entiers.
-message Compte {
-  string numero = 1;
-  string libelle = 2;
-  TypeCompte type = 3;
-  int64 solde_centimes = 4;
-  repeated Operation dernieres_operations = 5;
+// No decimal type in Protobuf: amounts travel in cents, on integers.
+message Account {
+  string number = 1;
+  string label = 2;
+  AccountType type = 3;
+  int64 balance_cents = 4;
+  repeated Operation latest_operations = 5;
 }
 ```
 
@@ -185,7 +185,7 @@ réel a montré un écran GraphQL différent des deux autres, parce que le sché
 fractions. Le métier date donc désormais ses opérations à la seconde :
 
 ```csharp
-maintenant = maintenant.AddTicks(-(maintenant.Ticks % TimeSpan.TicksPerSecond));
+now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
 ```
 
 ---
@@ -200,11 +200,11 @@ Le moteur exécute donc la requête **par niveaux** : un champ est résolu pour 
 Un résolveur **groupé** (le « DataLoader » des moteurs GraphQL) reçoit tous les comptes et fait une seule lecture :
 
 ```csharp
-.ChampGroupe("operations", "[Operation!]!", (comptes, a) =>
+.BatchedField("operations", "[Operation!]!", (accounts, a) =>
 {
-    var parCompte = banque.DernieresOperations(comptes.Select(c => c.Numero).ToList(), a.LireOuDefaut<int?>("derniers") ?? 10);
-    return comptes.Select(c => (object?)parCompte[c.Numero]).ToList();
-}, new Arg("derniers", "Int", 10))
+    var byAccount = bank.LatestOperations(accounts.Select(c => c.Number).ToList(), a.GetOrDefault<int?>("latest") ?? 10);
+    return accounts.Select(c => (object?)byAccount[c.Number]).ToList();
+}, new Arg("latest", "Int", 10))
 ```
 
 | Pour l'écran d'Alice | REST | GraphQL | gRPC |
@@ -247,8 +247,8 @@ La traduction est écrite une fois, dans [Traductions.cs](../23-RestGrpcGraphQL/
   servis (test `Une_erreur_sur_un_champ_n_empeche_pas_d_obtenir_les_autres`) :
 
 ```json
-{"data":{"a":{"libelle":"Compte courant"},"b":null},
- "errors":[{"message":"Compte « 99999 » inconnu.","locations":[{"line":1,"column":42}],"path":["b"],"extensions":{"code":"COMPTE_INCONNU"}}]}
+{"data":{"a":{"label":"Current account"},"b":null},
+ "errors":[{"message":"Unknown account \"99999\".","locations":[{"line":1,"column":41}],"path":["b"],"extensions":{"code":"UNKNOWN_ACCOUNT"}}]}
 ```
 
 Quand le champ en erreur est **non nul** (`!`), il ne peut pas valoir `null` : c'est son parent qui devient `null`, et
@@ -266,8 +266,8 @@ erreurs s'arrêtent. Enfin, une exception imprévue ne doit rien divulguer : `"E
 chaque nouvelle opération, une trame à la fois.
 
 ```csharp
-await foreach (var operation in operations.ReadAllAsync(annulation))
-    await ecrire(Message(operation));
+await foreach (var operation in operations.ReadAllAsync(cancellation))
+    await write(Message(operation));
 ```
 
 Le client fixe une **échéance** (en-tête `grpc-timeout`) ; le serveur l'applique aussi, et arrête le travail : le flux se
@@ -312,7 +312,7 @@ Les trois styles laissent ajouter un champ sans casser les clients, chacun à sa
   Aucun autre style ne sait aussi précisément ce que lisent ses clients.
 
 ```graphql
-soldeTexte: String! @deprecated(reason: "Utiliser « solde » (un nombre) et le formater à l'affichage.")
+balanceText: String! @deprecated(reason: "Use 'balance' (a number) and format it for display.")
 ```
 
 - **REST** : ajouter un champ JSON est sûr si les clients ignorent ceux qu'ils ne connaissent pas (c'est le

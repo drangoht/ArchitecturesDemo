@@ -53,43 +53,43 @@ flowchart LR
 ([CasUtilisation.cs](../../01-Hexagonale/Hexa.Hexagone/Application/CasUtilisation.cs)) :
 
 ```csharp
-var source = await comptes.Charger(sourceId) ?? throw new CompteIntrouvableException(sourceId);
-var cible = await comptes.Charger(cibleId) ?? throw new CompteIntrouvableException(cibleId);
+var source = await accounts.Load(sourceId) ?? throw new AccountNotFoundException(sourceId);
+var target = await accounts.Load(targetId) ?? throw new AccountNotFoundException(targetId);
 
-source.Retirer(montant);
-cible.Deposer(montant);
+source.Withdraw(amount);
+target.Deposit(amount);
 
-await comptes.Sauvegarder(source);
-await comptes.Sauvegarder(cible);
+await accounts.Save(source);
+await accounts.Save(target);
 ```
 
 **Cœur fonctionnel** : la règle reçoit tout ce dont elle a besoin, y compris le cumul du jour, et renvoie une décision
 ([Regles.cs](../../04-CoeurFonctionnel/Fonctionnel.Coeur/Regles.cs)) :
 
 ```csharp
-public static DecisionVirement Virer(Compte source, Compte cible, decimal montant, decimal dejaVireAujourdhui)
+public static TransferDecision Transfer(Account source, Account target, decimal amount, decimal alreadyTransferredToday)
 {
-    if (source.Id == cible.Id)
-        return new DecisionVirement.Refuse("Impossible de virer vers le même compte.");
-    // … plafond journalier, puis réutilisation de la règle de retrait …
+    if (source.Id == target.Id)
+        return new TransferDecision.Refused("Cannot transfer to the same account.");
+    // … daily limit, then reuse of the withdrawal rule …
 }
 ```
 
 La coquille fait les trois temps ([Endpoints.cs](../../04-CoeurFonctionnel/Fonctionnel.Coquille/Endpoints.cs)) :
 
 ```csharp
-// 2. DÉCIDER (pur)
-var decision = Regles.Virer(source.VersCoeur(), cible.VersCoeur(), requete.Montant, dejaVire);
+// 2. DECIDE (pure)
+var decision = Rules.Transfer(source.ToCore(), target.ToCore(), request.Amount, alreadyTransferred);
 
-// 3. APPLIQUER (I/O)
+// 3. APPLY (I/O)
 switch (decision)
 {
-    case DecisionVirement.Accepte ok:
-        source.Solde = ok.Source.Solde;
-        cible.Solde = ok.Cible.Solde;
-        // … opérations, SaveChangesAsync, 200 …
-    case DecisionVirement.Refuse refus:
-        return Results.BadRequest(new { erreur = refus.Raison });
+    case TransferDecision.Accepted ok:
+        source.Balance = ok.Source.Balance;
+        target.Balance = ok.Target.Balance;
+        // … operations, SaveChangesAsync, 200 …
+    case TransferDecision.Refused refusal:
+        return Results.BadRequest(new { error = refusal.Reason });
 }
 ```
 

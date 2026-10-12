@@ -54,24 +54,24 @@ Trois règles font l'architecture :
 Un filtre se résume à une méthode :
 
 ```csharp
-public interface IFiltre<in TEntree, TSortie>
+public interface IFilter<in TInput, TOutput>
 {
-    string Nom { get; }
+    string Name { get; }
 
-    /// <summary>Un rejet est un résultat normal (la ligne est écartée, le flux continue) ; une exception arrête tout le pipeline.</summary>
-    ValueTask<Issue<TSortie>> Traiter(TEntree entree, CancellationToken annulation);
+    /// <summary>A rejection is a normal result (the line is discarded, the flow goes on); an exception stops the whole pipeline.</summary>
+    ValueTask<Outcome<TOutput>> Process(TInput input, CancellationToken cancellation);
 }
 ```
 
 L'assemblage se lit comme le schéma, et le compilateur vérifie que la sortie de chaque filtre est l'entrée du suivant :
 
 ```csharp
-Noyau.Pipeline.Depuis<string>()
-    .Puis(new Analyser())
-    .Puis(new Valider())
-    .Puis(new Dedupliquer(registre))
-    .Puis(new Convertir())
-    .Puis(new ControlerFraude(options.CoutScoring), options.ParallelismeFraude, options.Ordonne);
+Core.Pipeline.From<string>()
+    .Then(new Parse())
+    .Then(new Validate())
+    .Then(new Deduplicate(ledger))
+    .Then(new ConvertCurrency())
+    .Then(new CheckFraud(options.ScoringCost), options.FraudParallelism, options.Ordered);
 ```
 
 En production : **TPL Dataflow** ou les **Channels** directement dans un processus, **Akka Streams** ; à l'échelle d'un
@@ -101,9 +101,9 @@ ligne 10  Exécuter              solde insuffisant             VIR-009
 Une **exception**, elle, signale une panne : tout le pipeline s'arrête (le premier étage en échec annule les autres).
 
 ```csharp
-// Le premier étage qui échoue arrête tous les autres.
-foreach (var tache in taches)
-    _ = tache.ContinueWith(_ => arret.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
+// The first stage that fails stops all the others.
+foreach (var task in tasks)
+    _ = task.ContinueWith(_ => stopping.Cancel(), TaskContinuationOptions.OnlyOnFaulted);
 ```
 
 ---
@@ -114,7 +114,7 @@ Les filtres ne se connaissant pas, on les réassemble à volonté. L'**import à
 est le même pipeline **sans le dernier filtre** : il dit ce qui serait rejeté, sans toucher à un seul compte.
 
 ```csharp
-public static Pipeline<string, Virement> ABlanc(Registre registre, OptionsImport options) => Controles(registre, options).Construire();
+public static Pipeline<string, Transfer> DryRun(Ledger ledger, ImportOptions options) => Checks(ledger, options).Build();
 ```
 
 De même, la panne simulée de la démo est un filtre inséré avant *Exécuter*, et les tests assemblent leurs propres
@@ -133,11 +133,11 @@ Les tuyaux contiennent au plus 64 éléments. Quand un étage est plus lent que 
 remplit, et l'étage d'avant **attend** pour écrire ; l'attente remonte jusqu'à la lecture du fichier.
 
 ```csharp
-/// <summary>Écrire dans un tuyau plein BLOQUE : l'étage attend que le suivant ait de la place. C'est la contre-pression.</summary>
-private async Task Ecrire(ChannelWriter<Element<TSortie>> sortie, Element<TSortie> element, ContexteExecution contexte)
+/// <summary>Writing into a full pipe BLOCKS: the stage waits for the next one to have room. That is the back-pressure.</summary>
+private async Task Write(ChannelWriter<Element<TOutput>> output, Element<TOutput> element, RunContext context)
 {
-    var debut = Stopwatch.GetTimestamp();
-    await sortie.WriteAsync(element, contexte.Annulation);
+    var start = Stopwatch.GetTimestamp();
+    await output.WriteAsync(element, context.Cancellation);
 ```
 
 Résultat : le fichier n'est jamais chargé en entier. **Essai réel**, 100 000 lignes générées à la volée : au plus
@@ -169,12 +169,12 @@ ligne 1, et Bob 1 000 € ligne 2, la ligne 2 n'est possible qu'après la 1. L'�
 et les fait ressortir dans l'ordre d'arrivée :
 
 ```csharp
-while (enAvance.Remove(attendu, out var suivant))
+while (early.Remove(expected, out var next))
 {
-    if (suivant is not null)
-        await Ecrire(sortie, suivant, contexte);
-    attendu++;
-    fenetre.Release();
+    if (next is not null)
+        await Write(output, next, context);
+    expected++;
+    window.Release();
 }
 ```
 

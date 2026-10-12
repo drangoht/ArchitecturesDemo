@@ -87,47 +87,47 @@ l'inversion des dépendances appliquée à la **sortie**.
 ([Retrait.cs](../03-Clean/Clean.CasUtilisation/Retrait/Retrait.cs))
 
 ```csharp
-public record DemandeRetrait(Guid CompteId, decimal Montant);
-public record ReponseRetrait(Guid CompteId, decimal AncienSolde, decimal NouveauSolde);
+public record WithdrawalRequest(Guid AccountId, decimal Amount);
+public record WithdrawalResponse(Guid AccountId, decimal OldBalance, decimal NewBalance);
 
-public interface IRetraitEntree
+public interface IWithdrawalInput
 {
-    Task Executer(DemandeRetrait demande, IRetraitSortie sortie);
+    Task Execute(WithdrawalRequest request, IWithdrawalOutput output);
 }
 
-public interface IRetraitSortie
+public interface IWithdrawalOutput
 {
-    void Succes(ReponseRetrait reponse);
-    void CompteIntrouvable(Guid compteId);
-    void Refus(string raison);
+    void Success(WithdrawalResponse response);
+    void AccountNotFound(Guid accountId);
+    void Refused(string reason);
 }
 
-/// L'interacteur ne renvoie rien : il pousse son résultat vers l'output boundary.
-/// Il ignore donc totalement si la réponse finira en JSON, en HTML ou en texte.
-public class RetraitInteracteur(IComptesPasserelle comptes) : IRetraitEntree
+/// The interactor returns nothing: it pushes its result to the output boundary.
+/// So it has no idea whether the response will end up as JSON, HTML or text.
+public class WithdrawalInteractor(IAccountsGateway accounts) : IWithdrawalInput
 {
-    public async Task Executer(DemandeRetrait demande, IRetraitSortie sortie)
+    public async Task Execute(WithdrawalRequest request, IWithdrawalOutput output)
     {
-        var compte = await comptes.Charger(demande.CompteId);
-        if (compte is null)
+        var account = await accounts.Load(request.AccountId);
+        if (account is null)
         {
-            sortie.CompteIntrouvable(demande.CompteId);
+            output.AccountNotFound(request.AccountId);
             return;
         }
 
-        var ancienSolde = compte.Solde;
+        var oldBalance = account.Balance;
         try
         {
-            compte.Retirer(demande.Montant);
+            account.Withdraw(request.Amount);
         }
-        catch (RegleMetierException e)
+        catch (BusinessRuleException e)
         {
-            sortie.Refus(e.Message);
+            output.Refused(e.Message);
             return;
         }
 
-        await comptes.Sauvegarder(compte);
-        sortie.Succes(new ReponseRetrait(compte.Id, ancienSolde, compte.Solde));
+        await accounts.Save(account);
+        output.Success(new WithdrawalResponse(account.Id, oldBalance, account.Balance));
     }
 }
 ```
@@ -138,19 +138,19 @@ public class RetraitInteracteur(IComptesPasserelle comptes) : IRetraitEntree
 *view model* (`VueHttp`), pas un `IResult` : les adaptateurs ne dépendent pas d'ASP.NET Core.
 
 ```csharp
-public class RetraitPresenterHttp : IRetraitSortie
+public class WithdrawalHttpPresenter : IWithdrawalOutput
 {
-    public VueHttp Vue { get; private set; } = VueHttp.Refus("Aucun résultat.");
+    public HttpView View { get; private set; } = HttpView.Refused("No result.");
 
-    public void Succes(ReponseRetrait r) =>
-        Vue = VueHttp.Ok(new
+    public void Success(WithdrawalResponse r) =>
+        View = HttpView.Ok(new
         {
-            solde = r.NouveauSolde,
-            message = $"Retrait de {r.AncienSolde - r.NouveauSolde:0.00} € effectué."
+            balance = r.NewBalance,
+            message = $"Withdrawal of {r.OldBalance - r.NewBalance:0.00} € done."
         });
 
-    public void CompteIntrouvable(Guid compteId) => Vue = VueHttp.Introuvable(compteId);
-    public void Refus(string raison) => Vue = VueHttp.Refus(raison);
+    public void AccountNotFound(Guid accountId) => View = HttpView.NotFound(accountId);
+    public void Refused(string reason) => View = HttpView.Refused(reason);
 }
 ```
 
@@ -159,11 +159,11 @@ public class RetraitPresenterHttp : IRetraitSortie
 Ajouter un format ne touche pas au cas d'utilisation.
 
 ```csharp
-public void Succes(ReponseConsultation r) =>
-    Texte = $"""
-        RELEVÉ DE COMPTE
-        Titulaire : {r.Titulaire}
-        Solde     : {r.Solde.ToString("N2", Francais)} €
+public void Success(LookupResponse r) =>
+    Text = $"""
+        ACCOUNT STATEMENT
+        Owner   : {r.Owner}
+        Balance : {r.Balance.ToString("N2", English)} €
         """;
 ```
 
@@ -172,12 +172,12 @@ public void Succes(ReponseConsultation r) =>
 ([Program.cs](../03-Clean/Clean.Web/Program.cs))
 
 ```csharp
-// Chaque route : créer le presenter → appeler le contrôleur → écrire la vue produite par le presenter.
-app.MapPost("/comptes/{id:guid}/retrait", async (Guid id, RetraitRequete requete, ComptesControleur controleur) =>
+// Each route: create the presenter → call the controller → write the view produced by the presenter.
+app.MapPost("/accounts/{id:guid}/withdrawal", async (Guid id, WithdrawalBody body, AccountsController controller) =>
 {
-    var presenter = new RetraitPresenterHttp();
-    await controleur.Retirer(id, requete.Montant, presenter);
-    return EnHttp(presenter.Vue);
+    var presenter = new WithdrawalHttpPresenter();
+    await controller.Withdraw(id, body.Amount, presenter);
+    return ToHttp(presenter.View);
 });
 ```
 
@@ -214,12 +214,12 @@ On teste **ce que dit** l'interacteur, avec un espion sur l'output boundary, san
 
 ```csharp
 [Fact]
-public async Task Un_retrait_trop_eleve_annonce_un_refus()
+public async Task A_withdrawal_that_is_too_large_reports_a_refusal()
 {
-    await new RetraitInteracteur(_comptes).Executer(new DemandeRetrait(Alice, 500m), _sortie);
+    await new WithdrawalInteractor(_accounts).Execute(new WithdrawalRequest(Alice, 500m), _output);
 
-    Assert.Equal("Solde insuffisant.", _sortie.Refus);
-    Assert.Null(_sortie.Succes);
+    Assert.Equal("Insufficient balance.", _output.Refused);
+    Assert.Null(_output.Success);
 }
 ```
 

@@ -55,8 +55,8 @@ sont **recopiés** dans chaque BFF, avec seulement les champs utiles à ses écr
 ([ClientServices.cs](../16-BFF/Bff.Mobile/ClientServices.cs))
 
 ```csharp
-// Copie volontaire, et non projet partagé avec le BFF web : chaque BFF appartient à l'équipe de SON application
-// et évolue à son rythme. Seuls les champs utiles à l'application mobile sont lus.
+// Deliberate copy, and not a project shared with the web BFF: each BFF belongs to the team of ITS application
+// and evolves at its own pace. Only the fields useful to the mobile application are read.
 ```
 
 ---
@@ -68,15 +68,15 @@ catégorie et des offres. Il faut sept appels aux services ; le navigateur n'en 
 ([TableauDeBord.cs](../16-BFF/Bff.Web/TableauDeBord.cs))
 
 ```csharp
-// ① Le profil d'abord : il dit quels comptes afficher, quel conseiller, quel segment d'offres.
-var profil = await services.Profil(jeton);
+// ① The profile first: it says which accounts to display, which advisor, which offer segment.
+var profile = await services.Profile(token);
 
-// ② Puis tout le reste EN PARALLÈLE : la durée totale est celle de l'appel le plus lent, pas la somme.
-var conseiller = services.Conseiller(profil.ConseillerId, jeton);
-var offres = Facultatif(annulation => services.Offres(profil.Segment, jeton, annulation), BudgetOffres);
-var comptes = profil.Comptes.Select(id => CompteAvecOperations(id, jeton)).ToList();
-Task[] appels = [conseiller, offres, .. comptes];
-await Task.WhenAll(appels);
+// ② Then all the rest IN PARALLEL: the total duration is that of the slowest call, not the sum.
+var advisor = services.Advisor(profile.AdvisorId, token);
+var offers = Optional(cancellation => services.Offers(profile.Segment, token, cancellation), OffersBudget);
+var accounts = profile.Accounts.Select(id => AccountWithOperations(id, token)).ToList();
+Task[] calls = [advisor, offers, .. accounts];
+await Task.WhenAll(calls);
 ```
 
 ```mermaid
@@ -130,10 +130,10 @@ qu'un curseur. Le BFF pourra changer de stratégie sans mettre à jour l'applica
 ([Ecrans.cs](../16-BFF/Bff.Mobile/Ecrans.cs))
 
 ```csharp
-var page = LirePage(curseur);
-var resultat = await services.Operations(compte, page, TaillePage, jeton);
-var suivant = page * TaillePage < resultat.Total ? Curseur(page + 1) : null;
-return new PageMobile(resultat.Operations.Select(Vue).ToList(), suivant);
+var page = ReadPage(cursor);
+var result = await services.Operations(account, page, PageSize, token);
+var next = page * PageSize < result.Total ? Cursor(page + 1) : null;
+return new MobilePage(result.Operations.Select(View).ToList(), next);
 ```
 
 ### Les versions de l'application
@@ -143,7 +143,7 @@ versions vivent donc en même temps. La v2 de l'application affiche un bandeau d
 et continue de servir `/mobile/v1/accueil` aux téléphones pas encore à jour. **Les services n'ont pas changé.**
 
 ```csharp
-var offre = version >= 2 ? Facultatif(a => services.Offres(profil.Segment, jeton, a), BudgetOffre) : Task.FromResult<OffreAval[]?>(null);
+var offer = version >= 2 ? Optional(c => services.Offers(profile.Segment, token, c), OfferBudget) : Task.FromResult<DownstreamOffer[]?>(null);
 ```
 
 ---
@@ -174,9 +174,9 @@ sequenceDiagram
 ([Session.cs](../16-BFF/Bff.Web/Session.cs))
 
 ```csharp
-o.Cookie.HttpOnly = true;                                 // illisible depuis JavaScript : une faille XSS ne peut pas le voler
-o.Cookie.SameSite = SameSiteMode.Strict;                  // jamais envoyé depuis un autre site
-o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // en production : Always, et le préfixe « __Host- »
+o.Cookie.HttpOnly = true;                                 // unreadable from JavaScript: an XSS flaw cannot steal it
+o.Cookie.SameSite = SameSiteMode.Strict;                  // never sent from another site
+o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // in production: Always, and the "__Host-" prefix
 ```
 
 - **Session côté serveur** (`SessionsEnMemoire`, un `ITicketStore`) : le cookie ne contient qu'une clé chiffrée. Se
@@ -204,14 +204,14 @@ Un écran qui agrège sept appels a sept occasions d'échouer. Le BFF distingue 
 l'**accessoire** (offres) : un appel accessoire a un budget de temps, et son échec est absorbé.
 
 ```csharp
-private static async Task<T?> Facultatif<T>(Func<CancellationToken, Task<T>> appel, TimeSpan budget) where T : class
+private static async Task<T?> Optional<T>(Func<CancellationToken, Task<T>> call, TimeSpan budget) where T : class
 {
-    using var delai = new CancellationTokenSource(budget);
+    using var timeout = new CancellationTokenSource(budget);
     try
     {
-        return await appel(delai.Token);
+        return await call(timeout.Token);
     }
-    catch (Exception e) when (e is ServiceAvalException or HttpRequestException or OperationCanceledException)
+    catch (Exception e) when (e is DownstreamServiceException or HttpRequestException or OperationCanceledException)
     {
         return null;
     }

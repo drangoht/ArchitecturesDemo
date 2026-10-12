@@ -61,27 +61,27 @@ flowchart LR
 ([DefinitionVirement.cs](../../14-SagaOrchestree/Saga.Orchestrateur/DefinitionVirement.cs)) :
 
 ```csharp
-new("ReserverFonds",
-    async s => { await comptes.Reserver(s.Id, s.Source, s.Montant); return Issue.Succes; },
-    Compenser: s => comptes.Liberer(s.Id, s.Source)),
+new("ReserveFunds",
+    async s => { await accounts.Reserve(s.Id, s.Source, s.Amount); return Outcome.Success; },
+    Compensate: s => accounts.Release(s.Id, s.Source)),
 // …
-new("DebiterDefinitivement",
-    async s => { await comptes.Capturer(s.Id, s.Source); return Issue.Succes; },
-    PointDeNonRetour: true),
+new("CaptureFunds",
+    async s => { await accounts.Capture(s.Id, s.Source); return Outcome.Success; },
+    PointOfNoReturn: true),
 ```
 
 Et c'est le moteur qui décide quoi faire d'un échec
 ([MoteurSaga.cs](../../14-SagaOrchestree/Saga.Orchestrateur/MoteurSaga.cs)) :
 
 ```csharp
-else if (PointDeNonRetourPasse(saga))
+else if (PointOfNoReturnPassed(saga))
 {
-    // On ne peut plus défaire : l'argent a déjà été débité définitivement.
-    ATraiterManuellement(saga, $"{etape.Nom} impossible après {options.TentativesMax} tentatives : {message}");
+    // Nothing can be undone any more: the money has already been debited for good.
+    RequireManualIntervention(saga, $"{step.Name} impossible after {options.MaxAttempts} attempts: {message}");
 }
 else
 {
-    DemarrerCompensation(saga, $"{etape.Nom} impossible après {options.TentativesMax} tentatives : {message}");
+    StartCompensation(saga, $"{step.Name} impossible after {options.MaxAttempts} attempts: {message}");
 }
 ```
 
@@ -90,9 +90,9 @@ par chaque événement, qui permettent de le raconter après coup
 ([Bus.cs](../../21-Choregraphie/Choreo.Bus/Bus.cs)) :
 
 ```csharp
-/// <summary>Un nouvel événement, en réaction à celui-ci : même corrélation, et celui-ci pour cause.</summary>
-public T Suite<T>(T suivant, string emetteur) where T : Evenement =>
-    suivant with { Correlation = Correlation, Cause = Id, Emetteur = emetteur };
+/// <summary>A new event, in reaction to this one: same correlation, and this one as cause.</summary>
+public T Next<T>(T next, string emitter) where T : Event =>
+    next with { Correlation = Correlation, Cause = Id, Emitter = emitter };
 ```
 
 Quand le change tombe en panne, personne n'attend sa réponse. Le filet de sécurité est **local** : Comptes donne une

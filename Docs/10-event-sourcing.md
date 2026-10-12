@@ -52,7 +52,7 @@ flowchart TB
 **La base de données est un fichier lisible** : `Es.Api\evenements.jsonl`, une ligne par événement.
 
 ```json
-{"position":3,"flux":"1111…","version":2,"type":"ArgentRetire.v2","donnees":{"compteId":"1111…","montant":100,"motif":"Courses","date":"…"},"date":"…"}
+{"position":3,"stream":"1111…","version":2,"type":"MoneyWithdrawn.v2","data":{"accountId":"1111…","amount":100,"reason":"Groceries","date":"…"},"date":"…"}
 ```
 
 ---
@@ -65,53 +65,53 @@ flowchart TB
 
 ```csharp
 /// <summary>
-/// Agrégat « event-sourcé ». Deux sortes de méthodes, à ne jamais mélanger :
-/// - les DÉCISIONS (Retirer, Cloturer…) vérifient les règles puis enregistrent un événement ;
-/// - Appliquer fait évoluer l'état à partir d'un événement, sans aucune règle (un fait passé ne se refuse pas).
-/// Charger un compte = rejouer Appliquer sur tout son historique.
+/// "Event-sourced" aggregate. Two kinds of methods, never to be mixed:
+/// - the DECISIONS (Withdraw, Close…) check the rules then record an event;
+/// - Apply evolves the state from an event, without any rule (a past fact cannot be refused).
+/// Loading an account = replaying Apply over its whole history.
 /// </summary>
-public class Compte
+public class Account
 {
     // …
-    public void Retirer(decimal montant, string motif, DateTime date)
+    public void Withdraw(decimal amount, string reason, DateTime date)
     {
-        VerifierOuvert();
-        VerifierMontant(montant);
-        if (montant > Solde)
-            throw new RegleMetierException("Solde insuffisant.");
-        Enregistrer(new ArgentRetire(Id, montant, motif, date));
+        CheckOpen();
+        CheckAmount(amount);
+        if (amount > Balance)
+            throw new BusinessRuleException("Insufficient balance.");
+        Record(new MoneyWithdrawn(Id, amount, reason, date));
     }
     // …
 
-    // ─── Évolution de l'état ───
+    // ─── State evolution ───
 
-    private void Enregistrer(IEvenement evenement)
+    private void Record(IEvent @event)
     {
-        Appliquer(evenement);
-        _nouveaux.Add(evenement);
+        Apply(@event);
+        _new.Add(@event);
     }
 
-    private void Appliquer(IEvenement evenement)
+    private void Apply(IEvent @event)
     {
-        switch (evenement)
+        switch (@event)
         {
-            case CompteOuvert e:
-                (Id, Titulaire, Solde) = (e.CompteId, e.Titulaire, e.DepotInitial);
+            case AccountOpened e:
+                (Id, Owner, Balance) = (e.AccountId, e.Owner, e.InitialDeposit);
                 break;
-            case ArgentDepose e:
-                Solde += e.Montant;
+            case MoneyDeposited e:
+                Balance += e.Amount;
                 break;
-            case ArgentRetire e:
-                Solde -= e.Montant;
+            case MoneyWithdrawn e:
+                Balance -= e.Amount;
                 break;
-            case VirementEmis e:
-                Solde -= e.Montant;
+            case TransferSent e:
+                Balance -= e.Amount;
                 break;
-            case VirementRecu e:
-                Solde += e.Montant;
+            case TransferReceived e:
+                Balance += e.Amount;
                 break;
-            case CompteCloture:
-                Cloture = true;
+            case AccountClosed:
+                Closed = true;
                 break;
         }
         Version++;
@@ -121,8 +121,8 @@ public class Compte
 Charger un compte, c'est rejouer `Appliquer` sur tout son historique :
 
 ```csharp
-public static Compte Reconstituer(IEnumerable<IEvenement> historique) =>
-    DepuisInstantane(null, historique);
+public static Account Rehydrate(IEnumerable<IEvent> history) =>
+    FromSnapshot(null, history);
 ```
 
 ```mermaid
@@ -139,19 +139,19 @@ stateDiagram-v2
 ([MagasinEvenements.cs](../10-EventSourcing/Es.Stockage/MagasinEvenements.cs))
 
 ```csharp
-/// Ajoute les événements de un ou plusieurs flux, en tout ou rien.
-/// Concurrence optimiste : si un flux a bougé depuis son chargement, rien n'est écrit.
-public Task Ajouter(params AEcrire[] ecritures)
+/// Appends the events of one or more streams, all or nothing.
+/// Optimistic concurrency: if a stream moved since it was loaded, nothing is written.
+public Task Append(params ToWrite[] writes)
 {
-    lock (_verrou)
+    lock (_lock)
     {
-        foreach (var ecriture in ecritures)
+        foreach (var write in writes)
         {
-            var actuelle = _evenements.Count(e => e.Flux == ecriture.Flux);
-            if (actuelle != ecriture.VersionAttendue)
-                throw new ConflitDeConcurrenceException(ecriture.Flux, ecriture.VersionAttendue, actuelle);
+            var current = _events.Count(e => e.Stream == write.Stream);
+            if (current != write.ExpectedVersion)
+                throw new ConcurrencyConflictException(write.Stream, write.ExpectedVersion, current);
         }
-        // … puis tout ajouter, en mémoire et dans le fichier .jsonl
+        // … then add everything, in memory and in the .jsonl file
     }
     return Task.CompletedTask;
 }
@@ -179,26 +179,26 @@ Tous les 5 événements, une photo de l'état est mise en **cache**. On peut l'e
 ([DepotComptes.cs](../10-EventSourcing/Es.Stockage/DepotComptes.cs))
 
 ```csharp
-public async Task<Compte> Charger(Guid id)
+public async Task<Account> Load(Guid id)
 {
-    var instantane = instantanes.Dernier(id);
-    var suite = await magasin.LireFlux(id, apresVersion: instantane?.Version ?? 0);
-    if (instantane is null && suite.Count == 0)
-        throw new CompteIntrouvableException(id);
-    return Compte.DepuisInstantane(instantane, suite.Select(e => e.Evenement()));
+    var snapshot = snapshots.Latest(id);
+    var rest = await store.ReadStream(id, afterVersion: snapshot?.Version ?? 0);
+    if (snapshot is null && rest.Count == 0)
+        throw new AccountNotFoundException(id);
+    return Account.FromSnapshot(snapshot, rest.Select(e => e.Event()));
 }
 ```
 
 ### 4. Le voyage dans le temps
 
 ```csharp
-/// <summary>Voyage dans le temps : l'état du compte tel qu'il était à une version donnée.</summary>
-public async Task<Compte> ChargerALaVersion(Guid id, int version)
+/// <summary>Time travel: the state of the account as it was at a given version.</summary>
+public async Task<Account> LoadAtVersion(Guid id, int version)
 {
-    var historique = await magasin.LireFlux(id);
-    if (historique.Count == 0)
-        throw new CompteIntrouvableException(id);
-    return Compte.Reconstituer(historique.Where(e => e.Version <= version).Select(e => e.Evenement()));
+    var history = await store.ReadStream(id);
+    if (history.Count == 0)
+        throw new AccountNotFoundException(id);
+    return Account.Rehydrate(history.Where(e => e.Version <= version).Select(e => e.Event()));
 }
 ```
 
@@ -212,12 +212,12 @@ public async Task<Compte> ChargerALaVersion(Guid id, int version)
 ```csharp
 private static readonly Dictionary<string, Func<string, (string Type, string Json)>> Upcasters = new()
 {
-    // v1 : { compteId, montant, date }  →  v2 : + motif
-    ["ArgentRetire"] = json =>
+    // v1: { accountId, amount, date }  →  v2: + reason
+    ["MoneyWithdrawn"] = json =>
     {
-        var noeud = JsonNode.Parse(json)!.AsObject();
-        noeud["motif"] = "Non précisé";
-        return ("ArgentRetire.v2", noeud.ToJsonString());
+        var node = JsonNode.Parse(json)!.AsObject();
+        node["reason"] = "Not specified";
+        return ("MoneyWithdrawn.v2", node.ToJsonString());
     }
 };
 ```
@@ -227,10 +227,10 @@ private static readonly Dictionary<string, Func<string, (string Type, string Jso
 ([Projections.cs](../10-EventSourcing/Es.Projections/Projections.cs))
 
 ```csharp
-// ─── Plus gros retraits : une projection ajoutée APRÈS coup ───
-// Comme elle se construit en rejouant tout le flux, elle connaît d'emblée tous les retraits passés,
-// y compris ceux faits avant qu'elle existe. Impossible avec une base classique, qui n'a gardé que l'état final.
-public class ProjectionPlusGrosRetraits : IProjection { /* … */ }
+// ─── Largest withdrawals: a projection added AFTERWARDS ───
+// Since it is built by replaying the whole stream, it knows all the past withdrawals right away,
+// including those made before it existed. Impossible with a classic database, which kept only the final state.
+public class LargestWithdrawalsProjection : IProjection { /* … */ }
 ```
 
 `POST /admin/projections/reconstruire` efface toutes les vues et rejoue tout le magasin.
@@ -243,19 +243,19 @@ Le style naturel de l'Event Sourcing : *étant donné* des faits, *quand* une co
 ([CompteTests.cs](../10-EventSourcing/Es.Tests/CompteTests.cs))
 
 ```csharp
-private static IReadOnlyList<IEvenement> Quand(IEvenement[] etantDonne, Action<Compte> commande)
+private static IReadOnlyList<IEvent> When(IEvent[] given, Action<Account> command)
 {
-    var compte = Compte.Reconstituer(etantDonne);
-    commande(compte);
-    return compte.NouveauxEvenements;
+    var account = Account.Rehydrate(given);
+    command(account);
+    return account.NewEvents;
 }
 
 [Fact]
-public void Un_retrait_possible_produit_ArgentRetire()
+public void A_possible_withdrawal_produces_MoneyWithdrawn()
 {
-    var alors = Quand(CompteAvec100Euros, c => c.Retirer(30m, "Courses", T));
+    var then = When(AccountWith100Euros, c => c.Withdraw(30m, "Groceries", T));
 
-    Assert.Equal([new ArgentRetire(Id, 30m, "Courses", T)], alors);
+    Assert.Equal([new MoneyWithdrawn(Id, 30m, "Groceries", T)], then);
 }
 ```
 
