@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Demo tool: starts the router and the cells, each in its own process (as an orchestrator would).
+    All the cells are the SAME program, started with a different identifier and port.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <!-- Makes sure the router and the cells are built before the launcher, without depending on them in the code. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Cell.Router\Cell.Router.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Cell.App\Cell.App.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

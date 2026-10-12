@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <!--
-    LE ROUTEUR DE CELLULES (plan de données : clé de partition, cellule, relais) et le PLAN DE CONTRÔLE (placement,
-    ajout de cellules, migration de clients, déploiement par vagues). Aucune référence au code des cellules.
-  -->
-
-</Project>

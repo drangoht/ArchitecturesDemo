@@ -1,6 +1,6 @@
 <Solution>
-  <Project Path="Cell.Cellule/Cell.Cellule.csproj" />
-  <Project Path="Cell.Lanceur/Cell.Lanceur.csproj" />
-  <Project Path="Cell.Routeur/Cell.Routeur.csproj" />
+  <Project Path="Cell.App/Cell.App.csproj" />
+  <Project Path="Cell.Launcher/Cell.Launcher.csproj" />
+  <Project Path="Cell.Router/Cell.Router.csproj" />
   <Project Path="Cell.Tests/Cell.Tests.csproj" />
 </Solution>

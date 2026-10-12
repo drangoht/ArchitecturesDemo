@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    A CELL: the COMPLETE application (API, data, rules), identical in all the cells.
+    Each instance only serves the customers assigned to it. Started several times, each with its identifier (Cell:Id = c1, c2…).
+  -->
+
+</Project>

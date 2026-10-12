@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    THE CELL ROUTER (data plane: partition key, cell, relay) and the CONTROL PLANE (placement,
+    adding cells, migrating customers, deployment in waves). No reference to the code of the cells.
+  -->
+
+</Project>

@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <!--
-    UNE CELLULE : l'application COMPLÈTE (API, données, règles), identique dans toutes les cellules.
-    Chaque instance ne sert que les clients qui lui sont attribués. Lancée plusieurs fois, chacune avec son identifiant (Cellule:Id = c1, c2…).
-  -->
-
-</Project>

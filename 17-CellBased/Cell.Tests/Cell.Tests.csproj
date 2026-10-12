@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cell.Routeur\Cell.Routeur.csproj" />
-    <ProjectReference Include="..\Cell.Cellule\Cell.Cellule.csproj" />
+    <ProjectReference Include="..\Cell.Router\Cell.Router.csproj" />
+    <ProjectReference Include="..\Cell.App\Cell.App.csproj" />
   </ItemGroup>
 
 </Project>

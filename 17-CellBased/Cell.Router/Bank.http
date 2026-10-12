@@ -1,0 +1,86 @@
+# Start first: dotnet run --project 17-CellBased\Cell.Launcher   (router :5117 + cells c1, c2, c3)
+# The customers only talk to the router; the response says which cell served it (X-Cell header).
+@router = http://localhost:5117
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+@david = 55555555-5555-5555-5555-555555555555
+
+### Who is where: alice and david in c1, bob and emma in c2, carla in c3
+GET {{router}}/platform/placement
+
+### State of the cells: capacity, customers, version, health
+GET {{router}}/platform/cells
+
+### Bob's account (X-Cell: c2)
+GET {{router}}/customers/bob/accounts
+
+### Transfer Alice → David: same cell, local transaction ("crossCell": false)
+POST {{router}}/customers/alice/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "targetCustomer": "david", "target": "{{david}}", "amount": 50 }
+
+### Transfer Alice → Bob: two cells, local debit then credit through the router ("crossCell": true)
+POST {{router}}/customers/alice/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "targetCustomer": "bob", "target": "{{bob}}", "amount": 100 }
+
+### ─── Blast radius: cell c2 goes down (or stop its process) ───
+PUT http://localhost:5232/admin/outage
+Content-Type: application/json
+
+{ "down": true }
+
+### Bob and Emma: 503. Alice, Carla and David: 200.
+GET {{router}}/customers/bob/accounts
+
+###
+GET {{router}}/customers/alice/accounts
+
+### A transfer to Bob is cancelled, and Alice's debit compensated
+POST {{router}}/customers/alice/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "targetCustomer": "bob", "target": "{{bob}}", "amount": 100 }
+
+###
+PUT http://localhost:5232/admin/outage
+Content-Type: application/json
+
+{ "down": false }
+
+### ─── Deployment in waves ───
+### The 1.1 contains a bug: the probe of the canary cell (c1) detects it, rollback, c2 and c3 received nothing
+POST {{router}}/platform/deployments
+Content-Type: application/json
+
+{ "version": "1.1" }
+
+### The 1.2 fixes it: c1 first, then c2 and c3
+POST {{router}}/platform/deployments
+Content-Type: application/json
+
+{ "version": "1.2" }
+
+### ─── Capacity: cells are added, not enlarged ───
+### New customers: each one goes to the least loaded cell (3 places per cell, 9 in all)
+POST {{router}}/customers
+Content-Type: application/json
+
+{ "id": "farid", "name": "Farid", "initialDeposit": 20 }
+
+### Provision the cell c4 (dotnet run --project 17-CellBased\Cell.Launcher -- c4), then register it
+POST {{router}}/platform/cells
+Content-Type: application/json
+
+{ "id": "c4", "url": "http://localhost:5234", "capacity": 3 }
+
+### Move Carla to c4 (rebalancing): her data and her routing follow
+POST {{router}}/platform/customers/carla/migrate
+Content-Type: application/json
+
+{ "to": "c4" }
+
+### Close c1 to new customers (before emptying it, for example)
+POST {{router}}/platform/cells/c1/close
