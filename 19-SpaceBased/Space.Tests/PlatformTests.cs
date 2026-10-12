@@ -247,7 +247,7 @@ public class PlatformTests : IAsyncLifetime
     public async Task Crossed_transfers_between_two_full_units_do_not_block()
     {
         await using var p = await NewPlatform(new PlatformOptions { CapacityPerUnit = 1 });
-        while (p.Send(new GetAccount(Alice)).Result.Unit == p.Send(new GetAccount(Bob)).Result.Unit)
+        while ((await p.Send(new GetAccount(Alice))).Unit == (await p.Send(new GetAccount(Bob))).Unit)
             await p.Deployment.Start();
         p.Simulation.Close();
 
