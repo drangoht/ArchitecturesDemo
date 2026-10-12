@@ -1,0 +1,21 @@
+@model TransferForm
+@* A second view for the same action: the controller chose it because the amount exceeds the threshold.
+   The server keeps nothing between the two requests: the form sends everything back, in hidden fields. *@
+@{
+    ViewData["Title"] = "Confirm the transfer";
+    var source = Model.Accounts.First(c => c.Id == Model.Source);
+    var target = Model.Accounts.First(c => c.Id == Model.Target);
+}
+
+<h2>Confirm the transfer</h2>
+<p>Transfer <strong>@Ui.Bank.Format.Euros(Model.Amount!.Value)</strong>
+   from <strong>@source.Owner — @source.Label</strong>
+   to <strong>@target.Owner — @target.Label</strong>?</p>
+<form asp-action="New" method="post">
+    <input type="hidden" asp-for="Source" />
+    <input type="hidden" asp-for="Target" />
+    <input type="hidden" asp-for="Amount" />
+    <input type="hidden" name="Confirmed" value="true" />
+    <button type="submit">Confirm</button>
+    <a class="button secondary" asp-action="New" asp-route-source="@Model.Source">Cancel</a>
+</form>

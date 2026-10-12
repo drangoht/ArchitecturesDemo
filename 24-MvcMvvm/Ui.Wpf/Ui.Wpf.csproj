@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE WPF VIEW of the ViewModels of Ui.Presentation: XAML and data bindings, NO logic.
+    MainWindow.xaml.cs only contains InitializeComponent; App.xaml.cs assembles (bank, ViewModel, window).
+    Windows only (WPF). The rest of the demo, tests included, does not depend on it.
+    Run: dotnet run (project 24-MvcMvvm\Ui.Wpf); with the argument "capture file.png", the window is
+    drawn into an image without being displayed.
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ui.Presentation\Ui.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

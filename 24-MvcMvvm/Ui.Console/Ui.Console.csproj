@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A SECOND VIEW on the SAME ViewModels as the WPF window: a console, driven by typed commands
+    (or read from a file). Ui.Presentation did not change by a single line to welcome it.
+    Binding.cs shows what a WPF {Binding} does, in twenty lines: subscribe to PropertyChanged and copy.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ui.Presentation\Ui.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- net10.0: the tests do not need WPF. The bindings of the XAML are checked by reading the file. -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ui.Mvc\Ui.Mvc.csproj" />
+    <ProjectReference Include="..\Ui.Presentation\Ui.Presentation.csproj" />
+    <ProjectReference Include="..\Ui.Console\Ui.Console.csproj" />
+  </ItemGroup>
+
+</Project>

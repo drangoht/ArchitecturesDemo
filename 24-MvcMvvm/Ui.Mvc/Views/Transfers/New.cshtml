@@ -1,0 +1,28 @@
+@model TransferForm
+@* The tag helpers (asp-for…) generate the names, ids, values and error messages from the model and ModelState:
+   after an error, the fields come back filled with what the user had typed, even "abc". *@
+@{
+    ViewData["Title"] = "New transfer";
+    var options = Model.Accounts.Select(c => new SelectListItem($"{c.Owner} — {c.Label} ({c.Balance})", c.Id.ToString()));
+}
+
+<h2>New transfer</h2>
+<form asp-action="New" method="post">
+    <div asp-validation-summary="ModelOnly"></div>
+    <div>
+        <label asp-for="Source"></label>
+        <select asp-for="Source" asp-items="options"><option value="">— choose —</option></select>
+        <span asp-validation-for="Source"></span>
+    </div>
+    <div>
+        <label asp-for="Target"></label>
+        <select asp-for="Target" asp-items="options"><option value="">— choose —</option></select>
+        <span asp-validation-for="Target"></span>
+    </div>
+    <div>
+        <label asp-for="Amount"></label>
+        <input asp-for="Amount" type="text" inputmode="decimal" autocomplete="off" />
+        <span asp-validation-for="Amount"></span>
+    </div>
+    <button type="submit">Transfer</button>
+</form>

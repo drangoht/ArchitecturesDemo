@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE MODEL (the "M" of MVC and MVVM), common to both demos: accounts, operations, transfers and their rules.
+    It knows nothing about the screens: neither ASP.NET Core, nor WPF, nor ViewModel (checked by a test). The two patterns
+    say nothing about its internal organization; they organize what lies BETWEEN it and the user.
+  -->
+
+</Project>

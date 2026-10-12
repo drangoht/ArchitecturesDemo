@@ -1,0 +1,111 @@
+<!--
+  THE VIEW: only bindings ({Binding …}) to the ViewModel, which is the DataContext.
+  - A binding reads the property and subscribes to PropertyChanged: when the ViewModel changes, the screen follows.
+  - The other way (TwoWay), a keystroke or a selection writes into the ViewModel's property.
+  - Command="{Binding …}" links a button to a command: click → Execute, CanExecute → button enabled or greyed out.
+  The compiler does NOT check these names (a typo gives a silent binding, without error):
+  the d:DataContext and DataType below say which type is bound where, and a test uses them to check everything.
+-->
+<Window x:Class="Ui.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Ui.Presentation;assembly=Ui.Presentation"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainScreenViewModel}"
+        Title="{Binding Title}" Width="940" Height="580" Background="White"
+        FontFamily="Segoe UI" FontSize="14">
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="24" />
+            <ColumnDefinition Width="360" />
+        </Grid.ColumnDefinitions>
+
+        <!-- On the left: the accounts and the history of the selected account -->
+        <DockPanel Grid.Column="0" DataContext="{Binding Accounts}" d:DataContext="{d:DesignInstance Type=vm:AccountsViewModel}">
+            <TextBlock DockPanel.Dock="Top" Text="Accounts" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <ListBox DockPanel.Dock="Top" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}"
+                     HorizontalContentAlignment="Stretch" BorderBrush="#CBD2D9">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:AccountViewModel}">
+                        <Grid Margin="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Owner}" Foreground="#616E7C" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding BalanceDisplay}" VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding OperationsTitle}" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,6" />
+            <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="3"
+                         Visibility="{Binding LoadingInProgress, Converter={StaticResource VisibleIfTrue}}" />
+            <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="#B42318" />
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Operations}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:OperationViewModel}">
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Date}" Foreground="#616E7C" />
+                                <TextBlock Grid.Column="1" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="Amount" Grid.Column="2" Text="{Binding Amount}" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDebit}" Value="True">
+                                    <Setter TargetName="Amount" Property="Foreground" Value="#B42318" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+
+        <!-- On the right: the transfer form -->
+        <Border Grid.Column="2" BorderBrush="#CBD2D9" BorderThickness="1" CornerRadius="4" Padding="16" VerticalAlignment="Top">
+            <StackPanel DataContext="{Binding Transfer}" d:DataContext="{d:DesignInstance Type=vm:TransferViewModel}">
+                <TextBlock Text="Transfer" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+                <TextBlock Text="Account to debit" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding Accounts}" SelectedItem="{Binding Source}" DisplayMemberPath="Display" Margin="0,4,0,8" />
+
+                <TextBlock Text="Account to credit" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding Accounts}" SelectedItem="{Binding Target}" DisplayMemberPath="Display" Margin="0,4,0,2" />
+                <TextBlock Text="{Binding TargetError}" Foreground="#B42318" TextWrapping="Wrap" />
+                <Button Content="⇅ Swap" Command="{Binding SwapCommand}" HorizontalAlignment="Left" Padding="8,2" Margin="0,4,0,8" />
+
+                <TextBlock Text="Amount (€)" FontWeight="SemiBold" />
+                <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,2" Padding="2" />
+                <TextBlock Text="{Binding AmountError}" Foreground="#B42318" TextWrapping="Wrap" />
+
+                <Button Content="Transfer" Command="{Binding TransferCommand}" Padding="16,6" Margin="0,12,0,8" HorizontalAlignment="Left" />
+                <ProgressBar IsIndeterminate="True" Height="3"
+                             Visibility="{Binding IsBusy, Converter={StaticResource VisibleIfTrue}}" />
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,6,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#207227" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MessageIsError}" Value="True">
+                                    <Setter Property="Foreground" Value="#B42318" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

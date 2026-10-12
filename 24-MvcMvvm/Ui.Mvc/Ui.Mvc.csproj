@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    MVC (Model - View - Controller), on the web: ASP.NET Core MVC, http://localhost:5124.
+    - The CONTROLLER receives the request (a route), queries the model, then CHOOSES the view and passes it its data.
+    - The VIEW (Razor, .cshtml) turns this data into HTML, once per request; it does not live beyond it.
+    - The MODEL is Ui.Bank; Models/ only contains the data tailored for each view.
+    The cycle is stateless: each click is a new request, which rebuilds everything.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ui.Bank\Ui.Bank.csproj" />
+  </ItemGroup>
+
+</Project>

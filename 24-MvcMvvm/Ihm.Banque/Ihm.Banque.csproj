@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    LE MODÈLE (le « M » de MVC et de MVVM), commun aux deux démos : comptes, opérations, virements et leurs règles.
-    Il ne sait rien des écrans : ni ASP.NET Core, ni WPF, ni ViewModel (vérifié par un test). Les deux patterns ne
-    disent rien de son organisation interne ; ils organisent ce qu'il y a ENTRE lui et l'utilisateur.
-  -->
-
-</Project>

@@ -1,0 +1,22 @@
+@model AccountList
+@* A strongly typed view: it receives what the controller prepared, and only formats it. *@
+@{
+    ViewData["Title"] = "Accounts";
+}
+
+<h2>Accounts</h2>
+<table>
+    <thead>
+        <tr><th>Owner</th><th>Account</th><th class="amount">Balance</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var account in Model.Accounts)
+        {
+            <tr>
+                <td>@account.Owner</td>
+                <td><a asp-action="Detail" asp-route-id="@account.Id">@account.Label</a></td>
+                <td class="amount">@account.Balance</td>
+            </tr>
+        }
+    </tbody>
+</table>

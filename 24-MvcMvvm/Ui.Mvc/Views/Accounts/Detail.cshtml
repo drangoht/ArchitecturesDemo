@@ -1,0 +1,32 @@
+@model AccountDetail
+@{
+    ViewData["Title"] = Model.Account.Label;
+}
+
+@if (TempData["Message"] is string message)
+{
+    @* Dropped by the transfer action just before the redirection; read here, hence erased. *@
+    <p class="message" role="status">@message</p>
+}
+
+<h2>@Model.Account.Label of @Model.Account.Owner</h2>
+<p>Balance: <strong id="balance">@Model.Account.Balance</strong></p>
+<p><a class="button" asp-controller="Transfers" asp-action="New" asp-route-source="@Model.Account.Id">Transfer from this account</a></p>
+
+<h3>Operations</h3>
+<table>
+    <thead>
+        <tr><th>Date</th><th>Label</th><th class="amount">Amount</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var operation in Model.Operations)
+        {
+            <tr>
+                <td>@operation.Date</td>
+                <td>@operation.Label</td>
+                <td class="amount @(operation.IsDebit ? "debit" : null)">@operation.Amount</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p><a asp-action="Index">← All accounts</a></p>
