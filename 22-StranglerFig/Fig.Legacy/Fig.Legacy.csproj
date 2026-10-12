@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    THE LEGACY SYSTEM, the one being replaced: a single block that does everything (accounts, operations, transfers, statements,
+    branches, fees), with the conventions of another era. Its clients depend on its public API: that is what the facade
+    exposes, and what the modern service must reproduce identically, route by route.
+    It is barely modified by the migration: only two internal routes were added for the synchronization
+    (the change log and the import of the operations written by the modern service).
+  -->
+
+</Project>

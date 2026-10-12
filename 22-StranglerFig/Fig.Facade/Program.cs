@@ -5,49 +5,49 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var options = builder.Configuration.GetSection("Facade").Get<OptionsFacade>() ?? new OptionsFacade();
+var options = builder.Configuration.GetSection("Facade").Get<FacadeOptions>() ?? new FacadeOptions();
 builder.Services.AddSingleton(options);
-builder.Services.AddSingleton<TableDeRoutage>();
-builder.Services.AddSingleton<Comparateur>();
-builder.Services.AddSingleton<Relais>();
-builder.Services.AddHttpClient("ancien", c => c.BaseAddress = new Uri(options.Ancien));
-builder.Services.AddHttpClient("nouveau", c => c.BaseAddress = new Uri(options.Nouveau));
+builder.Services.AddSingleton<RoutingTable>();
+builder.Services.AddSingleton<ShadowComparer>();
+builder.Services.AddSingleton<Relay>();
+builder.Services.AddHttpClient("legacy", c => c.BaseAddress = new Uri(options.Legacy));
+builder.Services.AddHttpClient("modern", c => c.BaseAddress = new Uri(options.Modern));
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
-// ─── Le pilotage de la migration (réservé à l'équipe : en-tête X-Cle-Admin) ───
-var facade = app.MapGroup("/facade").AddEndpointFilter(async (contexte, suite) =>
-    contexte.HttpContext.Request.Headers["X-Cle-Admin"] == options.CleAdmin ? await suite(contexte) : Results.Unauthorized());
+// ─── Steering the migration (reserved for the team: X-Admin-Key header) ───
+var facade = app.MapGroup("/facade").AddEndpointFilter(async (context, next) =>
+    context.HttpContext.Request.Headers["X-Admin-Key"] == options.AdminKey ? await next(context) : Results.Unauthorized());
 
-facade.MapGet("/routes", (TableDeRoutage table) => Results.Ok(table.Etat()));
+facade.MapGet("/routes", (RoutingTable table) => Results.Ok(table.State()));
 
-// Basculer une route, à chaud, dans un sens comme dans l'autre : migrer, ou revenir en arrière.
-facade.MapPut("/routes/{nom}", (string nom, ChangementDeMode changement, TableDeRoutage table, ILogger<Relais> journal) =>
+// Switch a route, live, one way or the other: migrate, or roll back.
+facade.MapPut("/routes/{name}", (string name, ModeChange change, RoutingTable table, ILogger<Relay> logger) =>
 {
     try
     {
-        var avant = table.Basculer(nom, changement.Mode);
-        journal.LogWarning("Route {Route} : {Avant} → {Apres}", nom, avant, changement.Mode);
-        return Results.Ok(table.Etat().Single(r => r.Nom == nom));
+        var before = table.Switch(name, change.Mode);
+        logger.LogWarning("Route {Route}: {Before} → {After}", name, before, change.Mode);
+        return Results.Ok(table.State().Single(r => r.Name == name));
     }
-    catch (RouteInconnueException e)
+    catch (UnknownRouteException e)
     {
-        return Results.NotFound(new { erreur = e.Message });
+        return Results.NotFound(new { error = e.Message });
     }
     catch (ArgumentException e)
     {
-        return Results.BadRequest(new { erreur = e.Message });
+        return Results.BadRequest(new { error = e.Message });
     }
 });
 
-facade.MapGet("/progression", (TableDeRoutage table) => Results.Ok(table.Progression()));
+facade.MapGet("/progress", (RoutingTable table) => Results.Ok(table.Progress()));
 
-facade.MapGet("/comparaisons", (Comparateur comparateur) => Results.Ok(comparateur.Bilan()));
+facade.MapGet("/comparisons", (ShadowComparer comparer) => Results.Ok(comparer.Report()));
 
-// ─── Tout le reste : relayé vers l'ancien ou le nouveau, selon la table ───
-app.Map("/{**chemin}", (HttpContext http, Relais relais) => relais.Traiter(http));
+// ─── Everything else: relayed to the legacy or the modern system, according to the table ───
+app.Map("/{**path}", (HttpContext http, Relay relay) => relay.Handle(http));
 
 app.Run();
 
-public sealed record ChangementDeMode(Mode Mode);
+public sealed record ModeChange(Mode Mode);

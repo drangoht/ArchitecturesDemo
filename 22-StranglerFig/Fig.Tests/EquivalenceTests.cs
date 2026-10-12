@@ -1,124 +1,124 @@
 using System.Net.Http.Json;
-using static Fig.Tests.Systeme;
+using static Fig.Tests.FigSystem;
 
 namespace Fig.Tests;
 
 /// <summary>
-/// Les tests de CONTRAT : pour chaque route que le nouveau service reprend, il doit répondre exactement comme l'ancien,
-/// au caractère près (statut, type de contenu, corps), y compris pour les erreurs. C'est la condition pour basculer une
-/// route sans que les clients le remarquent.
+/// The CONTRACT tests: for each route the modern service takes over, it must answer exactly like the legacy system,
+/// to the character (status, content type, body), errors included. It is the condition for switching a
+/// route without the clients noticing.
 /// </summary>
 public class EquivalenceTests
 {
-    /// <summary>Un historique varié, écrit des deux côtés, puis synchronisé.</summary>
-    private static async Task<Systeme> SystemeAvecHistorique()
+    /// <summary>A varied history, written on both sides, then synchronized.</summary>
+    private static async Task<FigSystem> SystemWithHistory()
     {
-        var s = new Systeme();
-        await s.Synchroniser();
-        s.Horloge.Avancer(TimeSpan.FromMinutes(5));
-        await s.PreleverFrais(Alice, 250, "Frais de tenue de compte mensuels (offre essentielle)");   // libellé tronqué à 30
-        s.Horloge.Avancer(TimeSpan.FromMinutes(5));
-        (await s.AncienDirect.PostAsJsonAsync("/virements", new { source = Alice, cible = Bob, montant = 120.5m })).EnsureSuccessStatusCode();
-        await s.Synchroniser();
-        s.Horloge.Avancer(TimeSpan.FromMinutes(5));
-        // Écrite dans l'ancien AVANT le virement suivant, mais connue du nouveau APRÈS lui : l'ordre d'arrivée n'est pas
-        // celui des dates, et le contrat trie par date.
-        await s.PreleverFrais(Alice, 99, "Commission d'intervention");
-        s.Horloge.Avancer(TimeSpan.FromMinutes(5));
-        // « 70.10 » : le nouveau service doit répondre 947.1 comme l'ancien, et non 947.10.
-        (await s.NouveauDirect.PostAsJsonAsync("/virements", new { source = Bob, cible = Alice, montant = 70.10m })).EnsureSuccessStatusCode();
-        // Le 31 octobre à 23 h 30 UTC, il est déjà 0 h 30 le 1er novembre à Paris (heure d'hiver) : relevé de novembre.
-        s.Horloge.Regler(new DateTimeOffset(2026, 10, 31, 23, 30, 0, TimeSpan.Zero));
-        await s.PreleverFrais(Bob, 1_000, "Cotisation carte");
-        await s.Synchroniser();
-        await s.Synchroniser();
+        var s = new FigSystem();
+        await s.Synchronize();
+        s.Clock.Advance(TimeSpan.FromMinutes(5));
+        await s.ChargeFee(Alice, 250, "Monthly account maintenance fees (essential plan)");   // label truncated to 30
+        s.Clock.Advance(TimeSpan.FromMinutes(5));
+        (await s.LegacyDirect.PostAsJsonAsync("/transfers", new { source = Alice, target = Bob, amount = 120.5m })).EnsureSuccessStatusCode();
+        await s.Synchronize();
+        s.Clock.Advance(TimeSpan.FromMinutes(5));
+        // Written in the legacy system BEFORE the next transfer, but known to the modern one AFTER it: the arrival order is not
+        // the order of the dates, and the contract sorts by date.
+        await s.ChargeFee(Alice, 99, "Intervention fee");
+        s.Clock.Advance(TimeSpan.FromMinutes(5));
+        // "70.10": the modern service must answer 947.1 like the legacy system, and not 947.10.
+        (await s.ModernDirect.PostAsJsonAsync("/transfers", new { source = Bob, target = Alice, amount = 70.10m })).EnsureSuccessStatusCode();
+        // On 31 October at 11:30 pm UTC, it is already 0:30 am on 1 November in Paris (winter time): November statement.
+        s.Clock.Set(new DateTimeOffset(2026, 10, 31, 23, 30, 0, TimeSpan.Zero));
+        await s.ChargeFee(Bob, 1_000, "Card fee");
+        await s.Synchronize();
+        await s.Synchronize();
         return s;
     }
 
-    public static TheoryData<string> Lectures => new()
+    public static TheoryData<string> Reads => new()
     {
-        $"/comptes/{Alice}",
-        $"/comptes/{Bob}",
-        $"/comptes/{Alice}/operations",
-        $"/comptes/{Bob}/operations",
-        $"/comptes/{Alice}/releve?mois=2026-10",
-        $"/comptes/{Bob}/releve?mois=2026-10",
-        $"/comptes/{Bob}/releve?mois=2026-11",
-        $"/comptes/{Bob}/releve",
-        $"/comptes/{Alice}/releve?mois=2026-09",
-        $"/comptes/{Alice}/releve?mois=octobre",
-        "/comptes/99999",
-        "/comptes/99999/operations",
-        "/comptes/99999/releve"
+        $"/accounts/{Alice}",
+        $"/accounts/{Bob}",
+        $"/accounts/{Alice}/operations",
+        $"/accounts/{Bob}/operations",
+        $"/accounts/{Alice}/statement?month=2026-10",
+        $"/accounts/{Bob}/statement?month=2026-10",
+        $"/accounts/{Bob}/statement?month=2026-11",
+        $"/accounts/{Bob}/statement",
+        $"/accounts/{Alice}/statement?month=2026-09",
+        $"/accounts/{Alice}/statement?month=october",
+        "/accounts/99999",
+        "/accounts/99999/operations",
+        "/accounts/99999/statement"
     };
 
     [Theory]
-    [MemberData(nameof(Lectures))]
-    public async Task Une_lecture_donne_la_meme_reponse_des_deux_cotes(string chemin)
+    [MemberData(nameof(Reads))]
+    public async Task A_read_gives_the_same_response_on_both_sides(string path)
     {
-        await using var s = await SystemeAvecHistorique();
+        await using var s = await SystemWithHistory();
 
-        var ancien = await s.AncienDirect.GetAsync(chemin);
-        var nouveau = await s.NouveauDirect.GetAsync(chemin);
+        var legacy = await s.LegacyDirect.GetAsync(path);
+        var modern = await s.ModernDirect.GetAsync(path);
 
-        Assert.Equal(ancien.StatusCode, nouveau.StatusCode);
-        Assert.Equal(ancien.Content.Headers.ContentType, nouveau.Content.Headers.ContentType);
-        Assert.Equal(await ancien.Content.ReadAsStringAsync(), await nouveau.Content.ReadAsStringAsync());
+        Assert.Equal(legacy.StatusCode, modern.StatusCode);
+        Assert.Equal(legacy.Content.Headers.ContentType, modern.Content.Headers.ContentType);
+        Assert.Equal(await legacy.Content.ReadAsStringAsync(), await modern.Content.ReadAsStringAsync());
     }
 
-    public static TheoryData<string, string, decimal> VirementsRefuses => new()
+    public static TheoryData<string, string, decimal> RefusedTransfers => new()
     {
-        { Alice, Bob, 5_000m },     // SOLDE INSUFFISANT
-        { Alice, Bob, 0m },         // MONTANT INVALIDE
+        { Alice, Bob, 5_000m },     // INSUFFICIENT BALANCE
+        { Alice, Bob, 0m },         // INVALID AMOUNT
         { Alice, Bob, -10m },
         { Alice, Bob, 1.005m },
-        { Alice, Alice, 10m },      // COMPTES IDENTIQUES
-        { Alice, "99999", 10m },    // COMPTE INCONNU
+        { Alice, Alice, 10m },      // IDENTICAL ACCOUNTS
+        { Alice, "99999", 10m },    // UNKNOWN ACCOUNT
         { "99999", Bob, 10m }
     };
 
     [Theory]
-    [MemberData(nameof(VirementsRefuses))]
-    public async Task Un_virement_refuse_l_est_avec_la_meme_erreur_des_deux_cotes(string source, string cible, decimal montant)
+    [MemberData(nameof(RefusedTransfers))]
+    public async Task A_refused_transfer_is_refused_with_the_same_error_on_both_sides(string source, string target, decimal amount)
     {
-        await using var s = await SystemeAvecHistorique();
-        var demande = new { source, cible, montant };
+        await using var s = await SystemWithHistory();
+        var request = new { source, target, amount };
 
-        var ancien = await s.AncienDirect.PostAsJsonAsync("/virements", demande);
-        var nouveau = await s.NouveauDirect.PostAsJsonAsync("/virements", demande);
+        var legacy = await s.LegacyDirect.PostAsJsonAsync("/transfers", request);
+        var modern = await s.ModernDirect.PostAsJsonAsync("/transfers", request);
 
-        Assert.False(ancien.IsSuccessStatusCode);
-        Assert.Equal(ancien.StatusCode, nouveau.StatusCode);
-        Assert.Equal(await ancien.Content.ReadAsStringAsync(), await nouveau.Content.ReadAsStringAsync());
+        Assert.False(legacy.IsSuccessStatusCode);
+        Assert.Equal(legacy.StatusCode, modern.StatusCode);
+        Assert.Equal(await legacy.Content.ReadAsStringAsync(), await modern.Content.ReadAsStringAsync());
     }
 
     [Fact]
-    public async Task Le_contrat_herite_garde_les_habitudes_de_l_ancien()
+    public async Task The_inherited_contract_keeps_the_habits_of_the_legacy_system()
     {
-        await using var s = await SystemeAvecHistorique();
+        await using var s = await SystemWithHistory();
 
-        var operations = (await s.Json(s.NouveauDirect, $"/comptes/{Alice}/operations")).AsArray();
-        var frais = operations.Single(o => o!["libelle"]!.GetValue<string>().StartsWith("FRAIS"))!;
+        var operations = (await s.Json(s.ModernDirect, $"/accounts/{Alice}/operations")).AsArray();
+        var fee = operations.Single(o => o!["label"]!.GetValue<string>().StartsWith("MONTHLY"))!;
 
-        Assert.Equal("FRAIS DE TENUE DE COMPTE MENSU", frais["libelle"]!.GetValue<string>());   // majuscules, 30 caractères
-        Assert.Equal("2026-10-12T10:05:00", frais["date"]!.GetValue<string>());                   // heure de Paris, sans fuseau
-        Assert.Equal("-2.5", frais["montant"]!.ToJsonString());                                    // et non -2.50
+        Assert.Equal("MONTHLY ACCOUNT MAINTENANCE FE", fee["label"]!.GetValue<string>());   // uppercase, 30 characters
+        Assert.Equal("2026-10-12T10:05:00", fee["date"]!.GetValue<string>());                // Paris time, without time zone
+        Assert.Equal("-2.5", fee["amount"]!.ToJsonString());                                 // and not -2.50
     }
 
     [Fact]
-    public async Task Un_virement_accepte_donne_le_meme_solde_mais_pas_la_meme_reference()
+    public async Task An_accepted_transfer_gives_the_same_balance_but_not_the_same_reference()
     {
-        await using var s = await SystemeAvecHistorique();
-        var demande = new { source = Alice, cible = Bob, montant = 100 };
+        await using var s = await SystemWithHistory();
+        var request = new { source = Alice, target = Bob, amount = 100 };
 
-        var ancien = await s.Json(s.AncienDirect, "/comptes/" + Alice);   // même point de départ des deux côtés
-        Assert.Equal(ancien.ToJsonString(), (await s.Json(s.NouveauDirect, "/comptes/" + Alice)).ToJsonString());
-        var reponseAncien = await (await s.AncienDirect.PostAsJsonAsync("/virements", demande)).Content.ReadFromJsonAsync<Dictionary<string, object>>();
-        var reponseNouveau = await (await s.NouveauDirect.PostAsJsonAsync("/virements", demande)).Content.ReadFromJsonAsync<Dictionary<string, object>>();
+        var legacy = await s.Json(s.LegacyDirect, "/accounts/" + Alice);   // same starting point on both sides
+        Assert.Equal(legacy.ToJsonString(), (await s.Json(s.ModernDirect, "/accounts/" + Alice)).ToJsonString());
+        var legacyResponse = await (await s.LegacyDirect.PostAsJsonAsync("/transfers", request)).Content.ReadFromJsonAsync<Dictionary<string, object>>();
+        var modernResponse = await (await s.ModernDirect.PostAsJsonAsync("/transfers", request)).Content.ReadFromJsonAsync<Dictionary<string, object>>();
 
-        Assert.Equal(reponseAncien!["soldeSource"].ToString(), reponseNouveau!["soldeSource"].ToString());
-        // La référence est opaque pour les clients : chaque système a sa numérotation, sans collision possible.
-        Assert.StartsWith("VIR-0", reponseAncien["reference"].ToString());
-        Assert.StartsWith("VIR-N", reponseNouveau["reference"].ToString());
+        Assert.Equal(legacyResponse!["sourceBalance"].ToString(), modernResponse!["sourceBalance"].ToString());
+        // The reference is opaque to the clients: each system has its own numbering, with no possible collision.
+        Assert.StartsWith("TRF-0", legacyResponse["reference"].ToString());
+        Assert.StartsWith("TRF-N", modernResponse["reference"].ToString());
     }
 }

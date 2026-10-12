@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fig.Ancien\Fig.Ancien.csproj" />
-    <ProjectReference Include="..\Fig.Nouveau\Fig.Nouveau.csproj" />
+    <ProjectReference Include="..\Fig.Legacy\Fig.Legacy.csproj" />
+    <ProjectReference Include="..\Fig.Modern\Fig.Modern.csproj" />
     <ProjectReference Include="..\Fig.Facade\Fig.Facade.csproj" />
   </ItemGroup>
 

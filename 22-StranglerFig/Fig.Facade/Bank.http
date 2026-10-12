@@ -1,0 +1,83 @@
+@facade = http://localhost:5122
+@legacy = http://localhost:5240
+@modern = http://localhost:5241
+@alice = 10001
+@bob = 10002
+
+### The client only knows the facade. At the start (appsettings.json): the lookup is already migrated,
+### the operations are in shadow mode, the statement and the transfers are still served by the legacy system.
+### The X-Served-By header of each response tells who answered.
+GET {{facade}}/accounts/{{alice}}
+
+### Shadow mode: the legacy system answers, the modern one is called in parallel and compared (see /facade/comparisons)
+GET {{facade}}/accounts/{{alice}}/operations
+
+### Still served by the legacy system
+GET {{facade}}/accounts/{{alice}}/statement
+
+### Still served by the legacy system. The modern service catches up through its log (synchronization every 500 ms).
+POST {{facade}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 50 }
+
+### A function nobody listed: it is not in the table, it goes to the legacy system
+GET {{facade}}/branches
+
+### The internal routes of both systems do not go through the facade (404)
+GET {{facade}}/internal/log
+
+# ─── Steering the migration (X-Admin-Key header) ───
+
+### The routing table: the mode of each route, and how many calls each system served
+GET {{facade}}/facade/routes
+X-Admin-Key: demo
+
+### The shadow mode comparisons: identical, divergences (with both bodies), abandoned (modern too slow)
+GET {{facade}}/facade/comparisons
+X-Admin-Key: demo
+
+### Switch the transfers to the modern service, live
+PUT {{facade}}/facade/routes/transfers
+X-Admin-Key: demo
+Content-Type: application/json
+
+{ "mode": "Modern" }
+
+### … the same call is now served by the modern service (X-Served-By: modern), which forwards it to the legacy system
+POST {{facade}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 25 }
+
+### Rolling back is the same operation, the other way round: the legacy system already knows the 25 € transfer
+PUT {{facade}}/facade/routes/transfers
+X-Admin-Key: demo
+Content-Type: application/json
+
+{ "mode": "Legacy" }
+
+### Refused: shadow mode would execute the transfer twice
+PUT {{facade}}/facade/routes/transfers
+X-Admin-Key: demo
+Content-Type: application/json
+
+{ "mode": "Shadow" }
+
+### Where does the migration stand? "legacyRemovable" is only true if everything is migrated AND nothing calls the legacy system any more
+GET {{facade}}/facade/progress
+X-Admin-Key: demo
+
+# ─── Behind the scenes (directly on both systems) ───
+
+### The legacy system's night batch: it writes without going through the facade, the modern one catches up anyway
+POST {{legacy}}/internal/fees
+Content-Type: application/json
+
+{ "ACCNUM": "{{alice}}", "AMTCTS": 250, "OPELBL": "Account maintenance fee" }
+
+### The legacy change log, as the anti-corruption layer reads it (cents, six-letter columns)
+GET {{legacy}}/internal/log?since=0
+
+### The state of the modern service's synchronization: position in the log, operations still to forward
+GET {{modern}}/internal/state

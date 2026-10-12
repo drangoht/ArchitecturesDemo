@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    THE MODERN SERVICE, which takes over the legacy system's functions one by one. Its domain is clean (euros as decimal, dates
+    with time zone); everything that comes from the legacy system or goes back to it passes through the anti-corruption layer. It exposes,
+    in addition, the legacy system's HISTORICAL contract, identically, so that the facade can switch a route without the clients
+    noticing the difference.
+    No reference to Fig.Legacy: it only knows it through HTTP (checked by a test).
+  -->
+
+</Project>

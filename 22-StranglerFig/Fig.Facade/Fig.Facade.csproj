@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <!--
-    LA FAÇADE (le « figuier étrangleur ») : le seul point d'entrée des clients. Une table de routage dit, route par route,
-    qui répond : l'ancien, le nouveau, ou l'ancien avec le nouveau appelé en ombre pour comparer. Tout ce qui n'est pas
-    déclaré va à l'ancien. On bascule une route à chaud, et on revient en arrière de la même façon.
-    Aucune logique métier, et aucune référence aux deux systèmes : elle ne les connaît que par HTTP.
+    THE FACADE (the "strangler fig"): the clients' only entry point. A routing table says, route by route,
+    who answers: the legacy system, the modern one, or the legacy one with the modern one called in shadow to compare. Anything not
+    declared goes to the legacy system. A route is switched live, and rolled back the same way.
+    No business logic, and no reference to the two systems: it only knows them through HTTP.
   -->
 
 </Project>
