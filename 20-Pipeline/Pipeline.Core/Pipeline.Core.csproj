@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE PIPELINE ENGINE, generic (no package): independent filters connected by bounded pipes
+    (System.Threading.Channels). It knows nothing about the bank.
+    In production: TPL Dataflow, System.Threading.Channels directly, Akka Streams, or at the scale of a system
+    Kafka Streams, Apache Beam, ETL pipelines.
+  -->
+
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- THE FILTERS of the import of a transfer file: each one does a single thing, without knowing the others. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pipeline.Core\Pipeline.Core.csproj" />
+  </ItemGroup>
+
+</Project>

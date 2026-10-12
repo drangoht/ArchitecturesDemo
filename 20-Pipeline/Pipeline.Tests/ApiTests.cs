@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Pipeline.Banque;
+using Pipeline.Bank;
 
 namespace Pipeline.Tests;
 
-/// <summary>L'application complète : le fichier envoyé dans le corps de la requête, lu en flux.</summary>
+/// <summary>The complete application: the file sent in the request body, read as a stream.</summary>
 public class ApiTests : IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _app = new();
@@ -20,64 +20,64 @@ public class ApiTests : IAsyncLifetime
 
     public Task DisposeAsync() => _app.DisposeAsync().AsTask();
 
-    private static readonly string Fichier = string.Join('\n',
-        "reference;emetteur;beneficiaire;montant;devise",
-        $"A-1;{DonneesDeDemo.Alice};{DonneesDeDemo.Bob};100;EUR",
-        $"A-2;{DonneesDeDemo.Alice};{DonneesDeDemo.Bob};abc;EUR",
-        $"A-3;{DonneesDeDemo.Bob};{DonneesDeDemo.Alice};50;EUR");
+    private static readonly string File = string.Join('\n',
+        "reference;payer;payee;amount;currency",
+        $"A-1;{DemoData.Alice};{DemoData.Bob};100;EUR",
+        $"A-2;{DemoData.Alice};{DemoData.Bob};abc;EUR",
+        $"A-3;{DemoData.Bob};{DemoData.Alice};50;EUR");
 
-    private async Task<(HttpStatusCode Code, JsonElement Import)> Importer(string requete = "/imports")
+    private async Task<(HttpStatusCode Code, JsonElement Import)> Import(string request = "/imports")
     {
-        var reponse = await _client.PostAsync(requete, new StringContent(Fichier));
-        return (reponse.StatusCode, await reponse.Content.ReadFromJsonAsync<JsonElement>());
+        var response = await _client.PostAsync(request, new StringContent(File));
+        return (response.StatusCode, await response.Content.ReadFromJsonAsync<JsonElement>());
     }
 
-    private async Task<decimal> Solde(string iban) =>
-        (await _client.GetFromJsonAsync<JsonElement>($"/comptes/{iban}")).GetProperty("solde").GetDecimal();
+    private async Task<decimal> Balance(string iban) =>
+        (await _client.GetFromJsonAsync<JsonElement>($"/accounts/{iban}")).GetProperty("balance").GetDecimal();
 
     [Fact]
-    public async Task Un_import_execute_le_fichier_et_garde_son_compte_rendu()
+    public async Task An_import_executes_the_file_and_keeps_its_report()
     {
-        var (code, import) = await Importer();
+        var (code, import) = await Import();
 
         Assert.Equal(HttpStatusCode.OK, code);
-        var bilan = import.GetProperty("bilan");
-        Assert.Equal((3, 2, 1), (bilan.GetProperty("lignes").GetInt32(), bilan.GetProperty("sorties").GetInt32(), bilan.GetProperty("rejets").GetInt32()));
-        Assert.Equal(950m, await Solde(DonneesDeDemo.Alice));
+        var report = import.GetProperty("report");
+        Assert.Equal((3, 2, 1), (report.GetProperty("lines").GetInt32(), report.GetProperty("outputs").GetInt32(), report.GetProperty("rejections").GetInt32()));
+        Assert.Equal(950m, await Balance(DemoData.Alice));
         var id = import.GetProperty("id").GetInt32();
-        Assert.Equal("Termine", (await _client.GetFromJsonAsync<JsonElement>($"/imports/{id}")).GetProperty("bilan").GetProperty("statut").GetString());
+        Assert.Equal("Completed", (await _client.GetFromJsonAsync<JsonElement>($"/imports/{id}")).GetProperty("report").GetProperty("status").GetString());
         Assert.Single((await _client.GetFromJsonAsync<JsonElement>("/imports")).EnumerateArray());
     }
 
     [Fact]
-    public async Task Un_import_a_blanc_ne_touche_a_aucun_compte()
+    public async Task A_dry_run_import_touches_no_account()
     {
-        var (_, import) = await Importer("/imports?aBlanc=true");
+        var (_, import) = await Import("/imports?dryRun=true");
 
-        Assert.True(import.GetProperty("aBlanc").GetBoolean());
-        Assert.Equal(2, import.GetProperty("bilan").GetProperty("sorties").GetInt32());
-        Assert.Equal(1_000m, await Solde(DonneesDeDemo.Alice));
+        Assert.True(import.GetProperty("dryRun").GetBoolean());
+        Assert.Equal(2, import.GetProperty("report").GetProperty("outputs").GetInt32());
+        Assert.Equal(1_000m, await Balance(DemoData.Alice));
     }
 
     [Fact]
-    public async Task Une_panne_repond_500_avec_le_compte_rendu()
+    public async Task A_failure_answers_500_with_the_report()
     {
-        var (code, import) = await Importer("/imports?panneALaReference=A-3");
+        var (code, import) = await Import("/imports?failureAtReference=A-3");
 
         Assert.Equal(HttpStatusCode.InternalServerError, code);
-        Assert.Equal("Echoue", import.GetProperty("bilan").GetProperty("statut").GetString());
-        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/comptes/FR00INCONNU")).StatusCode);
+        Assert.Equal("Failed", import.GetProperty("report").GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/accounts/FR00UNKNOWN")).StatusCode);
     }
 
     [Fact]
-    public async Task La_demo_de_l_import_massif_designe_le_goulot()
+    public async Task The_bulk_import_demo_points_out_the_bottleneck()
     {
-        var bilan = await (await _client.PostAsJsonAsync("/demo/import-massif", new { lignes = 5_000, parallelismeFraude = 2 }))
+        var report = await (await _client.PostAsJsonAsync("/demo/bulk-import", new { lines = 5_000, fraudParallelism = 2 }))
             .Content.ReadFromJsonAsync<JsonElement>();
 
-        Assert.Equal("Termine", bilan.GetProperty("statut").GetString());
-        Assert.Equal(6, bilan.GetProperty("etages").GetArrayLength());
-        Assert.Equal("Contrôler la fraude", bilan.GetProperty("goulot").GetString());
-        Assert.Equal(HttpStatusCode.BadRequest, (await _client.PostAsJsonAsync("/demo/import-massif", new { lignes = 0 })).StatusCode);
+        Assert.Equal("Completed", report.GetProperty("status").GetString());
+        Assert.Equal(6, report.GetProperty("stages").GetArrayLength());
+        Assert.Equal("Check fraud", report.GetProperty("bottleneck").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.PostAsJsonAsync("/demo/bulk-import", new { lines = 0 })).StatusCode);
     }
 }

@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!-- LES FILTRES de l'import d'un fichier de virements : chacun fait une seule chose, sans connaître les autres. -->
-
-  <ItemGroup>
-    <ProjectReference Include="..\Pipeline.Noyau\Pipeline.Noyau.csproj" />
-  </ItemGroup>
-
-</Project>

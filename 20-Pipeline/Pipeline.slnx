@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="Pipeline.Api/Pipeline.Api.csproj" />
-  <Project Path="Pipeline.Banque/Pipeline.Banque.csproj" />
-  <Project Path="Pipeline.Noyau/Pipeline.Noyau.csproj" />
+  <Project Path="Pipeline.Bank/Pipeline.Bank.csproj" />
+  <Project Path="Pipeline.Core/Pipeline.Core.csproj" />
   <Project Path="Pipeline.Tests/Pipeline.Tests.csproj" />
 </Solution>

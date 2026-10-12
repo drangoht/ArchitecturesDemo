@@ -1,0 +1,65 @@
+@base = http://localhost:5120
+@alice = FR7630006000011234567890189
+@bob = FR1230006000019876543210452
+
+### The accounts before the import: Alice 1,000 €, Bob 500 €
+GET {{base}}/accounts/{{alice}}
+
+###
+GET {{base}}/accounts/{{bob}}
+
+### "Dry run" import: the same filters, without the last one (Execute). Nothing is modified; the report tells what would go through.
+POST {{base}}/imports?dryRun=true
+Content-Type: text/csv
+
+< ./Transfers-sample.csv
+
+### The import: 11 lines, 3 transfers executed, 8 rejections, each one by the filter concerned (firstRejections)
+### The report also measures each stage: items processed, processing time, waiting for the next pipe
+POST {{base}}/imports
+Content-Type: text/csv
+
+< ./Transfers-sample.csv
+
+### Alice: 842.80 €; Bob: 657.20 €
+GET {{base}}/accounts/{{alice}}
+
+### Replay the same file: nothing is executed twice ("already executed" duplicates); only VIR-009 goes through, Bob now having enough to pay
+POST {{base}}/imports
+Content-Type: text/csv
+
+< ./Transfers-sample.csv
+
+### The imports done, and the report of one of them
+GET {{base}}/imports
+
+###
+GET {{base}}/imports/1
+
+### A failure in the middle of an import (an exception, not a rejection): the whole pipeline stops, 500.
+### Run on a freshly started API, then run the normal import again: it finishes the job without redoing anything.
+POST {{base}}/imports?failureAtReference=VIR-010
+Content-Type: text/csv
+
+< ./Transfers-sample.csv
+
+### ─── Throughput, bottleneck, back-pressure ───
+
+### 100,000 lines generated on the fly, 1 copy of the fraud check: it is the bottleneck (occupancy ≈ 0.94),
+### the other stages spend their time waiting (outputWaitMs); maxInFlight stays at a few hundred
+POST {{base}}/demo/bulk-import
+Content-Type: application/json
+
+{ "lines": 100000, "fraudParallelism": 1 }
+
+### 8 copies of the fraud check: several times faster, same result
+POST {{base}}/demo/bulk-import
+Content-Type: application/json
+
+{ "lines": 100000, "fraudParallelism": 8 }
+
+### A light fraud score: parallelizing moves the bottleneck to another stage (Validate)
+POST {{base}}/demo/bulk-import
+Content-Type: application/json
+
+{ "lines": 100000, "fraudParallelism": 8, "scoringCost": 5 }

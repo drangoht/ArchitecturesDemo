@@ -1,166 +1,166 @@
-using Pipeline.Banque;
-using Pipeline.Noyau;
+using Pipeline.Bank;
+using Pipeline.Core;
 
 namespace Pipeline.Tests;
 
-/// <summary>Les filtres bancaires, assemblés comme dans l'API, sur le fichier d'exemple et sur un gros fichier généré.</summary>
+/// <summary>The bank filters, assembled as in the API, on the sample file and on a big generated file.</summary>
 public class ImportTests
 {
-    private const string Alice = DonneesDeDemo.Alice, Bob = DonneesDeDemo.Bob;
+    private const string Alice = DemoData.Alice, Bob = DemoData.Bob;
 
-    private readonly Registre _registre = DonneesDeDemo.Registre();
+    private readonly Ledger _ledger = DemoData.Ledger();
 
-    /// <summary>Le fichier d'exemple de l'API (Virements-exemple.csv), retrouvé depuis le dossier de sortie des tests.</summary>
-    private static string[] FichierExemple()
+    /// <summary>The API's sample file (Transfers-sample.csv), found from the tests' output folder.</summary>
+    private static string[] SampleFile()
     {
-        var dossier = new DirectoryInfo(AppContext.BaseDirectory);
-        while (!File.Exists(Path.Combine(dossier.FullName, "Pipeline.Api", "Virements-exemple.csv")))
-            dossier = dossier.Parent!;
-        return File.ReadAllLines(Path.Combine(dossier.FullName, "Pipeline.Api", "Virements-exemple.csv"));
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(folder.FullName, "Pipeline.Api", "Transfers-sample.csv")))
+            folder = folder.Parent!;
+        return File.ReadAllLines(Path.Combine(folder.FullName, "Pipeline.Api", "Transfers-sample.csv"));
     }
 
-    private static async IAsyncEnumerable<string> Source(IEnumerable<string> lignes)
+    private static async IAsyncEnumerable<string> Source(IEnumerable<string> lines)
     {
-        using var lecteur = new StringReader(string.Join('\n', lignes));
-        await foreach (var ligne in Imports.Lignes(lecteur))
-            yield return ligne;
+        using var reader = new StringReader(string.Join('\n', lines));
+        await foreach (var line in Imports.Lines(reader))
+            yield return line;
     }
 
-    private Task<Bilan> Importer(OptionsImport? options = null) =>
-        Imports.Executer(_registre, options ?? new OptionsImport(ParallelismeFraude: 4)).Executer(Source(FichierExemple()));
+    private Task<Report> Import(ImportOptions? options = null) =>
+        Imports.Execute(_ledger, options ?? new ImportOptions(FraudParallelism: 4)).Run(Source(SampleFile()));
 
-    private decimal Solde(string iban) => _registre.Consulter(iban)!.Solde;
+    private decimal Balance(string iban) => _ledger.Get(iban)!.Balance;
 
     [Fact]
-    public async Task Le_fichier_d_exemple_donne_trois_virements_et_un_rejet_par_motif()
+    public async Task The_sample_file_gives_three_transfers_and_one_rejection_per_reason()
     {
-        var bilan = await Importer();
+        var report = await Import();
 
-        Assert.Equal((StatutExecution.Termine, 11L, 3L, 8L), (bilan.Statut, bilan.Lignes, bilan.Sorties, bilan.Rejets));
-        Assert.All(bilan.RejetsParMotif.Values, n => Assert.Equal(1, n));
+        Assert.Equal((RunStatus.Completed, 11L, 3L, 8L), (report.Status, report.Lines, report.Outputs, report.Rejections));
+        Assert.All(report.RejectionsByReason.Values, n => Assert.Equal(1, n));
         Assert.Equal(
-            [(3L, "Analyser"), (4, "Valider"), (5, "Valider"), (6, "Dédupliquer"), (7, "Convertir"), (8, "Contrôler la fraude"),
-             (9, "Contrôler la fraude"), (10, "Exécuter")],
-            bilan.PremiersRejets.Select(r => (r.Ligne, r.Filtre)));
-        Assert.Equal((842.80m, 657.20m), (Solde(Alice), Solde(Bob)));  // -120 +46 (50 USD) -83,20 (80 CHF)
+            [(3L, "Parse"), (4, "Validate"), (5, "Validate"), (6, "Deduplicate"), (7, "Convert currency"), (8, "Check fraud"),
+             (9, "Check fraud"), (10, "Execute")],
+            report.FirstRejections.Select(r => (r.Line, r.Filter)));
+        Assert.Equal((842.80m, 657.20m), (Balance(Alice), Balance(Bob)));  // -120 +46 (50 USD) -83.20 (80 CHF)
     }
 
     [Fact]
-    public async Task Rejouer_un_fichier_n_execute_rien_deux_fois()
+    public async Task Replaying_a_file_executes_nothing_twice()
     {
-        await Importer();
+        await Import();
 
-        var rejeu = await Importer();
+        var replay = await Import();
 
-        Assert.Equal(4, rejeu.RejetsParMotif["doublon"]);  // VIR-001, 002, 010 déjà exécutés, et VIR-001 en double dans le fichier
-        // Écartés tôt, par un filtre bon marché : ils n'atteignent ni le contrôle de fraude, ni l'exécution.
-        Assert.All(rejeu.PremiersRejets.Where(r => r.Motif == "doublon"), r => Assert.Equal("Dédupliquer", r.Filtre));
-        Assert.Equal(1, rejeu.Sorties);                     // seul VIR-009 passe : Bob a maintenant de quoi payer
-        Assert.Equal((1_442.80m, 57.20m), (Solde(Alice), Solde(Bob)));
+        Assert.Equal(4, replay.RejectionsByReason["duplicate"]);  // VIR-001, 002, 010 already executed, and VIR-001 twice in the file
+        // Discarded early, by a cheap filter: they reach neither the fraud check nor the execution.
+        Assert.All(replay.FirstRejections.Where(r => r.Reason == "duplicate"), r => Assert.Equal("Deduplicate", r.Filter));
+        Assert.Equal(1, replay.Outputs);                     // only VIR-009 goes through: Bob now has enough to pay
+        Assert.Equal((1_442.80m, 57.20m), (Balance(Alice), Balance(Bob)));
     }
 
     [Fact]
-    public async Task Un_import_a_blanc_dit_ce_qui_passerait_sans_rien_modifier()
+    public async Task A_dry_run_import_tells_what_would_go_through_without_modifying_anything()
     {
-        var sorties = new List<Virement>();
+        var outputs = new List<Transfer>();
 
-        var bilan = await Imports.ABlanc(_registre, new OptionsImport()).Executer(Source(FichierExemple()), sorties.Add);
+        var report = await Imports.DryRun(_ledger, new ImportOptions()).Run(Source(SampleFile()), outputs.Add);
 
-        Assert.Equal(["VIR-001", "VIR-002", "VIR-009", "VIR-010"], sorties.Select(v => v.Reference));
-        Assert.DoesNotContain("Exécuter", bilan.Etages.Select(e => e.Nom));
-        Assert.Equal((1_000m, 500m, 0), (Solde(Alice), Solde(Bob), _registre.NombreExecutes));
+        Assert.Equal(["VIR-001", "VIR-002", "VIR-009", "VIR-010"], outputs.Select(v => v.Reference));
+        Assert.DoesNotContain("Execute", report.Stages.Select(e => e.Name));
+        Assert.Equal((1_000m, 500m, 0), (Balance(Alice), Balance(Bob), _ledger.ExecutedCount));
     }
 
     [Fact]
-    public async Task Apres_une_panne_en_plein_import_le_rejeu_termine_sans_rien_executer_deux_fois()
+    public async Task After_a_failure_in_the_middle_of_an_import_the_replay_finishes_without_executing_anything_twice()
     {
-        var panne = await Importer(new OptionsImport(PanneALaReference: "VIR-010"));
+        var failure = await Import(new ImportOptions(FailureAtReference: "VIR-010"));
 
-        Assert.Equal(StatutExecution.Echoue, panne.Statut);
-        Assert.Equal("Panne simulée en traitant VIR-010.", panne.Erreur);
-        Assert.InRange(_registre.NombreExecutes, 0, 2);  // selon ce qui avait atteint l'exécution avant l'arrêt
+        Assert.Equal(RunStatus.Failed, failure.Status);
+        Assert.Equal("Simulated failure while processing VIR-010.", failure.Error);
+        Assert.InRange(_ledger.ExecutedCount, 0, 2);  // depending on what had reached the execution before the stop
 
-        var reprise = await Importer();
+        var resumption = await Import();
 
-        Assert.Equal(StatutExecution.Termine, reprise.Statut);
-        Assert.Equal(3, _registre.NombreExecutes);
-        Assert.Equal((842.80m, 657.20m), (Solde(Alice), Solde(Bob)));  // exactement comme sans panne
+        Assert.Equal(RunStatus.Completed, resumption.Status);
+        Assert.Equal(3, _ledger.ExecutedCount);
+        Assert.Equal((842.80m, 657.20m), (Balance(Alice), Balance(Bob)));  // exactly as without a failure
     }
 
     [Fact]
-    public async Task L_ordre_du_fichier_compte_et_l_etage_parallele_ordonne_le_respecte()
+    public async Task The_file_order_matters_and_the_ordered_parallel_stage_respects_it()
     {
-        // Bob ne peut payer la ligne 2 qu'après avoir reçu la ligne 1. La ligne 1 est la plus lente à contrôler.
-        string[] fichier = [$"L1;{Alice};{Bob};600;EUR", $"L2;{Bob};{Alice};1000;EUR"];
-        Pipeline<string, VirementExecute> Assembler(Registre registre, bool ordonne) => Noyau.Pipeline.Depuis<string>()
-            .Puis(new Analyser())
-            .Puis(new Convertir())
-            .Puis(new Lent<Virement>("Contrôle lent", v => v.Reference == "L1" ? 100 : 0), parallelisme: 4, ordonne)
-            .Puis(new Executer(registre))
-            .Construire();
+        // Bob can only pay line 2 after having received line 1. Line 1 is the slowest to check.
+        string[] file = [$"L1;{Alice};{Bob};600;EUR", $"L2;{Bob};{Alice};1000;EUR"];
+        Pipeline<string, ExecutedTransfer> Assemble(Ledger ledger, bool ordered) => Core.Pipeline.From<string>()
+            .Then(new Parse())
+            .Then(new ConvertCurrency())
+            .Then(new Slow<Transfer>("Slow check", v => v.Reference == "L1" ? 100 : 0), parallelism: 4, ordered)
+            .Then(new Execute(ledger))
+            .Build();
 
-        var ordonne = await Assembler(_registre, ordonne: true).Executer(Source(fichier));
-        var autreRegistre = DonneesDeDemo.Registre();
-        var desordonne = await Assembler(autreRegistre, ordonne: false).Executer(Source(fichier));
+        var ordered = await Assemble(_ledger, ordered: true).Run(Source(file));
+        var otherLedger = DemoData.Ledger();
+        var unordered = await Assemble(otherLedger, ordered: false).Run(Source(file));
 
-        Assert.Equal(2, ordonne.Sorties);
-        Assert.Equal(1, desordonne.Sorties);
-        Assert.Equal("solde insuffisant", desordonne.PremiersRejets.Single().Motif);
+        Assert.Equal(2, ordered.Outputs);
+        Assert.Equal(1, unordered.Outputs);
+        Assert.Equal("insufficient balance", unordered.FirstRejections.Single().Reason);
     }
 
     [Fact]
-    public async Task Un_gros_fichier_passe_en_flux_avec_une_memoire_bornee()
+    public async Task A_big_file_flows_through_with_bounded_memory()
     {
-        var (registre, comptes) = Imports.BacASable(200);
-        var total = registre.Soldes().Values.Sum();
+        var (ledger, accounts) = Imports.Sandbox(200);
+        var total = ledger.Balances().Values.Sum();
 
-        var bilan = await Imports.Executer(registre, new OptionsImport(ParallelismeFraude: 4)).Executer(Imports.FichierDeDemo(20_000, comptes));
+        var report = await Imports.Execute(ledger, new ImportOptions(FraudParallelism: 4)).Run(Imports.DemoFile(20_000, accounts));
 
-        Assert.Equal((StatutExecution.Termine, 20_000L), (bilan.Statut, bilan.Lignes));
-        Assert.Equal(bilan.Lignes, bilan.Sorties + bilan.Rejets);
-        foreach (var motif in new[] { "ligne mal formée", "IBAN invalide", "doublon", "plafond dépassé" })
-            Assert.Equal(200, bilan.RejetsParMotif[motif]);
-        Assert.InRange(bilan.MaxEnTransit, 1, 1_000);  // 20 000 lignes, jamais plus de quelques centaines en mémoire
-        Assert.Equal(total, registre.Soldes().Values.Sum());
+        Assert.Equal((RunStatus.Completed, 20_000L), (report.Status, report.Lines));
+        Assert.Equal(report.Lines, report.Outputs + report.Rejections);
+        foreach (var reason in new[] { "malformed line", "invalid IBAN", "duplicate", "ceiling exceeded" })
+            Assert.Equal(200, report.RejectionsByReason[reason]);
+        Assert.InRange(report.MaxInFlight, 1, 1_000);  // 20,000 lines, never more than a few hundred in memory
+        Assert.Equal(total, ledger.Balances().Values.Sum());
     }
 
     [Fact]
-    public async Task Paralleliser_le_controle_de_fraude_ne_change_pas_le_resultat()
+    public async Task Parallelizing_the_fraud_check_does_not_change_the_result()
     {
-        var (seul, comptes) = Imports.BacASable(50);
-        var (huit, _) = Imports.BacASable(50);
+        var (single, accounts) = Imports.Sandbox(50);
+        var (eight, _) = Imports.Sandbox(50);
 
-        await Imports.Executer(seul, new OptionsImport(ParallelismeFraude: 1, CoutScoring: 1)).Executer(Imports.FichierDeDemo(5_000, comptes));
-        await Imports.Executer(huit, new OptionsImport(ParallelismeFraude: 8, CoutScoring: 1)).Executer(Imports.FichierDeDemo(5_000, comptes));
+        await Imports.Execute(single, new ImportOptions(FraudParallelism: 1, ScoringCost: 1)).Run(Imports.DemoFile(5_000, accounts));
+        await Imports.Execute(eight, new ImportOptions(FraudParallelism: 8, ScoringCost: 1)).Run(Imports.DemoFile(5_000, accounts));
 
-        Assert.Equal(seul.Soldes(), huit.Soldes());
+        Assert.Equal(single.Balances(), eight.Balances());
     }
 
     [Fact]
-    public async Task Executer_refuse_un_virement_qui_n_est_pas_passe_par_la_conversion()
+    public async Task Execute_refuses_a_transfer_that_did_not_go_through_the_conversion()
     {
-        // Les filtres s'ignorent, mais le pipeline a un ordre logique : Exécuter suppose que Convertir est passé avant.
-        var bilan = await Noyau.Pipeline.Depuis<string>().Puis(new Analyser()).Puis(new Executer(_registre)).Construire()
-            .Executer(Source([$"X-1;{Alice};{Bob};100;EUR"]));
+        // The filters ignore each other, but the pipeline has a logical order: Execute assumes Convert currency came before.
+        var report = await Core.Pipeline.From<string>().Then(new Parse()).Then(new Execute(_ledger)).Build()
+            .Run(Source([$"X-1;{Alice};{Bob};100;EUR"]));
 
-        Assert.Equal("montant non converti", bilan.PremiersRejets.Single().Motif);
-        Assert.Equal(1_000m, Solde(Alice));
+        Assert.Equal("amount not converted", report.FirstRejections.Single().Reason);
+        Assert.Equal(1_000m, Balance(Alice));
     }
 
     [Fact]
-    public void Le_registre_n_execute_jamais_deux_fois_la_meme_reference()
+    public void The_ledger_never_executes_the_same_reference_twice()
     {
-        // Dernier rempart : deux imports SIMULTANÉS du même fichier passent tous deux Dédupliquer avant que l'un ait exécuté.
-        var virement = new Virement("R-1", Alice, Bob, 100m, "EUR", 100m);
+        // Last line of defence: two SIMULTANEOUS imports of the same file both go through Deduplicate before one has executed.
+        var transfer = new Transfer("R-1", Alice, Bob, 100m, "EUR", 100m);
 
-        Assert.Null(_registre.Virer(virement, out _));
-        Assert.Equal("doublon", _registre.Virer(virement, out _));
-        Assert.Equal(900m, Solde(Alice));
+        Assert.Null(_ledger.Transfer(transfer, out _));
+        Assert.Equal("duplicate", _ledger.Transfer(transfer, out _));
+        Assert.Equal(900m, Balance(Alice));
     }
 
     [Theory]
     [InlineData("FR7630006000011234567890189", true)]
     [InlineData("FR7630006000011234567890188", false)]
     [InlineData("FR76 3000", false)]
-    public void La_cle_d_un_iban_est_verifiee(string iban, bool valide) => Assert.Equal(valide, Iban.EstValide(iban));
+    public void The_check_digits_of_an_iban_are_verified(string iban, bool valid) => Assert.Equal(valid, Iban.IsValid(iban));
 }
