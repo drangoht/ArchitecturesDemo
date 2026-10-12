@@ -2,15 +2,15 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "00-couches",
+      "name": "00-layered",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "00-Couches/Couches.Presentation", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "00-Layered/Layered.Presentation", "--launch-profile", "http"],
       "port": 5100
     },
     {
-      "name": "01-hexagonale",
+      "name": "01-hexagonal",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "01-Hexagonale/Hexa.Adapters.Web", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "01-Hexagonal/Hexa.Adapters.Web", "--launch-profile", "http"],
       "port": 5101
     },
     {
@@ -26,9 +26,9 @@
       "port": 5103
     },
     {
-      "name": "04-coeur-fonctionnel",
+      "name": "04-functional-core",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "04-CoeurFonctionnel/Fonctionnel.Coquille", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "04-FunctionalCore/Functional.Shell", "--launch-profile", "http"],
       "port": 5104
     },
     {
@@ -38,21 +38,21 @@
       "port": 5105
     },
     {
-      "name": "06-composants",
+      "name": "06-components",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "06-Composants/Composants.Api", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "06-Components/Components.Api", "--launch-profile", "http"],
       "port": 5106
     },
     {
-      "name": "07-monolithe-modulaire",
+      "name": "07-modular-monolith",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "07-MonolitheModulaire/Modulaire.Hote", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "07-ModularMonolith/Modular.Host", "--launch-profile", "http"],
       "port": 5107
     },
     {
       "name": "08-microservices",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "08-Microservices/Micro.Lanceur"],
+      "runtimeArgs": ["run", "--project", "08-Microservices/Micro.Launcher"],
       "port": 5200
     },
     {
@@ -76,19 +76,19 @@
     {
       "name": "12-serverless",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "12-Serverless/Sls.Hote", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "12-Serverless/Sls.Host", "--launch-profile", "http"],
       "port": 5111
     },
     {
       "name": "13-microkernel",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "13-Microkernel/Mk.Hote", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "13-Microkernel/Mk.Host", "--launch-profile", "http"],
       "port": 5112
     },
     {
-      "name": "14-saga-orchestree",
+      "name": "14-orchestrated-saga",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "14-SagaOrchestree/Saga.Api", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "14-OrchestratedSaga/Saga.Api", "--launch-profile", "http"],
       "port": 5113
     },
     {
@@ -118,19 +118,19 @@
     {
       "name": "17-cell-based",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "17-CellBased/Cell.Lanceur"],
+      "runtimeArgs": ["run", "--project", "17-CellBased/Cell.Launcher"],
       "port": 5117
     },
     {
-      "name": "18-modele-acteurs",
+      "name": "18-actor-model",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "18-ModeleActeurs/Acteurs.Api", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "18-ActorModel/Actors.Api", "--launch-profile", "http"],
       "port": 5118
     },
     {
       "name": "19-space-based",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "19-SpaceBased/Espace.Api", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "19-SpaceBased/Space.Api", "--launch-profile", "http"],
       "port": 5119
     },
     {
@@ -140,21 +140,21 @@
       "port": 5120
     },
     {
-      "name": "21-choregraphie",
+      "name": "21-choreography",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "21-Choregraphie/Choreo.Api", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "21-Choreography/Choreo.Api", "--launch-profile", "http"],
       "port": 5121
     },
     {
-      "name": "22-strangler-ancien",
+      "name": "22-strangler-legacy",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Ancien", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Legacy", "--launch-profile", "http"],
       "port": 5240
     },
     {
-      "name": "22-strangler-nouveau",
+      "name": "22-strangler-modern",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Nouveau", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "22-StranglerFig/Fig.Modern", "--launch-profile", "http"],
       "port": 5241
     },
     {
@@ -166,13 +166,13 @@
     {
       "name": "23-rest-grpc-graphql",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "23-RestGrpcGraphQL/Styles.Serveur", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "23-RestGrpcGraphQL/Styles.Server", "--launch-profile", "http"],
       "port": 5123
     },
     {
       "name": "24-mvc",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "24-MvcMvvm/Ihm.Mvc", "--launch-profile", "http"],
+      "runtimeArgs": ["run", "--project", "24-MvcMvvm/Ui.Mvc", "--launch-profile", "http"],
       "port": 5124
     }
   ]

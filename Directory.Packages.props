@@ -1,5 +1,5 @@
 <Project>
-  <!-- Versions des packages centralisées : les .csproj ne mentionnent que le nom. -->
+  <!-- Centralized package versions: the .csproj files only mention the name. -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
