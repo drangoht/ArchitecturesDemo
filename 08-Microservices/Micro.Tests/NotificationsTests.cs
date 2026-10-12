@@ -7,30 +7,30 @@ namespace Micro.Tests;
 public class NotificationsTests
 {
     [Fact]
-    public async Task Un_message_recu_deux_fois_ne_cree_qu_une_notification()
+    public async Task A_message_received_twice_creates_only_one_notification()
     {
-        await using var service = new ServiceEnTest<Marqueur>();
+        await using var service = new ServiceUnderTest<Marker>();
         var client = service.CreateClient();
         var bob = Guid.NewGuid();
-        var evenement = new
+        var @event = new
         {
-            virementId = Guid.NewGuid(), sourceId = Guid.NewGuid(), titulaireSource = "Alice",
-            cibleId = bob, titulaireCible = "Bob", montant = 250m
+            transferId = Guid.NewGuid(), sourceId = Guid.NewGuid(), sourceOwner = "Alice",
+            targetId = bob, targetOwner = "Bob", amount = 250m
         };
         var messageId = Guid.NewGuid().ToString();
 
-        // Le courtier livre « au moins une fois » : on simule une double livraison du même message.
+        // The broker delivers "at least once": a double delivery of the same message is simulated.
         for (var i = 0; i < 2; i++)
         {
-            using var requete = new HttpRequestMessage(HttpMethod.Post, "/evenements/virement-effectue")
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/events/transfer-made")
             {
-                Content = JsonContent.Create(evenement)
+                Content = JsonContent.Create(@event)
             };
-            requete.Headers.Add("Message-Id", messageId);
-            (await client.SendAsync(requete)).EnsureSuccessStatusCode();
+            request.Headers.Add("Message-Id", messageId);
+            (await client.SendAsync(request)).EnsureSuccessStatusCode();
         }
 
         var notifications = await client.GetFromJsonAsync<JsonElement>($"/notifications/{bob}");
-        Assert.Contains("reçu de Alice", Assert.Single(notifications.EnumerateArray()).GetProperty("message").GetString());
+        Assert.Contains("received from Alice", Assert.Single(notifications.EnumerateArray()).GetProperty("message").GetString());
     }
 }

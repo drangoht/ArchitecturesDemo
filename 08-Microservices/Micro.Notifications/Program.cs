@@ -5,42 +5,42 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<NotificationsDb>((sp, options) =>
-    options.UseInMemoryDatabase(sp.GetRequiredService<IConfiguration>()["NomBase"] ?? "Notifications"));
+    options.UseInMemoryDatabase(sp.GetRequiredService<IConfiguration>()["DatabaseName"] ?? "Notifications"));
 
 var app = builder.Build();
 
-app.MapGet("/sante", () => Results.Ok(new { service = "notifications", statut = "ok" }));
+app.MapGet("/health", () => Results.Ok(new { service = "notifications", status = "ok" }));
 
-// Points de réception des messages (appelés par le courtier, non exposés par la passerelle).
-app.MapPost("/evenements/retrait-effectue",
-    ([FromHeader(Name = "Message-Id")] Guid messageId, RetraitEffectue e, NotificationsDb db) =>
-        Traiter(db, messageId,
-            new Notification(e.CompteId, $"Retrait de {e.Montant:0.00} €. Nouveau solde : {e.NouveauSolde:0.00} €.")));
+// Message reception points (called by the broker, not exposed by the gateway).
+app.MapPost("/events/withdrawal-made",
+    ([FromHeader(Name = "Message-Id")] Guid messageId, WithdrawalMade e, NotificationsDb db) =>
+        Handle(db, messageId,
+            new Notification(e.AccountId, $"Withdrawal of {e.Amount:0.00} €. New balance: {e.NewBalance:0.00} €.")));
 
-app.MapPost("/evenements/virement-effectue",
-    ([FromHeader(Name = "Message-Id")] Guid messageId, VirementEffectue e, NotificationsDb db) =>
-        Traiter(db, messageId,
-            new Notification(e.SourceId, $"Virement de {e.Montant:0.00} € envoyé à {e.TitulaireCible}."),
-            new Notification(e.CibleId, $"Virement de {e.Montant:0.00} € reçu de {e.TitulaireSource}.")));
+app.MapPost("/events/transfer-made",
+    ([FromHeader(Name = "Message-Id")] Guid messageId, TransferMade e, NotificationsDb db) =>
+        Handle(db, messageId,
+            new Notification(e.SourceId, $"Transfer of {e.Amount:0.00} € sent to {e.TargetOwner}."),
+            new Notification(e.TargetId, $"Transfer of {e.Amount:0.00} € received from {e.SourceOwner}.")));
 
-// API publique.
-app.MapGet("/notifications/{compteId:guid}", async (Guid compteId, NotificationsDb db) =>
+// Public API.
+app.MapGet("/notifications/{accountId:guid}", async (Guid accountId, NotificationsDb db) =>
     Results.Ok(await db.Notifications
-        .Where(n => n.CompteId == compteId)
+        .Where(n => n.AccountId == accountId)
         .OrderByDescending(n => n.DateUtc)
         .Select(n => new { n.Message, n.DateUtc })
         .ToListAsync()));
 
 app.Run();
 
-// Le courtier livre « au moins une fois » : un même message peut arriver deux fois. On l'ignore alors.
-static async Task<IResult> Traiter(NotificationsDb db, Guid messageId, params Notification[] notifications)
+// The broker delivers "at least once": the same message can arrive twice. It is then ignored.
+static async Task<IResult> Handle(NotificationsDb db, Guid messageId, params Notification[] notifications)
 {
-    if (await db.MessagesTraites.FindAsync(messageId) is not null)
-        return Results.Ok(new { doublon = true });
+    if (await db.ProcessedMessages.FindAsync(messageId) is not null)
+        return Results.Ok(new { duplicate = true });
 
-    db.MessagesTraites.Add(new MessageTraite { MessageId = messageId });
+    db.ProcessedMessages.Add(new ProcessedMessage { MessageId = messageId });
     db.Notifications.AddRange(notifications);
     await db.SaveChangesAsync();
-    return Results.Ok(new { doublon = false });
+    return Results.Ok(new { duplicate = false });
 }

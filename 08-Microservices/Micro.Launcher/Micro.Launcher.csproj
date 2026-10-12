@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Demo tool: starts each service in its own process (as an orchestrator would:
+    docker compose, Kubernetes, .NET Aspire…). It is not a service of the bank.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <!-- Makes sure the services are built before the launcher, without depending on them in the code. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Micro.Broker\Micro.Broker.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Micro.Accounts\Micro.Accounts.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Micro.Transfers\Micro.Transfers.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Micro.Notifications\Micro.Notifications.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Micro.Gateway\Micro.Gateway.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

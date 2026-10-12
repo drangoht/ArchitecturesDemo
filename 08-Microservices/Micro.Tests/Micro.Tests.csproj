@@ -15,13 +15,13 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-  <!-- Le projet de tests référence chaque service pour pouvoir le démarrer en mémoire, un par un. -->
+  <!-- The test project references each service to be able to start it in memory, one by one. -->
   <ItemGroup>
-    <ProjectReference Include="..\Micro.Comptes\Micro.Comptes.csproj" />
-    <ProjectReference Include="..\Micro.Virements\Micro.Virements.csproj" />
+    <ProjectReference Include="..\Micro.Accounts\Micro.Accounts.csproj" />
+    <ProjectReference Include="..\Micro.Transfers\Micro.Transfers.csproj" />
     <ProjectReference Include="..\Micro.Notifications\Micro.Notifications.csproj" />
-    <ProjectReference Include="..\Micro.Courtier\Micro.Courtier.csproj" />
-    <ProjectReference Include="..\Micro.Passerelle\Micro.Passerelle.csproj" />
+    <ProjectReference Include="..\Micro.Broker\Micro.Broker.csproj" />
+    <ProjectReference Include="..\Micro.Gateway\Micro.Gateway.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,37 @@
+# All calls go through the gateway (5200). Start first: dotnet run --project Micro.Launcher
+@base = http://localhost:5200
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Health of all the services
+GET {{base}}/health
+
+### [Accounts] Get Alice
+GET {{base}}/accounts/{{alice}}
+
+### [Accounts] Withdraw 100 € → outbox → broker → Notifications
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 100 }
+
+### [Transfers] Transfer from Alice to Bob → HTTP calls to Accounts, then event
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 250 }
+
+### [Notifications] Alice (they arrive a few moments later: eventual consistency)
+GET {{base}}/notifications/{{alice}}
+
+### [Notifications] Bob
+GET {{base}}/notifications/{{bob}}
+
+### The internal API of Accounts is NOT exposed by the gateway (404)
+POST {{base}}/internal/accounts/{{alice}}/debits
+Content-Type: application/json
+
+{ "operationId": "pirate", "amount": 1000 }
+
+### Broker state (directly, without going through the gateway)
+GET http://localhost:5209/state

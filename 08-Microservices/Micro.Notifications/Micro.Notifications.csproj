@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- Service Notifications : ne reçoit que des messages, livrés par le courtier. Ne connaît aucun autre service. -->
+  <!-- Notifications service: only receives messages, delivered by the broker. Knows no other service. -->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />

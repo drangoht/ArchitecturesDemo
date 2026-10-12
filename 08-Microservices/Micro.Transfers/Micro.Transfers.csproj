@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Transfers service: orchestrates a transfer by calling the Accounts service over HTTP.
+    Microsoft.Extensions.Http.Resilience adds retry, timeout and circuit breaker on these network calls.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+  </ItemGroup>
+
+</Project>

@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <!--
-    Mini courtier de messages, pour la démo uniquement (en production : RabbitMQ, Azure Service Bus, Kafka…).
-    Il reçoit des messages par sujet et les livre par HTTP aux abonnés, en réessayant jusqu'à ce qu'ils répondent.
-  -->
-
-</Project>
