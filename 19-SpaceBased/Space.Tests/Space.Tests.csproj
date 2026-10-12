@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Espace.Api\Espace.Api.csproj" />
+    <ProjectReference Include="..\Space.Api\Space.Api.csproj" />
   </ItemGroup>
 
 </Project>

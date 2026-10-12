@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- THE BUSINESS CODE of a processing unit: it only reads and writes in its unit's in-memory replica, never in the database. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Space.Grid\Space.Grid.csproj" />
+  </ItemGroup>
+
+</Project>

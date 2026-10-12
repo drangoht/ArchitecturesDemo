@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE VIRTUALIZED MIDDLEWARE, simulated in the process (no package): replicated data grid, messaging grid,
+    data pump and data reader, deployment manager. It knows nothing about the bank.
+    In production: Hazelcast, Apache Ignite, GigaSpaces or Oracle Coherence, spread over several machines.
+  -->
+
+</Project>

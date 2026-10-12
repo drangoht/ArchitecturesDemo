@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\Espace.Banque\Espace.Banque.csproj" />
+    <ProjectReference Include="..\Space.Bank\Space.Bank.csproj" />
   </ItemGroup>
 
 </Project>

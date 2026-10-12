@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    L'INTERGICIEL VIRTUALISÉ, simulé dans le processus (sans package) : grille de données répliquée, grille de messages,
-    pompe et lecteur de données, gestionnaire de déploiement. Il ne connaît rien de la banque.
-    En production : Hazelcast, Apache Ignite, GigaSpaces ou Oracle Coherence, répartis sur plusieurs machines.
-  -->
-
-</Project>

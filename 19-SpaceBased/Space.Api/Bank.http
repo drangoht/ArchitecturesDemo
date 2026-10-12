@@ -1,0 +1,97 @@
+@base = http://localhost:5119
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### The state of the grid: units (at least 2), routing, replication, pump, database
+GET {{base}}/grid
+
+### A request: the X-Unit header tells which unit answered (with affinity, always the same one for Alice)
+GET {{base}}/accounts/{{alice}}
+
+###
+POST {{base}}/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 10 }
+
+### The same data in each replica and in the database (run right after a withdrawal: replication takes 100 ms)
+GET {{base}}/grid/comparison/{{alice}}
+
+### Transfer: debit by Alice's unit, credit requested from Bob's unit
+POST {{base}}/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 25 }
+
+### ─── Collisions ───
+
+### With affinity: 200 simultaneous withdrawals of 1 €, a single unit handles them, nothing is lost
+POST {{base}}/demo/concurrent-withdrawals
+Content-Type: application/json
+
+{ "account": "{{alice}}", "count": 200, "amount": 1 }
+
+### Switch to round robin…
+POST {{base}}/grid/routing
+Content-Type: application/json
+
+{ "mode": "RoundRobin" }
+
+### … and start again: several units write Alice at the same time, writes get lost (lostUpdates),
+### the final balance no longer matches the accepted withdrawals
+POST {{base}}/demo/concurrent-withdrawals
+Content-Type: application/json
+
+{ "account": "{{alice}}", "count": 200, "amount": 1 }
+
+### Back to affinity
+POST {{base}}/grid/routing
+Content-Type: application/json
+
+{ "mode": "Affinity" }
+
+### ─── Elasticity ───
+
+### 600 simultaneous account openings: the manager adds units (up to 6), then removes them once calm
+POST {{base}}/demo/load
+Content-Type: application/json
+
+{ "count": 600 }
+
+### A few seconds later: back to 2 units; the log tells the story
+GET {{base}}/grid/log
+
+### Add, stop cleanly, bring down a unit (replace u1 with an identifier from GET /grid)
+POST {{base}}/grid/units
+
+###
+DELETE {{base}}/grid/units/u1
+
+###
+POST {{base}}/grid/units/u2/failure
+
+### ─── The database out of the request path ───
+
+### The database goes down…
+POST {{base}}/grid/database/failure
+
+### … the requests keep going (200); the writes pile up in the pump (pumpPending)
+POST {{base}}/accounts/{{bob}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 1 }
+
+###
+GET {{base}}/grid
+
+### All the units go down: no grid in memory any more, and no database to reload it → 503
+POST {{base}}/grid/total-failure
+
+###
+GET {{base}}/accounts/{{bob}}
+
+### The database comes back: the next request waits for the pump to write everything, then reloads the grid (cold start)
+POST {{base}}/grid/database/restore
+
+###
+GET {{base}}/accounts/{{bob}}

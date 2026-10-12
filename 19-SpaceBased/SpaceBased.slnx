@@ -1,6 +1,6 @@
 <Solution>
-  <Project Path="Espace.Api/Espace.Api.csproj" />
-  <Project Path="Espace.Banque/Espace.Banque.csproj" />
-  <Project Path="Espace.Grille/Espace.Grille.csproj" />
-  <Project Path="Espace.Tests/Espace.Tests.csproj" />
+  <Project Path="Space.Api/Space.Api.csproj" />
+  <Project Path="Space.Bank/Space.Bank.csproj" />
+  <Project Path="Space.Grid/Space.Grid.csproj" />
+  <Project Path="Space.Tests/Space.Tests.csproj" />
 </Solution>
