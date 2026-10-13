@@ -175,9 +175,18 @@ IWithdrawMoney withdraw = new WithdrawMoney(accounts, notifications);
 // Translating business errors into HTTP codes is the adapter's job, not the hexagon's.
 private static async Task<IResult> Translate(Func<Task<IResult>> action)
 {
-    try { return await action(); }
-    catch (AccountNotFoundException e) { return Results.NotFound(new { error = e.Message }); }
-    catch (BusinessRuleException e) { return Results.BadRequest(new { error = e.Message }); }
+    try
+    {
+        return await action();
+    }
+    catch (AccountNotFoundException e)
+    {
+        return Results.NotFound(new { error = e.Message });
+    }
+    catch (BusinessRuleException e)
+    {
+        return Results.BadRequest(new { error = e.Message });
+    }
 }
 ```
 
@@ -232,8 +241,18 @@ public abstract class IAccountsContract
 {
     protected abstract IAccounts Create(params Account[] initialAccounts);
 
+    // …
+
     [Fact]
-    public async Task An_unsaved_change_is_not_persisted() { /* … */ }
+    public async Task An_unsaved_change_is_not_persisted()
+    {
+        var id = Guid.NewGuid();
+        var accounts = Create(new Account(id, "Alice", 100m));
+
+        (await accounts.Load(id))!.Withdraw(40m);
+
+        Assert.Equal(100m, (await accounts.Load(id))!.Balance);
+    }
 }
 
 public class InMemoryAccountsTests : IAccountsContract
@@ -241,7 +260,14 @@ public class InMemoryAccountsTests : IAccountsContract
     protected override IAccounts Create(params Account[] initialAccounts) => new InMemoryAccounts(initialAccounts);
 }
 
-public class JsonFileAccountsTests : IAccountsContract, IDisposable { /* same tests, on a temporary file */ }
+public class JsonFileAccountsTests : IAccountsContract, IDisposable
+{
+    private readonly string _file = Path.Combine(Path.GetTempPath(), $"accounts-{Guid.NewGuid()}.json");
+
+    protected override IAccounts Create(params Account[] initialAccounts) => new JsonFileAccounts(_file, initialAccounts);
+
+    public void Dispose() => File.Delete(_file);
+}
 ```
 
 ```mermaid

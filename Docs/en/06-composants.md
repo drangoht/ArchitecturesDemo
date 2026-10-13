@@ -96,10 +96,16 @@ dependency injection.
 
 ```csharp
 // internal: invisible outside the component. Nobody can do "new Account()" from the API.
-internal class Account { /* … */ }
+internal class Account
+{
+    // …
+}
 
 // The implementation is internal: it can only be obtained through the interface, via dependency injection.
-internal class AccountsComponent(AccountsDbContext db) : IAccountsComponent { /* … */ }
+internal class AccountsComponent(AccountsDbContext db) : IAccountsComponent
+{
+    // …
+}
 ```
 
 The only other public point: plugging it into dependency injection. The component owns ITS database: no other

@@ -111,7 +111,7 @@ public async Task Send<TCommand>(TCommand command) where TCommand : ICommand
 ([WriteDb.cs](../09-CQRS/Cqrs.Write/Persistence/WriteDb.cs))
 
 ```csharp
-/// Saves the changes and adds to the log the events produced by the aggregates.
+/// <summary>Saves the changes and appends to the log the events produced by the aggregates.</summary>
 public async Task Save(params IDomainEvent[] extraEvents)
 {
     var events = ChangeTracker.Entries<Account>()

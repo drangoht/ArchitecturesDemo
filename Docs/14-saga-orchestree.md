@@ -103,7 +103,7 @@ L'orchestrateur **ne garde rien en mémoire** : tout ce qu'il faut pour reprendr
 (sérialisé) après chaque transition. ([SagaEngine.cs](../14-OrchestratedSaga/Saga.Orchestrator/SagaEngine.cs))
 
 ```csharp
-/// Moves all the ready sagas forward by one step. Returns the number of sagas handled.
+/// <summary>Moves all the ready sagas forward by one step. Returns the number of sagas processed.</summary>
 public async Task<int> Process()
 {
     // …
@@ -165,7 +165,7 @@ private void TransientFailure(SagaState saga, Step step, string message)
 Une compensation **doit finir par réussir** : en cas d'échec, on la réessaie indéfiniment.
 
 ```csharp
-/// Undoes the most recent of the successful steps. A compensation must end up succeeding: it is retried endlessly.
+/// <summary>Undoes the most recent of the successful steps. A compensation must eventually succeed: it is retried forever.</summary>
 private async Task CompensateOneStep(SagaState saga)
 {
     if (saga.CompletedSteps.Count == 0)
@@ -190,7 +190,7 @@ Au-delà de 10 000 €, un **analyste humain** doit décider. La saga passe « e
 et l'API reçoit la décision (`POST /sagas/{id}/compliance`) :
 
 ```csharp
-/// External event: the compliance analyst's decision.
+/// <summary>External event: the compliance analyst's decision.</summary>
 public async Task<bool> Signal(Guid id, bool approved, string? comment)
 {
     // …

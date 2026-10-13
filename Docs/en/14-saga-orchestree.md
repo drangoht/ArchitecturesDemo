@@ -106,7 +106,7 @@ each transition.
 ([SagaEngine.cs](../../14-OrchestratedSaga/Saga.Orchestrator/SagaEngine.cs))
 
 ```csharp
-/// Moves all the ready sagas forward by one step. Returns the number of sagas handled.
+/// <summary>Moves all the ready sagas forward by one step. Returns the number of sagas processed.</summary>
 public async Task<int> Process()
 {
     // …
@@ -171,7 +171,7 @@ private void TransientFailure(SagaState saga, Step step, string message)
 A compensation **must eventually succeed**: on failure, it is retried indefinitely.
 
 ```csharp
-/// Undoes the most recent of the successful steps. A compensation must end up succeeding: it is retried endlessly.
+/// <summary>Undoes the most recent of the successful steps. A compensation must eventually succeed: it is retried forever.</summary>
 private async Task CompensateOneStep(SagaState saga)
 {
     if (saga.CompletedSteps.Count == 0)
@@ -196,7 +196,7 @@ Above €10,000, a **human analyst** must decide. The saga goes "waiting", the f
 the decision (`POST /sagas/{id}/compliance`):
 
 ```csharp
-/// External event: the compliance analyst's decision.
+/// <summary>External event: the compliance analyst's decision.</summary>
 public async Task<bool> Signal(Guid id, bool approved, string? comment)
 {
     // …

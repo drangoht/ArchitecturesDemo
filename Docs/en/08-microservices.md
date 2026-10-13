@@ -93,13 +93,38 @@ with the same `operationId` doesn't debit twice.
 ([Micro.Accounts/Endpoints.cs](../../08-Microservices/Micro.Accounts/Endpoints.cs))
 
 ```csharp
+/// <summary>
 /// Internal API, called by the other services (the gateway does not expose it).
 /// Idempotent: a call replayed with the same operationId (retry after a network cut) does not debit twice.
-private static async Task<IResult> Apply(Guid id, MovementRequest request, AccountsDb db, Func<Account, decimal, string?> movement)
+/// </summary>
+public static void MapInternalEndpoints(this IEndpointRouteBuilder app)
+{
+    var @internal = app.MapGroup("/internal/accounts/{id:guid}");
+    @internal.MapPost("/debits", (Guid id, MovementRequest r, AccountsDb db) => Apply(id, r, db, (c, m) => c.Debit(m)));
+    @internal.MapPost("/credits", (Guid id, MovementRequest r, AccountsDb db) => Apply(id, r, db, (c, m) => c.Credit(m)));
+}
+
+private static async Task<IResult> Apply(
+    Guid id, MovementRequest request, AccountsDb db, Func<Account, decimal, string?> movement)
 {
     if (await db.ProcessedOperations.FindAsync(request.OperationId) is { } alreadyProcessed)
         return Respond(alreadyProcessed);
-    // … apply the movement, remember the operation and its response, save
+
+    var account = await db.Accounts.FindAsync(id);
+    if (account is null)
+        return Results.NotFound(new { error = $"Account {id} not found." });
+
+    var refusal = movement(account, request.Amount);
+    var operation = new ProcessedOperation
+    {
+        OperationId = request.OperationId,
+        Accepted = refusal is null,
+        Error = refusal,
+        BalanceAfter = account.Balance
+    };
+    db.ProcessedOperations.Add(operation);
+    await db.SaveChangesAsync();
+    return Respond(operation);
 }
 ```
 
@@ -170,14 +195,29 @@ await db.SaveChangesAsync();
 ```
 
 ```csharp
-// In OutboxRelay, in a loop:
-var pending = await db.Outbox.Where(m => m.SentAt == null).OrderBy(m => m.CreatedAt).Take(20).ToListAsync(stopping);
-foreach (var message in pending)
+private async Task SendPendingMessages(CancellationToken stopping)
 {
-    // … POST /topics/{topic} with the Message-Id header
-    (await broker.SendAsync(request, stopping)).EnsureSuccessStatusCode();
-    message.SentAt = DateTime.UtcNow;
-    await db.SaveChangesAsync(stopping);
+    using var scope = scopes.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AccountsDb>();
+    var pending = await db.Outbox.Where(m => m.SentAt == null).OrderBy(m => m.CreatedAt).Take(20).ToListAsync(stopping);
+    if (pending.Count == 0)
+        return;
+
+    var broker = http.CreateClient("broker");
+    foreach (var message in pending)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/topics/{message.Topic}")
+        {
+            Content = new StringContent(message.Body, Encoding.UTF8, "application/json")
+        };
+        // The identifier lets the subscribers ignore a message received twice.
+        request.Headers.Add("Message-Id", message.Id.ToString());
+
+        (await broker.SendAsync(request, stopping)).EnsureSuccessStatusCode();
+        message.SentAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(stopping);
+        logger.LogInformation("Event {Topic} published ({Id}).", message.Topic, message.Id);
+    }
 }
 ```
 

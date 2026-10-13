@@ -100,9 +100,16 @@ avant de prendre le suivant ([ActorSystem.cs](../18-ActorModel/Actors.Runtime/Ac
 ```csharp
 await foreach (var envelope in activation.Mailbox.Reader.ReadAllAsync())
 {
-    ...
+    activation.Processing = true;
+    object? response = null;
+    Exception? failure = null;
+    try
+    {
         // THE key point of the model: only one message at a time, each handled to the end before the next one.
         response = await activation.Instance!.Receive(envelope.Message);
+    }
+    // …
+}
 ```
 
 Le compte peut alors écrire le code le plus naïf qui soit : lire le solde, vérifier, modifier. Pas de `lock`, pas de

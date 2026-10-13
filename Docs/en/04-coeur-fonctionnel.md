@@ -54,7 +54,7 @@ shell will apply.
 ([Account.cs](../../04-FunctionalCore/Functional.Core/Account.cs), [Decisions.cs](../../04-FunctionalCore/Functional.Core/Decisions.cs))
 
 ```csharp
-/// Immutable value: an account is never modified, a new version of it is produced.
+/// <summary>Immutable value: an account is never modified, a new version of it is produced.</summary>
 public sealed record Account(Guid Id, string Owner, decimal Balance);
 
 // The rules DO nothing: they return a decision that the shell will apply.
@@ -85,13 +85,16 @@ public static TransferDecision Transfer(Account source, Account target, decimal 
         return new TransferDecision.Refused("Cannot transfer to the same account.");
 
     if (alreadyTransferredToday + amount > DailyTransferLimit)
-        return new TransferDecision.Refused(/* "Daily limit of 2000 € exceeded…" */);
+        return new TransferDecision.Refused(
+            $"Daily limit of {DailyTransferLimit:0} € exceeded (already transferred today: {alreadyTransferredToday:0.00} €).");
 
     // The withdrawal rule is reused: pure functions compose naturally.
     return Withdraw(source, amount) switch
     {
         WithdrawalDecision.Accepted withdrawal => new TransferDecision.Accepted(
-            withdrawal.UpdatedAccount, target with { Balance = target.Balance + amount }, amount),
+            withdrawal.UpdatedAccount,
+            target with { Balance = target.Balance + amount },
+            amount),
         WithdrawalDecision.Refused refusal => new TransferDecision.Refused(refusal.Reason),
         _ => throw new UnreachableException()
     };
@@ -105,7 +108,8 @@ total), 2. *DECIDE* (pure), 3. *APPLY*.
 ([Endpoints.cs](../../04-FunctionalCore/Functional.Shell/Endpoints.cs))
 
 ```csharp
-private static async Task<IResult> Transfer(TransferRequest request, BankDbContext db, TimeProvider clock, ILoggerFactory loggers)
+private static async Task<IResult> Transfer(
+    TransferRequest request, BankDbContext db, TimeProvider clock, ILoggerFactory loggers)
 {
     // 1. READ (I/O): the accounts AND everything the rule needs (here, the day's total).
     var source = await db.Accounts.FindAsync(request.Source);

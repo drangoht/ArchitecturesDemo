@@ -243,7 +243,10 @@ before it existed — impossible with a classic database, which only kept the fi
 // ─── Largest withdrawals: a projection added AFTERWARDS ───
 // Since it is built by replaying the whole stream, it knows all the past withdrawals right away,
 // including those made before it existed. Impossible with a classic database, which kept only the final state.
-public class LargestWithdrawalsProjection : IProjection { /* … */ }
+public class LargestWithdrawalsProjection : IProjection
+{
+    // …
+}
 ```
 
 `POST /admin/projections/rebuild` erases all the views and replays the whole store.

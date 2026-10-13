@@ -163,9 +163,20 @@ public class BankDbContext(DbContextOptions<BankDbContext> options) : DbContext(
 // Domain errors are translated into HTTP once, by a middleware.
 app.Use(async (context, next) =>
 {
-    try { await next(context); }
-    catch (AccountNotFoundException e) { context.Response.StatusCode = 404; /* … */ }
-    catch (BusinessRuleException e) { context.Response.StatusCode = 400; /* … */ }
+    try
+    {
+        await next(context);
+    }
+    catch (AccountNotFoundException e)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
+    }
+    catch (BusinessRuleException e)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = e.Message });
+    }
 });
 ```
 

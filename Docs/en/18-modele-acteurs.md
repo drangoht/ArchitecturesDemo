@@ -105,9 +105,16 @@ taking the next one — "THE key point of the model", as the comment says
 ```csharp
 await foreach (var envelope in activation.Mailbox.Reader.ReadAllAsync())
 {
-    ...
+    activation.Processing = true;
+    object? response = null;
+    Exception? failure = null;
+    try
+    {
         // THE key point of the model: only one message at a time, each handled to the end before the next one.
         response = await activation.Instance!.Receive(envelope.Message);
+    }
+    // …
+}
 ```
 
 The account can then write the most naive code there is: read the balance, check, modify. No `lock`, no transaction,

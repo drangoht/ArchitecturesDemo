@@ -230,7 +230,10 @@ private static readonly Dictionary<string, Func<string, (string Type, string Jso
 // ─── Largest withdrawals: a projection added AFTERWARDS ───
 // Since it is built by replaying the whole stream, it knows all the past withdrawals right away,
 // including those made before it existed. Impossible with a classic database, which kept only the final state.
-public class LargestWithdrawalsProjection : IProjection { /* … */ }
+public class LargestWithdrawalsProjection : IProjection
+{
+    // …
+}
 ```
 
 `POST /admin/projections/rebuild` efface toutes les vues et rejoue tout le magasin.
