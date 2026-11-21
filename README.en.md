@@ -10,6 +10,10 @@ Demo 0 (classic layers) is the baseline: every other one was born to fix one of 
 
 > The code (folders, projects, classes, routes, comments) is written in English, and quoted as it is.
 
+🔗 **Related repositories**: [DotNet11Features](https://github.com/drangoht/DotNet11Features) (what's new in .NET 11
+and C# 15, example by example) · [RuntimeAsyncDemo](https://github.com/drangoht/RuntimeAsyncDemo) (Runtime Async in
+.NET 11: state machine versus runtime, benchmarks).
+
 📘 **Full documentation, with diagrams: [`Docs/en/`](Docs/en/README.md)** (French original: 🌐 [Français](Docs/README.md)).
 
 📗 **Not a developer? The same thing explained with simple words and pictures: [`Docs/en/pour-tous/`](Docs/en/pour-tous/README.md)**.

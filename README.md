@@ -8,6 +8,10 @@ une démo qui expose le même métier de trois façons (REST, gRPC, GraphQL) et 
 MVC et en MVVM. On peut ainsi comparer la **forme** du code à fonctionnalités égales.
 La démo 0 (couches classiques) sert de point de comparaison : toutes les autres sont nées pour corriger l'une de ses limites.
 
+🔗 **Dépôts liés** : [DotNet11Features](https://github.com/drangoht/DotNet11Features) (les nouveautés de .NET 11 et
+C# 15, exemple par exemple) · [RuntimeAsyncDemo](https://github.com/drangoht/RuntimeAsyncDemo) (Runtime Async dans
+.NET 11 : machine à états contre runtime, benchmarks).
+
 📘 **Documentation complète, avec schémas : [`Docs/`](Docs/README.md)**.
 
 📗 **Pas développeur ? La même chose expliquée avec des mots simples et des images : [`Docs/pour-tous/`](Docs/pour-tous/README.md)**.
