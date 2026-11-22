@@ -39,4 +39,4 @@ asynchrones périmées**, fil d'exécution de l'interface, cérémonie (Communit
 **À retenir** : MVC et MVVM ne sont que la **couche de présentation** ; le modèle derrière suit n'importe quelle autre fiche.
 
 ---
-⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · [Index des fiches](README.md)
+⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · [Index des fiches](README.md) · ➡️ [Transaction Script et Active Record](25-transaction-script-active-record.md)

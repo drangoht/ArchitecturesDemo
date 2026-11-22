@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Transaction Script: one method per use case, which reads and writes the rows itself.
+    It only knows the database.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Simple.Data\Simple.Data.csproj" />
+  </ItemGroup>
+
+</Project>

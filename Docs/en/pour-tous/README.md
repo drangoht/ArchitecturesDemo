@@ -3,7 +3,7 @@
 🌐 [Français](../../pour-tous/README.md)
 
 You don't need to know how to program to read these pages. With simple words and everyday images, they explain the
-**25 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
+**26 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
 tests), each page links to its version for developers.
 
 <p align="center"><img src="../../pour-tous/images/accueil.jpg" alt="Illustration: a city made of very different buildings, connected by roads" width="480"></p>
@@ -70,6 +70,7 @@ These architectures don't all answer the same question. They can be combined, on
 | 9 | [CQRS](09-cqrs.md) | — | The kitchen on one side, the specials board on the other |
 | 10 | [Event Sourcing](10-event-sourcing.md) | — | The account book: you write down every operation, never just the total |
 | 11 | [Domain-Driven Design](11-ddd.md) | — | An architect who learns the residents' language before drawing |
+| 25 | [Transaction Script and Active Record](25-transaction-script-active-record.md) | — | The small grocery: one checklist per request, or one card per item |
 
 ### ④ How to replace an old system without stopping everything?
 
@@ -93,6 +94,8 @@ These architectures don't all answer the same question. They can be combined, on
 
 ## Where to start?
 
+0. [Transaction Script and Active Record](25-transaction-script-active-record.md): the starting point, code written
+   without any architecture, the one that is enough as long as the application stays simple.
 1. [Layers](00-couches.md): the classic way, the one whose flaw all the others try to fix.
 2. [Hexagonal](01-hexagonale.md): the big idea that follows, protecting the rules from everything else.
 3. [Modular Monolith](07-monolithe-modulaire.md) then [microservices](08-microservices.md): the most debated choice

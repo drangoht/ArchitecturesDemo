@@ -1,6 +1,6 @@
 # 24. MVC and MVVM (organizing the screen)
 
-🏠 [Contents](README.md) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · 🔧 [Technical version](../24-mvc-mvvm.md) · 🌐 [Français](../../pour-tous/24-mvc-mvvm.md)
+🏠 [Contents](README.md) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · ➡️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · 🔧 [Technical version](../24-mvc-mvvm.md) · 🌐 [Français](../../pour-tous/24-mvc-mvvm.md)
 
 <p align="center"><img src="../../pour-tous/images/24.jpg" alt="Illustration: mail you send and receive, and a car's dashboard" width="480"></p>
 

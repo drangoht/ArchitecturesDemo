@@ -34,3 +34,4 @@ since the demo folders and the code use it. This table is the reference for both
 | 22 | — (English name kept) | Strangler Fig | [`22-StranglerFig`](../../22-StranglerFig) |
 | 23 | — (English name kept) | REST, gRPC, GraphQL (API Styles) | [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) |
 | 24 | — (English name kept) | MVC and MVVM (Presentation Patterns) | [`24-MvcMvvm`](../../24-MvcMvvm) |
+| 25 | — (English name kept) | Transaction Script and Active Record | [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) |

@@ -47,12 +47,12 @@ Run after each batch:
 - `python Docs/en/outils/verif-code.py`: checks that every code block is identical to the French one (expected: 0 gaps).
 - `python Docs/en/outils/verif-mermaid.py Docs/en/*.md`: renders every Mermaid diagram in headless Chrome and lists
   syntax errors (expected: 0 errors).
-- `python Docs/fiches/pdf/generer-pdf.py --en`, then check the PDF still has 27 pages.
+- `python Docs/fiches/pdf/generer-pdf.py --en`, then check the PDF still has 28 pages.
 - **Architecture names**: English names follow [the names table](../noms-architectures.md). The 8 architectures with a
   French name show it under the title (`**French name**: *…*`), the mirror of the French pages' `**Name anglais**` line.
 - **Amounts**: `€250`, `€1,000` (English number format).
 - **PDF**: `python Docs/fiches/pdf/generer-pdf.py --en` → `Docs/en/fiches/pdf/architecture-cheat-sheets.pdf`;
-  one cheat sheet per page (27 pages): check the page count after any change.
+  one cheat sheet per page (28 pages): check the page count after any change.
 
 ## Glossary
 

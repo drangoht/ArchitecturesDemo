@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The database, written by hand: tables of rows and transactions (commit, rollback).
+    It stands in for SQL Server, which the demo does not download.
+  -->
+
+</Project>

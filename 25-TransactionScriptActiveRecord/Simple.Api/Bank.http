@@ -1,0 +1,39 @@
+@base = http://localhost:5125
+@alice = 11111111-1111-1111-1111-111111111111
+@bob = 22222222-2222-2222-2222-222222222222
+
+### Transaction Script: withdraw 100 € (one script does everything)
+POST {{base}}/scripts/accounts/{{alice}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 100 }
+
+### Active Record: read Alice (same database: the withdrawal above is there)
+GET {{base}}/records/accounts/{{alice}}
+
+### Active Record: transfer from Alice to Bob (the route coordinates, the objects check and save)
+POST {{base}}/records/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "{{bob}}", "amount": 250 }
+
+### Transaction Script: read Bob, with his latest operations
+GET {{base}}/scripts/accounts/{{bob}}
+
+### Transaction Script: transfer to an unknown account (404, and Alice's debit is rolled back)
+POST {{base}}/scripts/transfers
+Content-Type: application/json
+
+{ "source": "{{alice}}", "target": "00000000-0000-0000-0000-000000000000", "amount": 50 }
+
+### Same rule in both styles: insufficient balance (400)
+POST {{base}}/records/accounts/{{bob}}/withdrawal
+Content-Type: application/json
+
+{ "amount": 99999 }
+
+### Open an account (201)
+POST {{base}}/scripts/accounts
+Content-Type: application/json
+
+{ "owner": "Chloe", "initialDeposit": 50 }

@@ -3,7 +3,7 @@
 🌐 [English](en/README.md)
 
 Cette documentation explique **vingt-deux façons d'organiser une application**, **une façon d'y arriver** depuis un
-système existant, **trois façons de l'exposer** à ses clients et **deux façons d'organiser son interface**, chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+système existant, **trois façons de l'exposer** à ses clients, **deux façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
 > 📗 **Pas développeur ?** Une version sans code, avec des mots simples et des images de la vie courante :
@@ -53,6 +53,7 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 22 | **Strangler Fig** (migration progressive) | Strangler Fig | Une façade devant l'ancien système, qui lui retire ses fonctions une route à la fois au profit du nouveau | [22-strangler-fig](22-strangler-fig.md) | [`22-StranglerFig`](../22-StranglerFig) |
 | 23 | **REST, gRPC, GraphQL** (styles d'API) | REST, gRPC, GraphQL (API Styles) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client | [23-rest-grpc-graphql](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) |
 | 24 | **MVC et MVVM** (patterns de présentation) | MVC and MVVM (Presentation Patterns) | Le même écran en MVC web (une requête, une vue jetée) et en MVVM (un ViewModel vivant, que la vue observe) | [24-mvc-mvvm](24-mvc-mvvm.md) | [`24-MvcMvvm`](../24-MvcMvvm) |
+| 25 | **Transaction Script et Active Record** (le point de départ) | Transaction Script and Active Record | Le métier sans architecture : un script par cas d'utilisation, ou un objet par ligne qui s'enregistre lui-même | [25-transaction-script-active-record](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) |
 | ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---
@@ -98,6 +99,7 @@ flowchart LR
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
     Q3 --> M10["Event Sourcing"]
+    Q3 --> M25["Transaction Script<br/>Active Record"]
 
     Q4 --> S22["Strangler Fig"]
 
@@ -113,7 +115,7 @@ flowchart LR
 |---|---|---|---|
 | **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau |
 | **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire ; des acteurs à l'intérieur d'un service |
-| **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module |
+| **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module ; Transaction Script ou Active Record tant que le métier reste mince |
 | **Migration** | Comment remplacer un système en production sans tout arrêter ? | le système entier, le temps de la migration | Strangler Fig vers un monolithe modulaire ou des microservices ; sa façade devient ensuite leur passerelle |
 | **Exposition** | Sous quelle forme les clients appellent-ils le système ? | chaque frontière (public, partenaires, entre services) | gRPC entre microservices, REST pour l'API publique ; GraphQL devant les applications, à la place d'un BFF par application |
 | **Présentation** | Qui reçoit l'action de l'utilisateur, qui décide, qui affiche ? | un écran, une application cliente | MVC pour le site rendu par le serveur, MVVM pour l'application de bureau ou mobile, devant le même modèle ; un BFF par application derrière chacune |
@@ -150,7 +152,7 @@ flowchart TD
     SF{"Un système en production<br/>à remplacer ?"} -->|oui| SG["<b>Strangler Fig</b><br/>route par route,<br/>vers la cible choisie ci-dessous"]
     SF -->|"non : système neuf"| A
     SG -.-> A
-    A{"Le métier est-il<br/>surtout du CRUD ?"} -->|oui| B["<b>Couches</b> ou <b>Vertical Slice</b><br/>simple et suffisant"]
+    A{"Le métier est-il<br/>surtout du CRUD ?"} -->|oui| B["<b>Couches</b> ou <b>Vertical Slice</b><br/>simple et suffisant ;<br/>très mince : <b>Transaction Script</b><br/>ou <b>Active Record</b>"]
     A -->|"non : règles riches"| C{"Plusieurs équipes /<br/>sous-domaines distincts ?"}
     C -->|non| D["<b>Hexagonale</b> / <b>Onion</b> / <b>Clean</b><br/>+ objets-valeurs du <b>DDD</b>"]
     C -->|oui| E["<b>DDD stratégique</b><br/>pour trouver les contextes"]
@@ -226,6 +228,7 @@ chaque frappe. Détails : [démo 24](24-mvc-mvvm.md).
 | [Strangler Fig](22-strangler-fig.md) | rien (l'ancien n'est vu qu'à travers la couche anti-corruption) | l'état, **deux fois** (ancien et nouveau), synchronisé dans les deux sens | façade + ancien + nouveau, puis façade + nouveau | la façade : ce qui n'est pas déclaré reste à l'ancien ; retour arrière en une requête | deux systèmes à faire vivre ensemble ; synchronisation ; contrat hérité à reproduire |
 | [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) | rien (il ignore HTTP, JSON, Protobuf et GraphQL) | l'état | 1 (REST et GraphQL en HTTP/1.1, gRPC en HTTP/2) | le `.proto` (test de correspondance) ; le schéma GraphQL, validé avant exécution | REST : allers-retours, sur-récupération ; gRPC : pas de navigateur ; GraphQL : N+1 caché, requêtes à borner, cache HTTP perdu |
 | [MVC et MVVM](24-mvc-mvvm.md) | rien (il ignore les écrans) | l'état ; MVVM garde aussi celui de l'écran, en mémoire | 1 site (MVC) ; 1 application par poste (MVVM) | MVC : jeton anti-falsification, ModelState ; MVVM : ViewModels sans WPF (test d'archi), liaisons du XAML vérifiées par un test | MVC : validation après envoi, une page par étape ; MVVM : moteur de liaisons, liaisons non compilées, état à longue durée de vie (abonnements, réponses périmées) |
+| [Transaction Script et Active Record](25-transaction-script-active-record.md) | de la base, directement | l'état | 1 | la transaction (tout ou rien, une à la fois) | règles recopiées ou `Save` oublié ; tests qui demandent une base |
 
 ---
 
@@ -253,8 +256,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 489 tests
-dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5124)
+dotnet test ArchitecturesDemo.slnx                          # the 543 tests
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5125)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 

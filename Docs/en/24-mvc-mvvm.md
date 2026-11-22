@@ -5,7 +5,7 @@
 > screen's state and commands, the view binds to it and follows each of its changes); the model doesn't move, what
 > changes is **who receives the user's action, and how long the screen lives**.
 
-📁 Code: [`24-MvcMvvm`](../../24-MvcMvvm) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · ➡️ [Cross-cutting concepts](concepts-transverses.md) ·
+📁 Code: [`24-MvcMvvm`](../../24-MvcMvvm) · ⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · ➡️ [Transaction Script and Active Record](25-transaction-script-active-record.md) ·
 🌐 [Français](../24-mvc-mvvm.md)
 
 ---

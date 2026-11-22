@@ -39,4 +39,4 @@ responses**, the UI thread, ceremony (CommunityToolkit.Mvvm helps).
 **Takeaway**: MVC and MVVM are only the **presentation layer**; the model behind them follows any other cheat sheet.
 
 ---
-⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · [Cheat sheet index](README.md)
+⬅️ [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) · [Cheat sheet index](README.md) · ➡️ [Transaction Script and Active Record](25-transaction-script-active-record.md)

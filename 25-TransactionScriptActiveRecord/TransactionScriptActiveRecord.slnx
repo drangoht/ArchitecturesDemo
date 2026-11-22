@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Simple.Data/Simple.Data.csproj" />
+  <Project Path="Simple.Scripts/Simple.Scripts.csproj" />
+  <Project Path="Simple.Records/Simple.Records.csproj" />
+  <Project Path="Simple.Api/Simple.Api.csproj" />
+  <Project Path="Simple.Tests/Simple.Tests.csproj" />
+</Solution>

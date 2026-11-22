@@ -3,7 +3,7 @@
 🌐 [Français](../README.md) · How this English version is maintained: [TRANSLATION.md](TRANSLATION.md).
 
 This documentation explains **twenty-two ways to organize an application**, **one way to get there** from an existing
-system, **three ways to expose it** to its clients and **two ways to organize its user interface**, each illustrated by
+system, **three ways to expose it** to its clients, **two ways to organize its user interface** and **the starting point of them all** (the business written without any architecture), each illustrated by
 a complete, tested and runnable .NET 10 solution in this repository. They all implement **the same business** — a small
 bank: open an account, look it up, withdraw, transfer — so that the *shape* of the code can be compared with equal
 features.
@@ -57,6 +57,7 @@ features.
 | 22 | **Strangler Fig** (progressive migration) | — | A façade in front of the legacy system takes its features away one route at a time in favor of the new one | [22](fiches/22-strangler-fig.md) | [EN](22-strangler-fig.md) | [`22-StranglerFig`](../../22-StranglerFig) |
 | 23 | **REST, gRPC, GraphQL** (API styles) | — | The same business exposed as resources, as procedures and as a graph queried by the client | [23](fiches/23-rest-grpc-graphql.md) | [EN](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../../23-RestGrpcGraphQL) |
 | 24 | **MVC and MVVM** (presentation patterns) | — | The same screen in web MVC (one request, a discarded view) and in MVVM (a living ViewModel the view observes) | [24](fiches/24-mvc-mvvm.md) | [EN](24-mvc-mvvm.md) | [`24-MvcMvvm`](../../24-MvcMvvm) |
+| 25 | **Transaction Script and Active Record** (the starting point) | — | The business without any architecture: one script per use case, or one object per row that saves itself | [25](fiches/25-transaction-script-active-record.md) | [EN](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) |
 | ★ | **Cross-cutting concepts** | Concepts transverses | Idempotency, outbox, optimistic concurrency, compensation, eventual consistency | | [EN](concepts-transverses.md) | (demos 6 to 22) |
 
 ---
@@ -101,6 +102,7 @@ flowchart LR
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
     Q3 --> M10["Event Sourcing"]
+    Q3 --> M25["Transaction Script<br/>Active Record"]
 
     Q4 --> S22["Strangler Fig"]
 
@@ -116,7 +118,7 @@ flowchart LR
 |---|---|---|---|
 | **Code organization** | What goes where, who depends on whom, where can it be extended? | an application, a module, a service | Vertical Slice *inside* a module; Hexagonal *inside* a microservice; plug-ins around a core |
 | **System decomposition** | Which boundaries, which deployment, which coordination? | the whole system | A modular monolith one of whose modules becomes a microservice; an orchestrated saga between services; one application shared by several customers; one BFF per application in front of microservices; cells each containing a modular monolith; actors inside a service |
-| **Modeling** | How to represent the business and the state? | a context, a module | DDD to find the modules; CQRS + Event Sourcing in *one* module |
+| **Modeling** | How to represent the business and the state? | a context, a module | DDD to find the modules; CQRS + Event Sourcing in *one* module; Transaction Script or Active Record while the business stays thin |
 | **Migration** | How to replace a production system without stopping everything? | the whole system, for the duration of the migration | Strangler Fig toward a modular monolith or microservices; its façade then becomes their gateway |
 | **Exposure** | In what form do clients call the system? | each boundary (public, partners, between services) | gRPC between microservices, REST for the public API; GraphQL in front of the applications, instead of one BFF per application |
 | **Presentation** | Who receives the user's action, who decides, who displays? | a screen, a client application | MVC for the server-rendered site, MVVM for the desktop or mobile application, in front of the same model; one BFF per application behind each |
@@ -153,7 +155,7 @@ flowchart TD
     SF{"A production system<br/>to replace?"} -->|yes| SG["<b>Strangler Fig</b><br/>route by route,<br/>toward the target chosen below"]
     SF -->|"no: new system"| A
     SG -.-> A
-    A{"Is the business<br/>mostly CRUD?"} -->|yes| B["<b>Layered</b> or <b>Vertical Slice</b><br/>simple and sufficient"]
+    A{"Is the business<br/>mostly CRUD?"} -->|yes| B["<b>Layered</b> or <b>Vertical Slice</b><br/>simple and sufficient;<br/>very thin: <b>Transaction Script</b><br/>or <b>Active Record</b>"]
     A -->|"no: rich rules"| C{"Several teams /<br/>distinct subdomains?"}
     C -->|no| D["<b>Hexagonal</b> / <b>Onion</b> / <b>Clean</b><br/>+ <b>DDD</b> value objects"]
     C -->|yes| E["<b>Strategic DDD</b><br/>to find the contexts"]
@@ -229,6 +231,7 @@ keystroke. Details: [demo 24](24-mvc-mvvm.md).
 | [Strangler Fig](fiches/22-strangler-fig.md) | nothing (the legacy is only seen through the anti-corruption layer) | the state, **twice** (legacy and new), synchronized both ways | façade + legacy + new, then façade + new | the façade: anything undeclared stays on the legacy; rollback in one request | two systems to run together; synchronization; legacy contract to reproduce |
 | [REST, gRPC, GraphQL](fiches/23-rest-grpc-graphql.md) | nothing (unaware of HTTP, JSON, Protobuf and GraphQL) | the state | 1 (REST and GraphQL over HTTP/1.1, gRPC over HTTP/2) | the `.proto` (matching test); the GraphQL schema, validated before execution | REST: round trips, over-fetching; gRPC: no browser; GraphQL: hidden N+1, queries to bound, HTTP cache lost |
 | [MVC and MVVM](fiches/24-mvc-mvvm.md) | nothing (unaware of screens) | the state; MVVM also keeps the screen's state in memory | 1 site (MVC); 1 application per machine (MVVM) | MVC: anti-forgery token, ModelState; MVVM: ViewModels without WPF (architecture test), XAML bindings checked by a test | MVC: validation after submission, one page per step; MVVM: binding engine, uncompiled bindings, long-lived state (subscriptions, stale responses) |
+| [Transaction Script and Active Record](fiches/25-transaction-script-active-record.md) | the database, directly | the state | 1 | the transaction (all or nothing, one at a time) | copied rules or forgotten `Save`; tests that need a database |
 
 ---
 
@@ -256,8 +259,8 @@ Shared demo data: **Alice** `11111111-1111-1111-1111-111111111111` (€1,000) an
 ## Running the demos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 489 tests
-dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5124)
+dotnet test ArchitecturesDemo.slnx                          # the 543 tests
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5125)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 

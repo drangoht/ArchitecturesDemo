@@ -1,11 +1,10 @@
 # Fiches mémo : une page par architecture
 
-Le résumé technique de chaque démo, à relire en deux minutes : l'idée en une phrase, un schéma, les règles qui font
-l'architecture, quand l'utiliser ou non, les pièges. Pour le code, les tests et les déroulements, chaque fiche renvoie
-à sa page complète.
+Le résumé technique de chaque démo, à relire en deux minutes : l'idée en une phrase, un schéma, les règles, quand
+l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie à sa page complète.
 
 🖨️ **Version imprimable** : [fiches-architectures.pdf](pdf/fiches-architectures.pdf) (A4, une fiche par page,
-27 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
+28 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
 
 📖 Documentation complète : [Docs](../README.md) · 📗 Version sans code : [pour tous](../pour-tous/README.md) ·
 ★ [Concepts transverses](../concepts-transverses.md) (idempotence, outbox, concurrence optimiste, compensation)
@@ -49,6 +48,7 @@ l'architecture, quand l'utiliser ou non, les pièges. Pour le code, les tests et
 | 9 | [CQRS](09-cqrs.md) | Un modèle pour écrire, un autre pour lire |
 | 10 | [Event Sourcing](10-event-sourcing.md) | On stocke les événements, l'état se rejoue |
 | 11 | [DDD](11-ddd.md) | La langue du métier, des contextes délimités |
+| 25 | [Transaction Script et Active Record](25-transaction-script-active-record.md) | Le point de départ : le métier sans architecture |
 
 ## ④ Migration · ⑤ Exposition · ⑥ Présentation
 
@@ -64,7 +64,5 @@ l'architecture, quand l'utiliser ou non, les pièges. Pour le code, les tests et
 
 1. **Commencer simple** ([Couches](00-couches.md), [Vertical Slice](05-vertical-slice.md),
    [Monolithe modulaire](07-monolithe-modulaire.md)) et ne compliquer que face à un vrai problème.
-2. **Faire respecter l'architecture** par le compilateur (`internal`, références de projets) ou par un test
-   d'architecture, sinon elle finit contournée.
-3. **Dès qu'il y a un réseau ou des messages** : idempotence, outbox, cohérence à terme, compensation
-   ([concepts transverses](../concepts-transverses.md)).
+2. **Faire respecter l'architecture** par le compilateur (`internal`, références) ou un test d'architecture.
+3. **Réseau ou messages ?** Idempotence, outbox, cohérence à terme, compensation ([concepts transverses](../concepts-transverses.md)).

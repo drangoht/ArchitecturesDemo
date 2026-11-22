@@ -49,7 +49,9 @@ IMAGES = {
     "22": "a house being renovated room by room while a family keeps living in it, one room finished and modern, another room with scaffolding and workers",
     "23": "three ways of ordering food: a person reading a restaurant menu with a waiter, a person filling a structured order form, a person ticking items on a checklist",
     "24": "split illustration: on the left a person mailing a letter at a mailbox and receiving a reply letter, on the right a car dashboard with live moving gauges",
-    "accueil": "a friendly city made of many different buildings seen from above, houses, shops, a factory, a town hall, connected by roads, like a toy town",
+    # 25 : ni la liste à cocher ni le tiroir de fiches ne sont sortis ; l'image garde l'épicerie et son commerçant.
+    "25": "a small cozy village general store run by one single shopkeeper behind a wooden counter, on the counter a clipboard with a checklist and a small wooden drawer full of index cards, no writing",
+    "accueil":"a friendly city made of many different buildings seen from above, houses, shops, a factory, a town hall, connected by roads, like a toy town",
 }
 
 

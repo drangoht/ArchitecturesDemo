@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Active Record: business objects that load and save themselves.
+    The model DEPENDS on the database (the reverse of Onion and Hexagonal).
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Simple.Data\Simple.Data.csproj" />
+  </ItemGroup>
+
+</Project>

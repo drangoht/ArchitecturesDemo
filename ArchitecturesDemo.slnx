@@ -170,4 +170,11 @@
     <Project Path="24-MvcMvvm/Ui.Tests/Ui.Tests.csproj" />
     <Project Path="24-MvcMvvm/Ui.Wpf/Ui.Wpf.csproj" />
   </Folder>
+  <Folder Name="/25-TransactionScriptActiveRecord/">
+    <Project Path="25-TransactionScriptActiveRecord/Simple.Api/Simple.Api.csproj" />
+    <Project Path="25-TransactionScriptActiveRecord/Simple.Data/Simple.Data.csproj" />
+    <Project Path="25-TransactionScriptActiveRecord/Simple.Records/Simple.Records.csproj" />
+    <Project Path="25-TransactionScriptActiveRecord/Simple.Scripts/Simple.Scripts.csproj" />
+    <Project Path="25-TransactionScriptActiveRecord/Simple.Tests/Simple.Tests.csproj" />
+  </Folder>
 </Solution>

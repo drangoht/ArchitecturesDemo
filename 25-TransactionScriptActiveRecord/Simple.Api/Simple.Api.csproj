@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    One API, two styles over the same database: /scripts (Transaction Script) and /records (Active Record).
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Simple.Scripts\Simple.Scripts.csproj" />
+    <ProjectReference Include="..\Simple.Records\Simple.Records.csproj" />
+  </ItemGroup>
+
+</Project>

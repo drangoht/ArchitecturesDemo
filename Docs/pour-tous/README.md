@@ -3,7 +3,7 @@
 🌐 [English](../en/pour-tous/README.md)
 
 Pas besoin de savoir programmer pour lire ces pages. Elles expliquent avec des mots simples, et des images de la vie de
-tous les jours, les **25 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
+tous les jours, les **26 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
 schémas, tests), chaque page renvoie à sa version pour développeurs.
 
 <p align="center"><img src="images/accueil.jpg" alt="Illustration : une ville faite de bâtiments très différents, reliés par des routes" width="480"></p>
@@ -71,6 +71,7 @@ Ces architectures ne répondent pas toutes à la même question. On peut les com
 | 9 | [CQRS](09-cqrs.md) | CQRS (Command Query Responsibility Segregation) | La cuisine d'un côté, l'ardoise du jour de l'autre |
 | 10 | [L'« Event Sourcing »](10-event-sourcing.md) | Event Sourcing | Le carnet de comptes : on note chaque opération, jamais seulement le total |
 | 11 | [Le « Domain-Driven Design »](11-ddd.md) | Domain-Driven Design (DDD) | Un architecte qui apprend la langue des habitants avant de dessiner |
+| 25 | [Transaction Script et Active Record](25-transaction-script-active-record.md) | Transaction Script and Active Record | La petite épicerie : une liste à cocher par demande, ou une fiche par article |
 
 ### ④ Comment remplacer un vieux système sans tout arrêter ?
 
@@ -94,6 +95,8 @@ Ces architectures ne répondent pas toutes à la même question. On peut les com
 
 ## Par où commencer ?
 
+0. [Transaction Script et Active Record](25-transaction-script-active-record.md) : le point de départ, le code écrit
+   sans architecture, celui qui suffit tant que l'application reste simple.
 1. [Les couches](00-couches.md) : la façon classique, celle dont toutes les autres essaient de corriger un défaut.
 2. [L'hexagonale](01-hexagonale.md) : la grande idée qui suit, protéger les règles de tout le reste.
 3. [Le monolithe modulaire](07-monolithe-modulaire.md) puis [les microservices](08-microservices.md) : le choix le plus
