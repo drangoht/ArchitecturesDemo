@@ -1,6 +1,8 @@
 # ArchitecturesDemo
 
-Démos pédagogiques d'architectures logicielles (créées le 2026-10-10), dépôt **privé** `github.com/drangoht/ArchitecturesDemo`.
+Démos pédagogiques d'architectures logicielles (créées le 2026-10-10), dépôt **public** `github.com/drangoht/ArchitecturesDemo`.
+Ses README renvoient vers les dépôts liés `DotNet11Features` et `RuntimeAsyncDemo` (ligne « Dépôts liés »), qui
+renvoient vers lui : garder ces liens à jour en cas de renommage.
 Le même métier bancaire implémenté 25 fois en .NET 10 (couches, hexagonale, Onion, Clean, cœur fonctionnel, Vertical Slice,
 composants, monolithe modulaire, microservices, CQRS, Event Sourcing, DDD, serverless simulé, microkernel, saga orchestrée,
 multi-tenant, BFF, cellules, acteurs, space-based, pipeline, chorégraphie, la migration Strangler Fig, trois styles d'API :
