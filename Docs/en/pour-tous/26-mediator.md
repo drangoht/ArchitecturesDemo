@@ -1,6 +1,6 @@
 # 26. Mediator (the switchboard)
 
-🏠 [Contents](README.md) · ⬅️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · 🔧 [Technical version](../26-mediator.md) · 🌐 [Français](../../pour-tous/26-mediator.md)
+🏠 [Contents](README.md) · ⬅️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · ➡️ [Resilience](27-resilience.md) · 🔧 [Technical version](../26-mediator.md) · 🌐 [Français](../../pour-tous/26-mediator.md)
 
 <p align="center"><img src="../../pour-tous/images/26.jpg" alt="Illustration: a switchboard operator with a headset, at a company's reception" width="480"></p>
 

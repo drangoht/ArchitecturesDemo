@@ -77,6 +77,9 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
     });
 ```
 
+What this call sets (the order of the strategies, the doubling wait, the shared breaker) is written by hand in
+[demo 27](27-resilience.md).
+
 The client has its **own copy** of the remote model: no library shared with the Accounts service
 ([AccountsClient.cs](../../08-Microservices/Micro.Transfers/AccountsClient.cs)):
 

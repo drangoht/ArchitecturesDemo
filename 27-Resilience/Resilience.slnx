@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Res.Resilience/Res.Resilience.csproj" />
+  <Project Path="Res.FraudSimulator/Res.FraudSimulator.csproj" />
+  <Project Path="Res.Bank/Res.Bank.csproj" />
+  <Project Path="Res.Api/Res.Api.csproj" />
+  <Project Path="Res.Tests/Res.Tests.csproj" />
+</Solution>

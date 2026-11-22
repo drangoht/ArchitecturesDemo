@@ -72,6 +72,9 @@ builder.Services.AddHttpClient("accounts", (sp, client) =>
     });
 ```
 
+Ce que règle cet appel (l'ordre des stratégies, l'attente qui double, le disjoncteur partagé) est écrit à la main
+dans la [démo 27](27-resilience.md).
+
 Le client a sa **propre copie** du modèle distant ([AccountsClient.cs](../08-Microservices/Micro.Transfers/AccountsClient.cs)) :
 
 ```csharp

@@ -12,7 +12,7 @@ mechanisms then come back in several demos. This page gathers them.
 | [Outbox](#outbox) | Saving data **and** publishing an event, without losing either | 8 (and 9, 22) |
 | [Optimistic concurrency](#optimistic-concurrency) | Two simultaneous changes to the same data | 10, 12 (and the alternative: 18; the counter-example: 19) |
 | [Compensation / saga](#compensation-and-saga) | No transaction across several databases | 6, 7, 8, 14, 17, 18, 21 |
-| [Retries and dead letters](#retries-and-dead-letters) | Transient vs lasting failures | 8, 12, 14, 18, 21 |
+| [Retries and dead letters](#retries-and-dead-letters) | Transient vs lasting failures | 8, 12, 14, 18, 21, 27 |
 | [Eventual consistency](#eventual-consistency) | Reads don't see writes right away | 8, 9, 10, 12, 19, 22 |
 | [Domain vs integration events](#domain-vs-integration-events) | What you publish to others | 7, 9, 11 |
 

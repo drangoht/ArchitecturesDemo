@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The bank: accounts, transfers, the fraud check client and the fallback. It knows the exceptions of the
+    strategies (to fall back), not the strategies themselves, nor the simulator.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Res.Resilience\Res.Resilience.csproj" />
+  </ItemGroup>
+
+</Project>

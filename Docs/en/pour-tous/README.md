@@ -3,7 +3,7 @@
 🌐 [Français](../../pour-tous/README.md)
 
 You don't need to know how to program to read these pages. With simple words and everyday images, they explain the
-**27 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
+**28 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
 tests), each page links to its version for developers.
 
 <p align="center"><img src="../../pour-tous/images/accueil.jpg" alt="Illustration: a city made of very different buildings, connected by roads" width="480"></p>
@@ -63,6 +63,7 @@ These architectures don't all answer the same question. They can be combined, on
 | 18 | [Actors](18-modele-acteurs.md) | Modèle d'acteurs | Counter clerks who each have their own mailbox |
 | 19 | [Space-based](19-space-based.md) | Architecture spatiale | Supermarket checkouts opened when the crowd arrives |
 | 21 | [Choreography](21-choregraphie.md) | Chorégraphie | Dancers who coordinate without a conductor |
+| 27 | [Resilience](27-resilience.md) | Résilience | The electrical panel: a breaker trips, the house keeps the light |
 
 ### ③ How to represent the rules and the data?
 

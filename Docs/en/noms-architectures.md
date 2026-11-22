@@ -36,3 +36,4 @@ since the demo folders and the code use it. This table is the reference for both
 | 24 | — (English name kept) | MVC and MVVM (Presentation Patterns) | [`24-MvcMvvm`](../../24-MvcMvvm) |
 | 25 | — (English name kept) | Transaction Script and Active Record | [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) |
 | 26 | — (English name kept) | Mediator | [`26-Mediator`](../../26-Mediator) |
+| 27 | Résilience (timeout, retry, circuit breaker, bulkhead) | Resilience Patterns | [`27-Resilience`](../../27-Resilience) |

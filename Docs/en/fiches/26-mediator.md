@@ -39,4 +39,4 @@ doesn't separate the models ([Mediator or CQRS?](../differences/18-mediator-vs-c
 service interface also gives a pipeline.
 
 ---
-⬅️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · [Cheat sheet index](README.md)
+⬅️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · [Cheat sheet index](README.md) · ➡️ [Resilience](27-resilience.md)

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The partner's fraud check, simulated in process: healthy, flaky, slow or down, on demand.
+    It replaces the network at the end of the HttpClient pipeline.
+  -->
+
+</Project>

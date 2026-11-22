@@ -183,4 +183,11 @@
     <Project Path="26-Mediator/Med.Mediator/Med.Mediator.csproj" />
     <Project Path="26-Mediator/Med.Tests/Med.Tests.csproj" />
   </Folder>
+  <Folder Name="/27-Resilience/">
+    <Project Path="27-Resilience/Res.Api/Res.Api.csproj" />
+    <Project Path="27-Resilience/Res.Bank/Res.Bank.csproj" />
+    <Project Path="27-Resilience/Res.FraudSimulator/Res.FraudSimulator.csproj" />
+    <Project Path="27-Resilience/Res.Resilience/Res.Resilience.csproj" />
+    <Project Path="27-Resilience/Res.Tests/Res.Tests.csproj" />
+  </Folder>
 </Solution>

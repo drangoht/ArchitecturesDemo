@@ -1,6 +1,6 @@
 # 26. Mediator (le standard téléphonique)
 
-🏠 [Sommaire](README.md) · ⬅️ [Transaction Script et Active Record](25-transaction-script-active-record.md) · 🔧 [Version technique](../26-mediator.md) · 🌐 [English](../en/pour-tous/26-mediator.md)
+🏠 [Sommaire](README.md) · ⬅️ [Transaction Script et Active Record](25-transaction-script-active-record.md) · ➡️ [La résilience](27-resilience.md) · 🔧 [Version technique](../26-mediator.md) · 🌐 [English](../en/pour-tous/26-mediator.md)
 
 <p align="center"><img src="images/26.jpg" alt="Illustration : une standardiste avec son casque, à l'accueil d'une entreprise" width="480"></p>
 

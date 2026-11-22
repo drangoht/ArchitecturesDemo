@@ -12,7 +12,7 @@ mécanismes reviennent alors dans plusieurs démos. Cette page les rassemble.
 | [Outbox](#outbox) | Enregistrer une donnée **et** publier un événement, sans perdre l'un des deux | 8 (et 9, 22) |
 | [Concurrence optimiste](#concurrence-optimiste) | Deux modifications simultanées de la même donnée | 10, 12 (et l'alternative : 18 ; le contre-exemple : 19) |
 | [Compensation / saga](#compensation-et-saga) | Pas de transaction entre plusieurs bases | 6, 7, 8, 14, 17, 18, 21 |
-| [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18, 21 |
+| [Nouveaux essais et lettres mortes](#nouveaux-essais-et-lettres-mortes) | Pannes passagères vs pannes durables | 8, 12, 14, 18, 21, 27 |
 | [Cohérence à terme](#cohérence-à-terme) | Les lectures ne voient pas tout de suite les écritures | 8, 9, 10, 12, 19, 22 |
 | [Événements de domaine vs d'intégration](#événements-de-domaine-vs-dintégration) | Ce qu'on publie aux autres | 7, 9, 11 |
 
@@ -185,6 +185,9 @@ flowchart LR
 Le [modèle d'acteurs](18-modele-acteurs.md) applique la même idée aux acteurs eux-mêmes : un acteur qui plante est
 redémarré (jusqu'à 3 fois par minute), puis arrêté et mis en quarantaine ; les messages qu'on lui envoie pendant ce temps
 sont des « lettres mortes », comptées par le runtime.
+
+La [démo 27](27-resilience.md) écrit à la main ce que fait `AddStandardResilienceHandler` : attente qui double et
+jitter, timeout par tentative, circuit breaker et cloison, dans cet ordre, puis un repli décidé par le métier.
 
 À distinguer : un **refus métier** (solde insuffisant) n'est **pas** une panne. Il ne doit pas déclencher de nouvel essai
 (voir `TransfersFunctions.Execute`, qui marque le virement « Refusé » sans lever d'exception).

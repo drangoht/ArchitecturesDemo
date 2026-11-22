@@ -186,6 +186,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "26-Mediator/Med.Api", "--launch-profile", "http"],
       "port": 5126
+    },
+    {
+      "name": "27-resilience",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "27-Resilience/Res.Api", "--launch-profile", "http"],
+      "port": 5127
     }
   ]
 }

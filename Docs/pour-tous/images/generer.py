@@ -52,6 +52,8 @@ IMAGES = {
     # 25 : ni la liste à cocher ni le tiroir de fiches ne sont sortis ; l'image garde l'épicerie et son commerçant.
     "25": "a small cozy village general store run by one single shopkeeper behind a wooden counter, on the counter a clipboard with a checklist and a small wooden drawer full of index cards, no writing",
     "26": "a friendly switchboard operator wearing a headset at a reception desk in a bright office lobby, an old-fashioned switchboard panel with cables and plugs, a few people waiting with folders, no writing",
+    # 27 : les compartiments étanches d'un navire n'ont jamais été dessinés (3 essais) ; le tableau électrique, si.
+    "27": "an open home electrical panel on a wall with a neat row of circuit breaker switches, one switch flipped down, a friendly electrician pointing at it with a flashlight, the rest of the house lights still on",
     "accueil": "a friendly city made of many different buildings seen from above, houses, shops, a factory, a town hall, connected by roads, like a toy town",
 }
 

@@ -5,7 +5,7 @@
 > validation, unit of work), and broadcasts the **notifications** to everyone interested. That is what MediatR does,
 > written here by hand; and it is **not** CQRS.
 
-📁 Code: [`26-Mediator`](../../26-Mediator) · ⬅️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · ➡️ [Cross-cutting concepts](concepts-transverses.md) · 🌐 [Français](../26-mediator.md)
+📁 Code: [`26-Mediator`](../../26-Mediator) · ⬅️ [Transaction Script and Active Record](25-transaction-script-active-record.md) · ➡️ [Resilience](27-resilience.md) · 🌐 [Français](../26-mediator.md)
 
 ---
 

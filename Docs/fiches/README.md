@@ -4,7 +4,7 @@ Le résumé technique de chaque démo, à relire en deux minutes : l'idée en un
 l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie à sa page complète.
 
 🖨️ **Version imprimable** : [fiches-architectures.pdf](pdf/fiches-architectures.pdf) (A4, une fiche par page,
-29 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
+30 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
 
 📖 Documentation complète : [Docs](../README.md) · 📗 Version sans code : [pour tous](../pour-tous/README.md) ·
 ★ [Concepts transverses](../concepts-transverses.md) (idempotence, outbox, concurrence optimiste, compensation)
@@ -41,6 +41,7 @@ l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie 
 | 18 | [Acteurs](18-modele-acteurs.md) | État privé, messages un par un, aucun verrou |
 | 19 | [Spatiale](19-space-based.md) | Les données en mémoire, la base en différé |
 | 21 | [Chorégraphie](21-choregraphie.md) | Chacun réagit aux événements des autres |
+| 27 | [Résilience](27-resilience.md) | Couper, réessayer, disjoncter, cloisonner, se replier |
 
 ## ③ Modélisation : comment représenter le métier et l'état ?
 

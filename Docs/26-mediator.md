@@ -5,7 +5,7 @@
 > communs (journal, validation, unité de travail), et diffuse les **notifications** à tous ceux qu'elles intéressent.
 > C'est ce que fait MediatR, écrit ici à la main ; et ce n'est **pas** du CQRS.
 
-📁 Code : [`26-Mediator`](../26-Mediator) · ⬅️ [Transaction Script et Active Record](25-transaction-script-active-record.md) · ➡️ [Concepts transverses](concepts-transverses.md) · 🌐 [English](en/26-mediator.md)
+📁 Code : [`26-Mediator`](../26-Mediator) · ⬅️ [Transaction Script et Active Record](25-transaction-script-active-record.md) · ➡️ [Résilience](27-resilience.md) · 🌐 [English](en/26-mediator.md)
 
 ---
 

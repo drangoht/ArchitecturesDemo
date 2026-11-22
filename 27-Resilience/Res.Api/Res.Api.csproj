@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The API and the composition root: it chooses the order of the strategies around the fraud client,
+    and plugs the simulated partner in place of the network.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Res.Bank\Res.Bank.csproj" />
+    <ProjectReference Include="..\Res.FraudSimulator\Res.FraudSimulator.csproj" />
+  </ItemGroup>
+
+</Project>

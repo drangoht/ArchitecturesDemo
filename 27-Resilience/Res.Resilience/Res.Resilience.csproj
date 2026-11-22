@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The four strategies, written by hand as HttpClient handlers (DelegatingHandler): timeout, retry,
+    circuit breaker, bulkhead. What Polly and AddStandardResilienceHandler do (demo 8), without any package.
+    It knows nothing about the bank.
+  -->
+
+</Project>

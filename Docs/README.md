@@ -3,7 +3,7 @@
 🌐 [English](en/README.md)
 
 Cette documentation explique **vingt-deux façons d'organiser une application**, **une façon d'y arriver** depuis un
-système existant, **trois façons de l'exposer** à ses clients, **deux façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture) et **une façon d'appeler le code** (le médiateur), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+système existant, **trois façons de l'exposer** à ses clients, **deux façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture), **une façon d'appeler le code** (le médiateur) et **les protections de tout appel réseau** (la résilience), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
 > 📗 **Pas développeur ?** Une version sans code, avec des mots simples et des images de la vie courante :
@@ -55,6 +55,7 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 24 | **MVC et MVVM** (patterns de présentation) | MVC and MVVM (Presentation Patterns) | Le même écran en MVC web (une requête, une vue jetée) et en MVVM (un ViewModel vivant, que la vue observe) | [24-mvc-mvvm](24-mvc-mvvm.md) | [`24-MvcMvvm`](../24-MvcMvvm) |
 | 25 | **Transaction Script et Active Record** (le point de départ) | Transaction Script and Active Record | Le métier sans architecture : un script par cas d'utilisation, ou un objet par ligne qui s'enregistre lui-même | [25-transaction-script-active-record](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) |
 | 26 | **Mediator** (messagerie en processus) | Mediator | Les routes envoient des messages ; un médiateur trouve le handler et l'entoure d'un pipeline commun | [26-mediator](26-mediator.md) | [`26-Mediator`](../26-Mediator) |
+| 27 | **Résilience** (timeout, retry, circuit breaker, bulkhead) | Resilience Patterns | Ne pas tomber avec un service qu'on ne contrôle pas : couper, réessayer, arrêter d'appeler, borner, se replier | [27-resilience](27-resilience.md) | [`27-Resilience`](../27-Resilience) |
 | ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---
@@ -97,6 +98,7 @@ flowchart LR
     Q2 --> D18["Acteurs"]
     Q2 --> D19["Spatiale"]
     Q2 --> D21["Chorégraphie"]
+    Q2 --> D27["Résilience"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -116,7 +118,7 @@ flowchart LR
 | Famille | Question | Granularité | Exemples de combinaison |
 |---|---|---|---|
 | **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau ; un médiateur devant des tranches verticales |
-| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire ; des acteurs à l'intérieur d'un service |
+| **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire ; des acteurs à l'intérieur d'un service ; timeout, retry et circuit breaker autour de chaque appel entre services |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module ; Transaction Script ou Active Record tant que le métier reste mince |
 | **Migration** | Comment remplacer un système en production sans tout arrêter ? | le système entier, le temps de la migration | Strangler Fig vers un monolithe modulaire ou des microservices ; sa façade devient ensuite leur passerelle |
 | **Exposition** | Sous quelle forme les clients appellent-ils le système ? | chaque frontière (public, partenaires, entre services) | gRPC entre microservices, REST pour l'API publique ; GraphQL devant les applications, à la place d'un BFF par application |
@@ -232,6 +234,7 @@ chaque frappe. Détails : [démo 24](24-mvc-mvvm.md).
 | [MVC et MVVM](24-mvc-mvvm.md) | rien (il ignore les écrans) | l'état ; MVVM garde aussi celui de l'écran, en mémoire | 1 site (MVC) ; 1 application par poste (MVVM) | MVC : jeton anti-falsification, ModelState ; MVVM : ViewModels sans WPF (test d'archi), liaisons du XAML vérifiées par un test | MVC : validation après envoi, une page par étape ; MVVM : moteur de liaisons, liaisons non compilées, état à longue durée de vie (abonnements, réponses périmées) |
 | [Transaction Script et Active Record](25-transaction-script-active-record.md) | de la base, directement | l'état | 1 | la transaction (tout ou rien, une à la fois) | règles recopiées ou `Save` oublié ; tests qui demandent une base |
 | [Mediator](26-mediator.md) | du médiateur (et du `DbContext`) | l'état | 1 | handlers `internal` ; test d'archi : un handler par requête | chemin d'exécution invisible ; souvent pris pour du CQRS |
+| [Résilience](27-resilience.md) | rien (les stratégies sont dans le pipeline HTTP) | l'état | 1 | l'ordre du pipeline ; breaker partagé ; repli explicite | réglages à tester ; réessayer seulement l'idempotent |
 
 ---
 
@@ -259,8 +262,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 578 tests
-dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5126)
+dotnet test ArchitecturesDemo.slnx                          # the 613 tests
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5127)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 

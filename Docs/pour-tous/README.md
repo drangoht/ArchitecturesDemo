@@ -3,7 +3,7 @@
 🌐 [English](../en/pour-tous/README.md)
 
 Pas besoin de savoir programmer pour lire ces pages. Elles expliquent avec des mots simples, et des images de la vie de
-tous les jours, les **27 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
+tous les jours, les **28 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
 schémas, tests), chaque page renvoie à sa version pour développeurs.
 
 <p align="center"><img src="images/accueil.jpg" alt="Illustration : une ville faite de bâtiments très différents, reliés par des routes" width="480"></p>
@@ -64,6 +64,7 @@ Ces architectures ne répondent pas toutes à la même question. On peut les com
 | 18 | [Les acteurs](18-modele-acteurs.md) | Actor Model | Des guichetiers qui ont chacun leur boîte aux lettres |
 | 19 | [L'architecture spatiale](19-space-based.md) | Space-Based Architecture | Des caisses de supermarché qu'on ouvre quand la foule arrive |
 | 21 | [La chorégraphie](21-choregraphie.md) | Event-Driven Choreography | Des danseurs qui se coordonnent sans chef d'orchestre |
+| 27 | [La résilience](27-resilience.md) | Resilience Patterns | Le tableau électrique : un disjoncteur saute, la maison garde la lumière |
 
 ### ③ Comment représenter les règles et les données ?
 

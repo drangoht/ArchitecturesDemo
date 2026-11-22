@@ -39,4 +39,4 @@ l'exécution : un test d'architecture doit vérifier un handler par requête) ; 
 décorateur sur une interface de service donne aussi un pipeline.
 
 ---
-⬅️ [Transaction Script et Active Record](25-transaction-script-active-record.md) · [Index des fiches](README.md)
+⬅️ [Transaction Script et Active Record](25-transaction-script-active-record.md) · [Index des fiches](README.md) · ➡️ [Résilience](27-resilience.md)

@@ -3,7 +3,7 @@
 🌐 [Français](../README.md) · How this English version is maintained: [TRANSLATION.md](TRANSLATION.md).
 
 This documentation explains **twenty-two ways to organize an application**, **one way to get there** from an existing
-system, **three ways to expose it** to its clients, **two ways to organize its user interface** and **the starting point of them all** (the business written without any architecture) and **one way to call the code** (the mediator), each illustrated by
+system, **three ways to expose it** to its clients, **two ways to organize its user interface** and **the starting point of them all** (the business written without any architecture), **one way to call the code** (the mediator) and **the protections of every network call** (resilience), each illustrated by
 a complete, tested and runnable .NET 10 solution in this repository. They all implement **the same business** — a small
 bank: open an account, look it up, withdraw, transfer — so that the *shape* of the code can be compared with equal
 features.
@@ -59,6 +59,7 @@ features.
 | 24 | **MVC and MVVM** (presentation patterns) | — | The same screen in web MVC (one request, a discarded view) and in MVVM (a living ViewModel the view observes) | [24](fiches/24-mvc-mvvm.md) | [EN](24-mvc-mvvm.md) | [`24-MvcMvvm`](../../24-MvcMvvm) |
 | 25 | **Transaction Script and Active Record** (the starting point) | — | The business without any architecture: one script per use case, or one object per row that saves itself | [25](fiches/25-transaction-script-active-record.md) | [EN](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) |
 | 26 | **Mediator** (in-process messaging) | — | The routes send messages; a mediator finds the handler and wraps it in a common pipeline | [26](fiches/26-mediator.md) | [EN](26-mediator.md) | [`26-Mediator`](../../26-Mediator) |
+| 27 | **Resilience** (timeout, retry, circuit breaker, bulkhead) | Résilience | Don't go down with a service you don't control: cut, retry, stop calling, bound, fall back | [27](fiches/27-resilience.md) | [EN](27-resilience.md) | [`27-Resilience`](../../27-Resilience) |
 | ★ | **Cross-cutting concepts** | Concepts transverses | Idempotency, outbox, optimistic concurrency, compensation, eventual consistency | | [EN](concepts-transverses.md) | (demos 6 to 22) |
 
 ---
@@ -100,6 +101,7 @@ flowchart LR
     Q2 --> D18["Actors"]
     Q2 --> D19["Space-based"]
     Q2 --> D21["Choreography"]
+    Q2 --> D27["Resilience"]
 
     Q3 --> M11["DDD"]
     Q3 --> M9["CQRS"]
@@ -119,7 +121,7 @@ flowchart LR
 | Family | Question | Granularity | Example combinations |
 |---|---|---|---|
 | **Code organization** | What goes where, who depends on whom, where can it be extended? | an application, a module, a service | Vertical Slice *inside* a module; Hexagonal *inside* a microservice; plug-ins around a core; a mediator in front of vertical slices |
-| **System decomposition** | Which boundaries, which deployment, which coordination? | the whole system | A modular monolith one of whose modules becomes a microservice; an orchestrated saga between services; one application shared by several customers; one BFF per application in front of microservices; cells each containing a modular monolith; actors inside a service |
+| **System decomposition** | Which boundaries, which deployment, which coordination? | the whole system | A modular monolith one of whose modules becomes a microservice; an orchestrated saga between services; one application shared by several customers; one BFF per application in front of microservices; cells each containing a modular monolith; actors inside a service; timeout, retry and circuit breaker around every call between services |
 | **Modeling** | How to represent the business and the state? | a context, a module | DDD to find the modules; CQRS + Event Sourcing in *one* module; Transaction Script or Active Record while the business stays thin |
 | **Migration** | How to replace a production system without stopping everything? | the whole system, for the duration of the migration | Strangler Fig toward a modular monolith or microservices; its façade then becomes their gateway |
 | **Exposure** | In what form do clients call the system? | each boundary (public, partners, between services) | gRPC between microservices, REST for the public API; GraphQL in front of the applications, instead of one BFF per application |
@@ -235,6 +237,7 @@ keystroke. Details: [demo 24](24-mvc-mvvm.md).
 | [MVC and MVVM](fiches/24-mvc-mvvm.md) | nothing (unaware of screens) | the state; MVVM also keeps the screen's state in memory | 1 site (MVC); 1 application per machine (MVVM) | MVC: anti-forgery token, ModelState; MVVM: ViewModels without WPF (architecture test), XAML bindings checked by a test | MVC: validation after submission, one page per step; MVVM: binding engine, uncompiled bindings, long-lived state (subscriptions, stale responses) |
 | [Transaction Script and Active Record](fiches/25-transaction-script-active-record.md) | the database, directly | the state | 1 | the transaction (all or nothing, one at a time) | copied rules or forgotten `Save`; tests that need a database |
 | [Mediator](fiches/26-mediator.md) | the mediator (and the `DbContext`) | the state | 1 | `internal` handlers; architecture test: one handler per request | invisible execution path; often taken for CQRS |
+| [Resilience](fiches/27-resilience.md) | nothing (the strategies are in the HTTP pipeline) | the state | 1 | the pipeline's order; shared breaker; explicit fallback | settings to test; only retry what is idempotent |
 
 ---
 
@@ -262,8 +265,8 @@ Shared demo data: **Alice** `11111111-1111-1111-1111-111111111111` (€1,000) an
 ## Running the demos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 578 tests
-dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5126)
+dotnet test ArchitecturesDemo.slnx                          # the 613 tests
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5127)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 
