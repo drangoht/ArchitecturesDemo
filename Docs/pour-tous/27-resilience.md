@@ -1,6 +1,6 @@
 # 27. Résilience (tenir quand un partenaire flanche)
 
-🏠 [Sommaire](README.md) · ⬅️ [Le Mediator](26-mediator.md) · 🔧 [Version technique](../27-resilience.md) · 🌐 [English](../en/pour-tous/27-resilience.md)
+🏠 [Sommaire](README.md) · ⬅️ [Le Mediator](26-mediator.md) · ➡️ [MVU](28-mvu.md) · 🔧 [Version technique](../27-resilience.md) · 🌐 [English](../en/pour-tous/27-resilience.md)
 
 <p align="center"><img src="images/27.jpg" alt="Illustration : un tableau électrique ouvert, avec sa rangée de disjoncteurs" width="480"></p>
 

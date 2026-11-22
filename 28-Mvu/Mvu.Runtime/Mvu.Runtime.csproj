@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The MVU engine, written by hand: the description of a screen (nodes), the diff between two views, and the loop
+    that reads the messages one at a time, calls Update, renders the differences and runs the effects.
+    What Elm, Elmish/Fabulous or a Redux store do. It knows nothing about the bank.
+  -->
+
+</Project>

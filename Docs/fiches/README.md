@@ -4,7 +4,7 @@ Le résumé technique de chaque démo, à relire en deux minutes : l'idée en un
 l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie à sa page complète.
 
 🖨️ **Version imprimable** : [fiches-architectures.pdf](pdf/fiches-architectures.pdf) (A4, une fiche par page,
-30 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
+31 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
 
 📖 Documentation complète : [Docs](../README.md) · 📗 Version sans code : [pour tous](../pour-tous/README.md) ·
 ★ [Concepts transverses](../concepts-transverses.md) (idempotence, outbox, concurrence optimiste, compensation)
@@ -59,6 +59,7 @@ l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie 
 | 22 | [Strangler Fig](22-strangler-fig.md) | Une façade, une route migrée à la fois, réversible |
 | 23 | [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) | Ressources, procédures, graphe choisi par le client |
 | 24 | [MVC et MVVM](24-mvc-mvvm.md) | Une vue jetée à chaque requête, ou un ViewModel vivant |
+| 28 | [MVU](28-mvu.md) | Un modèle immuable, des messages, une fonction pure |
 
 ---
 

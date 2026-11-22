@@ -190,4 +190,10 @@
     <Project Path="27-Resilience/Res.Resilience/Res.Resilience.csproj" />
     <Project Path="27-Resilience/Res.Tests/Res.Tests.csproj" />
   </Folder>
+  <Folder Name="/28-Mvu/">
+    <Project Path="28-Mvu/Mvu.Bank/Mvu.Bank.csproj" />
+    <Project Path="28-Mvu/Mvu.Console/Mvu.Console.csproj" />
+    <Project Path="28-Mvu/Mvu.Runtime/Mvu.Runtime.csproj" />
+    <Project Path="28-Mvu/Mvu.Tests/Mvu.Tests.csproj" />
+  </Folder>
 </Solution>

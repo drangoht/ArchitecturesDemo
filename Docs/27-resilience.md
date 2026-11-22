@@ -7,7 +7,7 @@
 > réessayer les pannes passagères (**retry**), arrêter d'appeler un service à terre (**circuit breaker**), borner ce
 > qu'il peut immobiliser (**bulkhead**), et décider quoi faire sans lui (**repli**).
 
-📁 Code : [`27-Resilience`](../27-Resilience) · ⬅️ [Mediator](26-mediator.md) · ➡️ [Concepts transverses](concepts-transverses.md) · 🌐 [English](en/27-resilience.md)
+📁 Code : [`27-Resilience`](../27-Resilience) · ⬅️ [Mediator](26-mediator.md) · ➡️ [MVU](28-mvu.md) · 🌐 [English](en/27-resilience.md)
 
 ---
 

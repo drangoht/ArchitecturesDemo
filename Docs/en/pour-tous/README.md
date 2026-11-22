@@ -3,7 +3,7 @@
 🌐 [Français](../../pour-tous/README.md)
 
 You don't need to know how to program to read these pages. With simple words and everyday images, they explain the
-**28 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
+**29 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
 tests), each page links to its version for developers.
 
 <p align="center"><img src="../../pour-tous/images/accueil.jpg" alt="Illustration: a city made of very different buildings, connected by roads" width="480"></p>
@@ -91,6 +91,7 @@ These architectures don't all answer the same question. They can be combined, on
 | # | Name | French name | In one picture |
 |---|---|---|---|
 | 24 | [MVC and MVVM](24-mvc-mvvm.md) | — | Mail you send and receive, or a dashboard that moves live |
+| 28 | [MVU](28-mvu.md) | — | A match's scoreboard, redisplayed from the referee's sheet |
 
 ---
 

@@ -1,6 +1,6 @@
 # 27. Resilience (holding on when a partner falters)
 
-🏠 [Contents](README.md) · ⬅️ [Mediator](26-mediator.md) · 🔧 [Technical version](../27-resilience.md) · 🌐 [Français](../../pour-tous/27-resilience.md)
+🏠 [Contents](README.md) · ⬅️ [Mediator](26-mediator.md) · ➡️ [MVU](28-mvu.md) · 🔧 [Technical version](../27-resilience.md) · 🌐 [Français](../../pour-tous/27-resilience.md)
 
 <p align="center"><img src="../../pour-tous/images/27.jpg" alt="Illustration: an open electrical panel, with its row of circuit breakers" width="480"></p>
 

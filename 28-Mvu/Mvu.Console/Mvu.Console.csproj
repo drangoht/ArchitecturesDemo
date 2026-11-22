@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The console: a generic renderer (any MVU program) and the assembly of the bank screen.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mvu.Bank\Mvu.Bank.csproj" />
+  </ItemGroup>
+
+</Project>

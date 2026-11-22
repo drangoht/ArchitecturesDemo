@@ -359,7 +359,7 @@ Tous séparent le **modèle** de sa **présentation** ; ils diffèrent par l'obj
   l'idée.
 - **MVU / flux unidirectionnel** (Elm, Redux, et les composants de React ou Blazor) : l'état est immuable, chaque
   action produit un nouvel état, et la vue est recalculée. Une piste à part, qui remplace les liaisons dans les deux
-  sens par un seul sens.
+  sens par un seul sens : c'est la [démo 28](28-mvu.md), sur le même écran.
 
 ---
 

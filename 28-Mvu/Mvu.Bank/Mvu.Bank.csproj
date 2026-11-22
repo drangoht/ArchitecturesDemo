@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The bank screen in MVU: Model (the whole state), Msg (everything that can happen), Update (pure), View (pure),
+    and BankEffects, the only code that calls the bank. The model of the bank is THE SAME as demo 24's (Ui.Bank):
+    the same screen, a third pattern.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mvu.Runtime\Mvu.Runtime.csproj" />
+    <ProjectReference Include="..\..\24-MvcMvvm\Ui.Bank\Ui.Bank.csproj" />
+  </ItemGroup>
+
+</Project>

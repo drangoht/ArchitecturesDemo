@@ -363,7 +363,7 @@ direction of the arrows.
   work. WPF, MAUI, Avalonia, WinUI; on the web, Knockout, and Vue or Angular components take up the idea.
 - **MVU / unidirectional flow** (Elm, Redux, and React or Blazor components): the state is immutable, each action
   produces a new state, and the view is recomputed. A separate path, which replaces two-way bindings with a single
-  direction.
+  direction: that is [demo 28](28-mvu.md), on the same screen.
 
 ---
 

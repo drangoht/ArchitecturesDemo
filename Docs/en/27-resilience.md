@@ -7,7 +7,7 @@
 > (**retry**), stop calling a service that is down (**circuit breaker**), bound what it can tie up (**bulkhead**), and
 > decide what to do without it (**fallback**).
 
-📁 Code: [`27-Resilience`](../../27-Resilience) · ⬅️ [Mediator](26-mediator.md) · ➡️ [Cross-cutting concepts](concepts-transverses.md) · 🌐 [Français](../27-resilience.md)
+📁 Code: [`27-Resilience`](../../27-Resilience) · ⬅️ [Mediator](26-mediator.md) · ➡️ [MVU](28-mvu.md) · 🌐 [Français](../27-resilience.md)
 
 ---
 

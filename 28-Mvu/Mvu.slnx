@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../24-MvcMvvm/Ui.Bank/Ui.Bank.csproj" />
+  <Project Path="Mvu.Runtime/Mvu.Runtime.csproj" />
+  <Project Path="Mvu.Bank/Mvu.Bank.csproj" />
+  <Project Path="Mvu.Console/Mvu.Console.csproj" />
+  <Project Path="Mvu.Tests/Mvu.Tests.csproj" />
+</Solution>

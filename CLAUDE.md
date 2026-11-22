@@ -3,16 +3,16 @@
 Démos pédagogiques d'architectures logicielles (créées le 2026-10-10), dépôt **public** `github.com/drangoht/ArchitecturesDemo`.
 Ses README renvoient vers les dépôts liés `DotNet11Features` et `RuntimeAsyncDemo` (ligne « Dépôts liés »), qui
 renvoient vers lui : garder ces liens à jour en cas de renommage.
-Le même métier bancaire implémenté 28 fois en .NET 10 (couches, hexagonale, Onion, Clean, cœur fonctionnel, Vertical Slice,
+Le même métier bancaire implémenté 29 fois en .NET 10 (couches, hexagonale, Onion, Clean, cœur fonctionnel, Vertical Slice,
 composants, monolithe modulaire, microservices, CQRS, Event Sourcing, DDD, serverless simulé, microkernel, saga orchestrée,
 multi-tenant, BFF, cellules, acteurs, space-based, pipeline, chorégraphie, la migration Strangler Fig, trois styles d'API :
 REST, gRPC, GraphQL, deux patterns de présentation : MVC, MVVM, et le point de départ sans architecture : Transaction
-Script, Active Record, un médiateur écrit à la main et les stratégies de résilience), 613 tests xUnit. Documentation dans `Docs\` (une page par architecture, schémas Mermaid, extraits du code) ; le `README.md`
+Script, Active Record, un médiateur écrit à la main les stratégies de résilience et MVU), 646 tests xUnit. Documentation dans `Docs\` (une page par architecture, schémas Mermaid, extraits du code) ; le `README.md`
 liste les démos, leurs ports (5100–5123, microservices 5200–5209, services du BFF 5210, cellules 5231–5234, ancien et nouveau
-système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la démo 24 5124, démo 25 5125, démo 26 5126, démo 27 5127) et les points à observer.
+système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la démo 24 5124, démo 25 5125, démo 26 5126, démo 27 5127 ; démo 28 en console) et les points à observer.
 - `dotnet test ArchitecturesDemo.slnx` : tout compiler et tester (chaque démo a aussi sa propre `.slnx`).
 - Aucun package hors du cache NuGet local (choix de l'utilisateur). **Code en anglais** (identifiants, commentaires, messages,
-  routes, tests, dossiers `00-Layered`…`27-Resilience`, projets) depuis le 2026-10-12 (lot 7) : la version française du code n'existe plus.
+  routes, tests, dossiers `00-Layered`…`28-Mvu`, projets) depuis le 2026-10-12 (lot 7) : la version française du code n'existe plus.
 - Démo 23 : Protobuf, gRPC (HTTP/2, trailers) et le moteur GraphQL sont écrits à la main dans `Styles.Tooling` (pas de package).
 - Démo 24 : `Ui.Wpf` cible `net10.0-windows` (WPF, Windows seulement) ; `Ui.Wpf.exe capture fichier.png` dessine la fenêtre
   dans une image sans l'afficher. Les tests (net10.0) vérifient les liaisons du XAML en lisant le fichier.
@@ -38,4 +38,6 @@ système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la 
   `internal`, et un test d'architecture vérifie un handler par requête.
 - Démo 27 : stratégies de résilience écrites à la main (`DelegatingHandler`), partenaire simulé ; tests sur
   `FakeTimeProvider` (utilitaire `Drive` qui avance l'horloge tant que l'appel n'est pas fini).
+- Démo 28 : MVU écrit à la main (moteur, diff, console générique) ; réutilise `24-MvcMvvm\Ui.Bank` (seule démo qui
+  référence un projet d'une autre démo).
 - `13-Microkernel\plugins\` est une sortie de compilation (non versionnée) : compiler la solution avant de lancer l'API.

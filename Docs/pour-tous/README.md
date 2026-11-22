@@ -3,7 +3,7 @@
 🌐 [English](../en/pour-tous/README.md)
 
 Pas besoin de savoir programmer pour lire ces pages. Elles expliquent avec des mots simples, et des images de la vie de
-tous les jours, les **28 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
+tous les jours, les **29 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
 schémas, tests), chaque page renvoie à sa version pour développeurs.
 
 <p align="center"><img src="images/accueil.jpg" alt="Illustration : une ville faite de bâtiments très différents, reliés par des routes" width="480"></p>
@@ -92,6 +92,7 @@ Ces architectures ne répondent pas toutes à la même question. On peut les com
 | # | Nom | Nom anglais | En une image |
 |---|---|---|---|
 | 24 | [MVC et MVVM](24-mvc-mvvm.md) | MVC and MVVM (Presentation Patterns) | Le courrier qu'on envoie et qu'on reçoit, ou le tableau de bord qui bouge en direct |
+| 28 | [MVU](28-mvu.md) | MVU (Model-View-Update) | Le tableau d'affichage d'un match, réaffiché d'après la feuille de l'arbitre |
 
 ---
 

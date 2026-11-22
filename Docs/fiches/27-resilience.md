@@ -37,4 +37,4 @@ autour du retry au lieu de chaque tentative ; corps de requête illisible au 2e 
 ce qu'on règle.
 
 ---
-⬅️ [Mediator](26-mediator.md) · [Index des fiches](README.md)
+⬅️ [Mediator](26-mediator.md) · [Index des fiches](README.md) · ➡️ [MVU](28-mvu.md)

@@ -3,7 +3,7 @@
 🌐 [English](en/README.md)
 
 Cette documentation explique **vingt-deux façons d'organiser une application**, **une façon d'y arriver** depuis un
-système existant, **trois façons de l'exposer** à ses clients, **deux façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture), **une façon d'appeler le code** (le médiateur) et **les protections de tout appel réseau** (la résilience), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+système existant, **trois façons de l'exposer** à ses clients, **trois façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture), **une façon d'appeler le code** (le médiateur) et **les protections de tout appel réseau** (la résilience), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
 > 📗 **Pas développeur ?** Une version sans code, avec des mots simples et des images de la vie courante :
@@ -56,6 +56,7 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 25 | **Transaction Script et Active Record** (le point de départ) | Transaction Script and Active Record | Le métier sans architecture : un script par cas d'utilisation, ou un objet par ligne qui s'enregistre lui-même | [25-transaction-script-active-record](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) |
 | 26 | **Mediator** (messagerie en processus) | Mediator | Les routes envoient des messages ; un médiateur trouve le handler et l'entoure d'un pipeline commun | [26-mediator](26-mediator.md) | [`26-Mediator`](../26-Mediator) |
 | 27 | **Résilience** (timeout, retry, circuit breaker, bulkhead) | Resilience Patterns | Ne pas tomber avec un service qu'on ne contrôle pas : couper, réessayer, arrêter d'appeler, borner, se replier | [27-resilience](27-resilience.md) | [`27-Resilience`](../27-Resilience) |
+| 28 | **MVU** (Model-View-Update) | MVU (Model-View-Update) | L'écran de la démo 24 en flux à sens unique : un modèle immuable, des messages, une fonction pure, une vue recalculée | [28-mvu](28-mvu.md) | [`28-Mvu`](../28-Mvu) |
 | ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---
@@ -110,6 +111,7 @@ flowchart LR
     Q5 --> E23["REST · gRPC · GraphQL"]
 
     Q6 --> P24["MVC · MVVM"]
+    Q6 --> P28["MVU"]
 
     classDef q fill:#1f6feb,color:#fff,stroke:#1f6feb
     class Q1,Q2,Q3,Q4,Q5,Q6 q
@@ -122,7 +124,7 @@ flowchart LR
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module ; Transaction Script ou Active Record tant que le métier reste mince |
 | **Migration** | Comment remplacer un système en production sans tout arrêter ? | le système entier, le temps de la migration | Strangler Fig vers un monolithe modulaire ou des microservices ; sa façade devient ensuite leur passerelle |
 | **Exposition** | Sous quelle forme les clients appellent-ils le système ? | chaque frontière (public, partenaires, entre services) | gRPC entre microservices, REST pour l'API publique ; GraphQL devant les applications, à la place d'un BFF par application |
-| **Présentation** | Qui reçoit l'action de l'utilisateur, qui décide, qui affiche ? | un écran, une application cliente | MVC pour le site rendu par le serveur, MVVM pour l'application de bureau ou mobile, devant le même modèle ; un BFF par application derrière chacune |
+| **Présentation** | Qui reçoit l'action de l'utilisateur, qui décide, qui affiche ? | un écran, une application cliente | MVC pour le site rendu par le serveur, MVVM pour l'application de bureau ou mobile, devant le même modèle ; MVU pour un écran riche à tester sans écran ; un BFF par application derrière chacune |
 
 ### Les deux grands axes de l'organisation du code
 
@@ -235,6 +237,7 @@ chaque frappe. Détails : [démo 24](24-mvc-mvvm.md).
 | [Transaction Script et Active Record](25-transaction-script-active-record.md) | de la base, directement | l'état | 1 | la transaction (tout ou rien, une à la fois) | règles recopiées ou `Save` oublié ; tests qui demandent une base |
 | [Mediator](26-mediator.md) | du médiateur (et du `DbContext`) | l'état | 1 | handlers `internal` ; test d'archi : un handler par requête | chemin d'exécution invisible ; souvent pris pour du CQRS |
 | [Résilience](27-resilience.md) | rien (les stratégies sont dans le pipeline HTTP) | l'état | 1 | l'ordre du pipeline ; breaker partagé ; repli explicite | réglages à tester ; réessayer seulement l'idempotent |
+| [MVU](28-mvu.md) | rien (`Update` ignore la banque) | l'état ; l'écran en un modèle immuable | 1 application | seuls les effets appellent la banque (test d'archi) | verbeux ; vue recalculée : diff et clés |
 
 ---
 
@@ -262,7 +265,7 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 613 tests
+dotnet test ArchitecturesDemo.slnx                          # the 646 tests
 dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5127)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```

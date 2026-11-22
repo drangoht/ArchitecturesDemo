@@ -3,7 +3,7 @@
 🌐 [Français](../README.md) · How this English version is maintained: [TRANSLATION.md](TRANSLATION.md).
 
 This documentation explains **twenty-two ways to organize an application**, **one way to get there** from an existing
-system, **three ways to expose it** to its clients, **two ways to organize its user interface** and **the starting point of them all** (the business written without any architecture), **one way to call the code** (the mediator) and **the protections of every network call** (resilience), each illustrated by
+system, **three ways to expose it** to its clients, **three ways to organize its user interface** and **the starting point of them all** (the business written without any architecture), **one way to call the code** (the mediator) and **the protections of every network call** (resilience), each illustrated by
 a complete, tested and runnable .NET 10 solution in this repository. They all implement **the same business** — a small
 bank: open an account, look it up, withdraw, transfer — so that the *shape* of the code can be compared with equal
 features.
@@ -60,6 +60,7 @@ features.
 | 25 | **Transaction Script and Active Record** (the starting point) | — | The business without any architecture: one script per use case, or one object per row that saves itself | [25](fiches/25-transaction-script-active-record.md) | [EN](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) |
 | 26 | **Mediator** (in-process messaging) | — | The routes send messages; a mediator finds the handler and wraps it in a common pipeline | [26](fiches/26-mediator.md) | [EN](26-mediator.md) | [`26-Mediator`](../../26-Mediator) |
 | 27 | **Resilience** (timeout, retry, circuit breaker, bulkhead) | Résilience | Don't go down with a service you don't control: cut, retry, stop calling, bound, fall back | [27](fiches/27-resilience.md) | [EN](27-resilience.md) | [`27-Resilience`](../../27-Resilience) |
+| 28 | **MVU** (Model-View-Update) | — | Demo 24's screen as a one-way flow: an immutable model, messages, a pure function, a recomputed view | [28](fiches/28-mvu.md) | [EN](28-mvu.md) | [`28-Mvu`](../../28-Mvu) |
 | ★ | **Cross-cutting concepts** | Concepts transverses | Idempotency, outbox, optimistic concurrency, compensation, eventual consistency | | [EN](concepts-transverses.md) | (demos 6 to 22) |
 
 ---
@@ -113,6 +114,7 @@ flowchart LR
     Q5 --> E23["REST · gRPC · GraphQL"]
 
     Q6 --> P24["MVC · MVVM"]
+    Q6 --> P28["MVU"]
 
     classDef q fill:#1f6feb,color:#fff,stroke:#1f6feb
     class Q1,Q2,Q3,Q4,Q5,Q6 q
@@ -125,7 +127,7 @@ flowchart LR
 | **Modeling** | How to represent the business and the state? | a context, a module | DDD to find the modules; CQRS + Event Sourcing in *one* module; Transaction Script or Active Record while the business stays thin |
 | **Migration** | How to replace a production system without stopping everything? | the whole system, for the duration of the migration | Strangler Fig toward a modular monolith or microservices; its façade then becomes their gateway |
 | **Exposure** | In what form do clients call the system? | each boundary (public, partners, between services) | gRPC between microservices, REST for the public API; GraphQL in front of the applications, instead of one BFF per application |
-| **Presentation** | Who receives the user's action, who decides, who displays? | a screen, a client application | MVC for the server-rendered site, MVVM for the desktop or mobile application, in front of the same model; one BFF per application behind each |
+| **Presentation** | Who receives the user's action, who decides, who displays? | a screen, a client application | MVC for the server-rendered site, MVVM for the desktop or mobile application, in front of the same model; MVU for a rich screen to be tested without a screen; one BFF per application behind each |
 
 ### The two main axes of code organization
 
@@ -238,6 +240,7 @@ keystroke. Details: [demo 24](24-mvc-mvvm.md).
 | [Transaction Script and Active Record](fiches/25-transaction-script-active-record.md) | the database, directly | the state | 1 | the transaction (all or nothing, one at a time) | copied rules or forgotten `Save`; tests that need a database |
 | [Mediator](fiches/26-mediator.md) | the mediator (and the `DbContext`) | the state | 1 | `internal` handlers; architecture test: one handler per request | invisible execution path; often taken for CQRS |
 | [Resilience](fiches/27-resilience.md) | nothing (the strategies are in the HTTP pipeline) | the state | 1 | the pipeline's order; shared breaker; explicit fallback | settings to test; only retry what is idempotent |
+| [MVU](fiches/28-mvu.md) | nothing (`Update` ignores the bank) | the state; the screen in one immutable model | 1 application | only the effects call the bank (architecture test) | verbose; recomputed view: diff and keys |
 
 ---
 
@@ -265,7 +268,7 @@ Shared demo data: **Alice** `11111111-1111-1111-1111-111111111111` (€1,000) an
 ## Running the demos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 613 tests
+dotnet test ArchitecturesDemo.slnx                          # the 646 tests
 dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5127)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
