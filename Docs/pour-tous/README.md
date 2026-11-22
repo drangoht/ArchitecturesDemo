@@ -3,7 +3,7 @@
 🌐 [English](../en/pour-tous/README.md)
 
 Pas besoin de savoir programmer pour lire ces pages. Elles expliquent avec des mots simples, et des images de la vie de
-tous les jours, les **26 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
+tous les jours, les **27 façons d'organiser une application** présentées dans ce dépôt. Pour le détail technique (code,
 schémas, tests), chaque page renvoie à sa version pour développeurs.
 
 <p align="center"><img src="images/accueil.jpg" alt="Illustration : une ville faite de bâtiments très différents, reliés par des routes" width="480"></p>
@@ -45,6 +45,7 @@ Ces architectures ne répondent pas toutes à la même question. On peut les com
 | 5 | [Le Vertical Slice](05-vertical-slice.md) | Vertical Slice Architecture | Un livre de recettes : tout ce qu'il faut pour un plat sur la même fiche |
 | 13 | [Le Microkernel](13-microkernel.md) | Microkernel (Plug-in Architecture) | Une perceuse et ses embouts interchangeables |
 | 20 | [Le pipeline](20-pipeline.md) | Pipes and Filters (Pipeline) | Une chaîne de montage |
+| 26 | [Le Mediator](26-mediator.md) | Mediator | Le standard téléphonique : on passe toujours par lui |
 
 ### ② Comment découper un grand système en morceaux ?
 

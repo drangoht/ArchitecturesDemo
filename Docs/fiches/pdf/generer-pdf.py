@@ -28,14 +28,14 @@ FICHES = ICI.parent
 TEXTES = {
     False: {"lang": "fr", "titre": "Architectures logicielles · fiches mémo", "pied": "ArchitecturesDemo · fiches mémo",
             "h1": "Architectures logicielles<br>Fiches mémo",
-            "p1": "26 démos, une page chacune : l'idée en une phrase, un schéma, les règles qui font l'architecture, "
+            "p1": "27 démos, une page chacune : l'idée en une phrase, un schéma, les règles qui font l'architecture, "
                   "quand l'utiliser, les pièges.",
             "p2": "Le même métier partout : une petite banque où Alice vire 250 € à Bob.",
             "p3": "Le détail (code, tests, déroulements) est dans <code>Docs/</code> du dépôt, une page complète par "
                   "architecture ; la version sans code dans <code>Docs/pour-tous/</code>."},
     True: {"lang": "en", "titre": "Software architectures · cheat sheets", "pied": "ArchitecturesDemo · cheat sheets",
            "h1": "Software architectures<br>Cheat sheets",
-           "p1": "26 demos, one page each: the idea in one sentence, a diagram, the rules that make the architecture, "
+           "p1": "27 demos, one page each: the idea in one sentence, a diagram, the rules that make the architecture, "
                  "when to use it, the pitfalls.",
            "p2": "The same business everywhere: a small bank where Alice transfers €250 to Bob.",
            "p3": "The details (code, tests, walkthroughs) are in the repository's <code>Docs/</code>, one full page per "

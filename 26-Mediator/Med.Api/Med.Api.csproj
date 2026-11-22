@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The API: thin routes that only Send messages through IMediator.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Med.Bank\Med.Bank.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -35,3 +35,4 @@ et du code.
 | 23 | — (nom anglais conservé) | REST, gRPC, GraphQL (API Styles) | [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) |
 | 24 | — (nom anglais conservé) | MVC and MVVM (Presentation Patterns) | [`24-MvcMvvm`](../24-MvcMvvm) |
 | 25 | — (nom anglais conservé) | Transaction Script and Active Record | [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) |
+| 26 | — (nom anglais conservé) | Mediator | [`26-Mediator`](../26-Mediator) |

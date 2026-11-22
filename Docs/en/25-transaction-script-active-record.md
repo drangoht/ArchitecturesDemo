@@ -5,7 +5,7 @@
 > row**, which carries its rules and saves itself (**Active Record**). Almost every application starts there, and the
 > other demos were built against their limits.
 
-📁 Code: [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) · ⬅️ [MVC and MVVM](24-mvc-mvvm.md) · ➡️ [Cross-cutting concepts](concepts-transverses.md) · 🌐 [Français](../25-transaction-script-active-record.md)
+📁 Code: [`25-TransactionScriptActiveRecord`](../../25-TransactionScriptActiveRecord) · ⬅️ [MVC and MVVM](24-mvc-mvvm.md) · ➡️ [Mediator](26-mediator.md) · 🌐 [Français](../25-transaction-script-active-record.md)
 
 ---
 

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The bank: one file per request (request + validator + handler), the notifications and their handlers,
+    and the pipeline behaviors. It depends on the mediator, never on the API.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Med.Mediator\Med.Mediator.csproj" />
+  </ItemGroup>
+
+</Project>

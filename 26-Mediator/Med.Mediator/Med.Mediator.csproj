@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The mediator, written by hand: about a hundred lines, what MediatR does (without its licence, paid since 2025).
+    It knows nothing about the bank: only the dependency injection container.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

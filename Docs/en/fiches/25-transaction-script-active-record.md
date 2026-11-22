@@ -37,4 +37,4 @@ fat routes → [Layered](00-couches.md), [Clean](03-clean.md); tests that need a
 [Hexagonal](01-hexagonale.md); independent scripts → [Vertical Slice](05-vertical-slice.md).
 
 ---
-⬅️ [MVC and MVVM](24-mvc-mvvm.md) · [Cheat sheet index](README.md)
+⬅️ [MVC and MVVM](24-mvc-mvvm.md) · [Cheat sheet index](README.md) · ➡️ [Mediator](26-mediator.md)

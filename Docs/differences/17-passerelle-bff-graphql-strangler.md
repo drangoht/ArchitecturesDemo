@@ -12,7 +12,7 @@
 📖 Pages : [Microservices](../08-microservices.md) · [BFF](../16-bff.md) · [REST, gRPC, GraphQL](../23-rest-grpc-graphql.md) ·
 [Strangler Fig](../22-strangler-fig.md)
 
-⬅️ [Acteurs ou Spatiale ?](16-acteurs-vs-spatiale.md) · ➡️ [Sommaire](README.md)
+⬅️ [Acteurs ou Spatiale ?](16-acteurs-vs-spatiale.md) · ➡️ [Mediator ou CQRS ?](18-mediator-vs-cqrs.md)
 
 ---
 

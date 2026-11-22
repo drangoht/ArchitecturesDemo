@@ -1,6 +1,6 @@
 # 25. Transaction Script and Active Record (the starting point)
 
-🏠 [Contents](README.md) · ⬅️ [MVC and MVVM](24-mvc-mvvm.md) · 🔧 [Technical version](../25-transaction-script-active-record.md) · 🌐 [Français](../../pour-tous/25-transaction-script-active-record.md)
+🏠 [Contents](README.md) · ⬅️ [MVC and MVVM](24-mvc-mvvm.md) · ➡️ [Mediator](26-mediator.md) · 🔧 [Technical version](../25-transaction-script-active-record.md) · 🌐 [Français](../../pour-tous/25-transaction-script-active-record.md)
 
 <p align="center"><img src="../../pour-tous/images/25.jpg" alt="Illustration: a small village grocery, a single shopkeeper behind a wooden counter" width="480"></p>
 

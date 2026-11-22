@@ -10,7 +10,7 @@
 📖 Pages: [Microservices](../08-microservices.md) · [BFF](../16-bff.md) · [REST, gRPC, GraphQL](../23-rest-grpc-graphql.md) ·
 [Strangler Fig](../22-strangler-fig.md)
 
-⬅️ [Actors or Space-based?](16-acteurs-vs-spatiale.md) · ➡️ [Contents](README.md) · 🌐 [Français](../../differences/17-passerelle-bff-graphql-strangler.md)
+⬅️ [Actors or Space-based?](16-acteurs-vs-spatiale.md) · ➡️ [Mediator or CQRS?](18-mediator-vs-cqrs.md) · 🌐 [Français](../../differences/17-passerelle-bff-graphql-strangler.md)
 
 ---
 

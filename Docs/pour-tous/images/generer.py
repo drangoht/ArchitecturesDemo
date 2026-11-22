@@ -51,7 +51,8 @@ IMAGES = {
     "24": "split illustration: on the left a person mailing a letter at a mailbox and receiving a reply letter, on the right a car dashboard with live moving gauges",
     # 25 : ni la liste à cocher ni le tiroir de fiches ne sont sortis ; l'image garde l'épicerie et son commerçant.
     "25": "a small cozy village general store run by one single shopkeeper behind a wooden counter, on the counter a clipboard with a checklist and a small wooden drawer full of index cards, no writing",
-    "accueil":"a friendly city made of many different buildings seen from above, houses, shops, a factory, a town hall, connected by roads, like a toy town",
+    "26": "a friendly switchboard operator wearing a headset at a reception desk in a bright office lobby, an old-fashioned switchboard panel with cables and plugs, a few people waiting with folders, no writing",
+    "accueil": "a friendly city made of many different buildings seen from above, houses, shops, a factory, a town hall, connected by roads, like a toy town",
 }
 
 

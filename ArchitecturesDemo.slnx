@@ -177,4 +177,10 @@
     <Project Path="25-TransactionScriptActiveRecord/Simple.Scripts/Simple.Scripts.csproj" />
     <Project Path="25-TransactionScriptActiveRecord/Simple.Tests/Simple.Tests.csproj" />
   </Folder>
+  <Folder Name="/26-Mediator/">
+    <Project Path="26-Mediator/Med.Api/Med.Api.csproj" />
+    <Project Path="26-Mediator/Med.Bank/Med.Bank.csproj" />
+    <Project Path="26-Mediator/Med.Mediator/Med.Mediator.csproj" />
+    <Project Path="26-Mediator/Med.Tests/Med.Tests.csproj" />
+  </Folder>
 </Solution>

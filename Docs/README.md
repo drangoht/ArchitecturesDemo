@@ -3,7 +3,7 @@
 🌐 [English](en/README.md)
 
 Cette documentation explique **vingt-deux façons d'organiser une application**, **une façon d'y arriver** depuis un
-système existant, **trois façons de l'exposer** à ses clients, **deux façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
+système existant, **trois façons de l'exposer** à ses clients, **deux façons d'organiser son interface** et **le point de départ de toutes** (le métier écrit sans architecture) et **une façon d'appeler le code** (le médiateur), chacune illustrée par une solution .NET 10 complète, testée et exécutable dans ce dépôt. Toutes implémentent **le même métier** — une petite banque : ouvrir un compte,
 consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à fonctionnalités égales.
 
 > 📗 **Pas développeur ?** Une version sans code, avec des mots simples et des images de la vie courante :
@@ -54,6 +54,7 @@ consulter, retirer, virer — pour qu'on puisse comparer la *forme* du code à f
 | 23 | **REST, gRPC, GraphQL** (styles d'API) | REST, gRPC, GraphQL (API Styles) | Le même métier exposé en ressources, en procédures et en graphe interrogé par le client | [23-rest-grpc-graphql](23-rest-grpc-graphql.md) | [`23-RestGrpcGraphQL`](../23-RestGrpcGraphQL) |
 | 24 | **MVC et MVVM** (patterns de présentation) | MVC and MVVM (Presentation Patterns) | Le même écran en MVC web (une requête, une vue jetée) et en MVVM (un ViewModel vivant, que la vue observe) | [24-mvc-mvvm](24-mvc-mvvm.md) | [`24-MvcMvvm`](../24-MvcMvvm) |
 | 25 | **Transaction Script et Active Record** (le point de départ) | Transaction Script and Active Record | Le métier sans architecture : un script par cas d'utilisation, ou un objet par ligne qui s'enregistre lui-même | [25-transaction-script-active-record](25-transaction-script-active-record.md) | [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) |
+| 26 | **Mediator** (messagerie en processus) | Mediator | Les routes envoient des messages ; un médiateur trouve le handler et l'entoure d'un pipeline commun | [26-mediator](26-mediator.md) | [`26-Mediator`](../26-Mediator) |
 | ★ | **Concepts transverses** | Idempotence, outbox, concurrence optimiste, compensation, cohérence à terme | [concepts-transverses](concepts-transverses.md) | (démos 6 à 22) |
 
 ---
@@ -83,6 +84,7 @@ flowchart LR
     Q1 --> C5["Vertical Slice"]
     Q1 --> C13["Microkernel"]
     Q1 --> C20["Pipeline"]
+    Q1 --> C26["Mediator"]
 
     Q2 --> D6["Composants"]
     Q2 --> D7["Monolithe modulaire"]
@@ -113,7 +115,7 @@ flowchart LR
 
 | Famille | Question | Granularité | Exemples de combinaison |
 |---|---|---|---|
-| **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau |
+| **Organisation du code** | Où mettre quoi, qui dépend de qui, où peut-on étendre ? | une application, un module, un service | Vertical Slice *dans* un module ; Hexagonale *dans* un microservice ; plugins autour d'un noyau ; un médiateur devant des tranches verticales |
 | **Découpage du système** | Quelles frontières, quel déploiement, quelle coordination ? | le système entier | Monolithe modulaire dont un module devient microservice ; saga orchestrée entre services ; une application partagée entre plusieurs clients ; un BFF par application devant des microservices ; des cellules contenant chacune un monolithe modulaire ; des acteurs à l'intérieur d'un service |
 | **Modélisation** | Comment représenter le métier et l'état ? | un contexte, un module | DDD pour trouver les modules ; CQRS + Event Sourcing dans *un* module ; Transaction Script ou Active Record tant que le métier reste mince |
 | **Migration** | Comment remplacer un système en production sans tout arrêter ? | le système entier, le temps de la migration | Strangler Fig vers un monolithe modulaire ou des microservices ; sa façade devient ensuite leur passerelle |
@@ -229,6 +231,7 @@ chaque frappe. Détails : [démo 24](24-mvc-mvvm.md).
 | [REST, gRPC, GraphQL](23-rest-grpc-graphql.md) | rien (il ignore HTTP, JSON, Protobuf et GraphQL) | l'état | 1 (REST et GraphQL en HTTP/1.1, gRPC en HTTP/2) | le `.proto` (test de correspondance) ; le schéma GraphQL, validé avant exécution | REST : allers-retours, sur-récupération ; gRPC : pas de navigateur ; GraphQL : N+1 caché, requêtes à borner, cache HTTP perdu |
 | [MVC et MVVM](24-mvc-mvvm.md) | rien (il ignore les écrans) | l'état ; MVVM garde aussi celui de l'écran, en mémoire | 1 site (MVC) ; 1 application par poste (MVVM) | MVC : jeton anti-falsification, ModelState ; MVVM : ViewModels sans WPF (test d'archi), liaisons du XAML vérifiées par un test | MVC : validation après envoi, une page par étape ; MVVM : moteur de liaisons, liaisons non compilées, état à longue durée de vie (abonnements, réponses périmées) |
 | [Transaction Script et Active Record](25-transaction-script-active-record.md) | de la base, directement | l'état | 1 | la transaction (tout ou rien, une à la fois) | règles recopiées ou `Save` oublié ; tests qui demandent une base |
+| [Mediator](26-mediator.md) | du médiateur (et du `DbContext`) | l'état | 1 | handlers `internal` ; test d'archi : un handler par requête | chemin d'exécution invisible ; souvent pris pour du CQRS |
 
 ---
 
@@ -256,8 +259,8 @@ Données de démo communes : **Alice** `11111111-1111-1111-1111-111111111111` (1
 ## Lancer les démos
 
 ```powershell
-dotnet test ArchitecturesDemo.slnx                          # the 543 tests
-dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5125)
+dotnet test ArchitecturesDemo.slnx                          # the 578 tests
+dotnet run --project 01-Hexagonal\Hexa.Adapters.Web        # one API (ports 5100 to 5126)
 dotnet run --project 08-Microservices\Micro.Launcher         # the 5 microservices
 ```
 

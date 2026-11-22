@@ -3,7 +3,7 @@
 🌐 [Français](../../pour-tous/README.md)
 
 You don't need to know how to program to read these pages. With simple words and everyday images, they explain the
-**26 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
+**27 ways of organizing an application** presented in this repository. For the technical details (code, diagrams,
 tests), each page links to its version for developers.
 
 <p align="center"><img src="../../pour-tous/images/accueil.jpg" alt="Illustration: a city made of very different buildings, connected by roads" width="480"></p>
@@ -44,6 +44,7 @@ These architectures don't all answer the same question. They can be combined, on
 | 5 | [Vertical Slice](05-vertical-slice.md) | — | A recipe book: everything needed for a dish on the same card |
 | 13 | [Microkernel](13-microkernel.md) | — | A drill and its interchangeable bits |
 | 20 | [Pipeline](20-pipeline.md) | — | An assembly line |
+| 26 | [Mediator](26-mediator.md) | — | The switchboard: you always go through it |
 
 ### ② How to split a large system into pieces?
 

@@ -4,7 +4,7 @@ Le résumé technique de chaque démo, à relire en deux minutes : l'idée en un
 l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie à sa page complète.
 
 🖨️ **Version imprimable** : [fiches-architectures.pdf](pdf/fiches-architectures.pdf) (A4, une fiche par page,
-28 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
+29 pages), régénérée par `python Docs/fiches/pdf/generer-pdf.py` (Chrome ou Edge, connexion à jsDelivr).
 
 📖 Documentation complète : [Docs](../README.md) · 📗 Version sans code : [pour tous](../pour-tous/README.md) ·
 ★ [Concepts transverses](../concepts-transverses.md) (idempotence, outbox, concurrence optimiste, compensation)
@@ -24,6 +24,7 @@ l'utiliser ou non, les pièges. Pour le code et les tests, chaque fiche renvoie 
 | 5 | [Vertical Slice](05-vertical-slice.md) | Un fichier par fonctionnalité |
 | 13 | [Microkernel](13-microkernel.md) | Un noyau, des plugins chargés à chaud |
 | 20 | [Pipeline](20-pipeline.md) | Des filtres en parallèle, des tuyaux bornés |
+| 26 | [Mediator](26-mediator.md) | Un message, un handler, un pipeline commun |
 
 ## ② Découpage du système : quelles frontières, quel déploiement ?
 

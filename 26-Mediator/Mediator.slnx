@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Med.Mediator/Med.Mediator.csproj" />
+  <Project Path="Med.Bank/Med.Bank.csproj" />
+  <Project Path="Med.Api/Med.Api.csproj" />
+  <Project Path="Med.Tests/Med.Tests.csproj" />
+</Solution>

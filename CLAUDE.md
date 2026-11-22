@@ -3,16 +3,16 @@
 Démos pédagogiques d'architectures logicielles (créées le 2026-10-10), dépôt **public** `github.com/drangoht/ArchitecturesDemo`.
 Ses README renvoient vers les dépôts liés `DotNet11Features` et `RuntimeAsyncDemo` (ligne « Dépôts liés »), qui
 renvoient vers lui : garder ces liens à jour en cas de renommage.
-Le même métier bancaire implémenté 26 fois en .NET 10 (couches, hexagonale, Onion, Clean, cœur fonctionnel, Vertical Slice,
+Le même métier bancaire implémenté 27 fois en .NET 10 (couches, hexagonale, Onion, Clean, cœur fonctionnel, Vertical Slice,
 composants, monolithe modulaire, microservices, CQRS, Event Sourcing, DDD, serverless simulé, microkernel, saga orchestrée,
 multi-tenant, BFF, cellules, acteurs, space-based, pipeline, chorégraphie, la migration Strangler Fig, trois styles d'API :
 REST, gRPC, GraphQL, deux patterns de présentation : MVC, MVVM, et le point de départ sans architecture : Transaction
-Script, Active Record), 543 tests xUnit. Documentation dans `Docs\` (une page par architecture, schémas Mermaid, extraits du code) ; le `README.md`
+Script, Active Record, et un médiateur écrit à la main), 578 tests xUnit. Documentation dans `Docs\` (une page par architecture, schémas Mermaid, extraits du code) ; le `README.md`
 liste les démos, leurs ports (5100–5123, microservices 5200–5209, services du BFF 5210, cellules 5231–5234, ancien et nouveau
-système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la démo 24 5124, démo 25 5125) et les points à observer.
+système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la démo 24 5124, démo 25 5125, démo 26 5126) et les points à observer.
 - `dotnet test ArchitecturesDemo.slnx` : tout compiler et tester (chaque démo a aussi sa propre `.slnx`).
 - Aucun package hors du cache NuGet local (choix de l'utilisateur). **Code en anglais** (identifiants, commentaires, messages,
-  routes, tests, dossiers `00-Layered`…`25-TransactionScriptActiveRecord`, projets) depuis le 2026-10-12 (lot 7) : la version française du code n'existe plus.
+  routes, tests, dossiers `00-Layered`…`26-Mediator`, projets) depuis le 2026-10-12 (lot 7) : la version française du code n'existe plus.
 - Démo 23 : Protobuf, gRPC (HTTP/2, trailers) et le moteur GraphQL sont écrits à la main dans `Styles.Tooling` (pas de package).
 - Démo 24 : `Ui.Wpf` cible `net10.0-windows` (WPF, Windows seulement) ; `Ui.Wpf.exe capture fichier.png` dessine la fenêtre
   dans une image sans l'afficher. Les tests (net10.0) vérifient les liaisons du XAML en lisant le fichier.
@@ -21,7 +21,7 @@ système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la 
 - `Docs\fiches\` : une fiche mémo technique d'une page par architecture (phrase, schéma Mermaid, règles, quand l'utiliser,
   pièges), renvoyant à la page complète. À tenir à jour avec toute nouvelle démo, comme `pour-tous\`. PDF imprimable
   `Docs/fiches/pdf/fiches-architectures.pdf`, régénéré par `generer-pdf.py` (Chrome sans interface ; Edge échoue depuis l'app).
-- `Docs\differences\` : 17 comparaisons détaillées deux à deux (Hexagonale ou Onion, CQRS ou Event Sourcing, Saga ou
+- `Docs\differences\` : 18 comparaisons détaillées deux à deux (Hexagonale ou Onion, CQRS ou Event Sourcing, Saga ou
   Chorégraphie…), extraits du code des démos ; REST/gRPC/GraphQL et MVC/MVVM renvoient à leurs démos (23, 24).
 - Noms d'architecture : un nom anglais d'usage est gardé tel quel (pas de traduction inventée) ; un nom français affiche aussi
   son nom anglais (ligne « **Nom anglais** » sous le titre, colonne des sommaires) ;
@@ -34,4 +34,6 @@ système du Strangler Fig 5240–5241, gRPC de la démo 23 5250, site MVC de la 
   la prose suit la langue de la page.
 - Démo 25 : `Simple.Data` est une base écrite à la main (tables + transactions avec retour arrière), faute de SQLite
   dans le cache NuGet ; la démo est numérotée en dernier mais présentée comme le point de départ.
+- Démo 26 : `Med.Mediator` est un médiateur écrit à la main (MediatR est payant depuis 2025) ; les handlers sont
+  `internal`, et un test d'architecture vérifie un handler par requête.
 - `13-Microkernel\plugins\` est une sortie de compilation (non versionnée) : compiler la solution avant de lancer l'API.

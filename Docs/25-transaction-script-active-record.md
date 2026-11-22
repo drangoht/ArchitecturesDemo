@@ -5,7 +5,7 @@
 > table**, qui porte ses règles et s'enregistre lui-même (**Active Record**). C'est par là que commencent presque toutes
 > les applications, et c'est contre leurs limites que les autres démos se sont construites.
 
-📁 Code : [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) · ⬅️ [MVC et MVVM](24-mvc-mvvm.md) · ➡️ [Concepts transverses](concepts-transverses.md) · 🌐 [English](en/25-transaction-script-active-record.md)
+📁 Code : [`25-TransactionScriptActiveRecord`](../25-TransactionScriptActiveRecord) · ⬅️ [MVC et MVVM](24-mvc-mvvm.md) · ➡️ [Mediator](26-mediator.md) · 🌐 [English](en/25-transaction-script-active-record.md)
 
 ---
 

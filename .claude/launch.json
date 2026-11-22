@@ -180,6 +180,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "25-TransactionScriptActiveRecord/Simple.Api", "--launch-profile", "http"],
       "port": 5125
+    },
+    {
+      "name": "26-mediator",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "26-Mediator/Med.Api", "--launch-profile", "http"],
+      "port": 5126
     }
   ]
 }

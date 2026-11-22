@@ -89,7 +89,8 @@ public class OpenAccountHandler(WriteDb db, TimeProvider clock) : ICommandHandle
 
 ### 2. Un pipeline commun pour toutes les commandes
 
-C'est le rôle qu'on confie souvent à MediatR, écrit ici en quelques lignes.
+C'est le rôle qu'on confie souvent à MediatR, écrit ici en quelques lignes. Mais ce bus ne fait pas le CQRS : voir
+[Mediator ou CQRS ?](differences/18-mediator-vs-cqrs.md) et la [démo 26](26-mediator.md).
 ([CommandBus.cs](../09-CQRS/Cqrs.Write/Commands/CommandBus.cs))
 
 ```csharp

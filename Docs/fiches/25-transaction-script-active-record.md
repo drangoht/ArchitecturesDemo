@@ -37,4 +37,4 @@ routes obèses → [Couches](00-couches.md), [Clean](03-clean.md) ; tests qui ex
 [Hexagonale](01-hexagonale.md) ; scripts indépendants → [Vertical Slice](05-vertical-slice.md).
 
 ---
-⬅️ [MVC et MVVM](24-mvc-mvvm.md) · [Index des fiches](README.md)
+⬅️ [MVC et MVVM](24-mvc-mvvm.md) · [Index des fiches](README.md) · ➡️ [Mediator](26-mediator.md)

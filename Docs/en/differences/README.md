@@ -38,6 +38,7 @@ business, the same transfer, written in both architectures.
 |---|---|---|
 | 6 | [DDD or Hexagonal / Onion?](06-ddd-vs-hexagonale-onion.md) | **what** to model and where to cut, versus **how** to arrange |
 | 7 | [CQRS or Event Sourcing?](07-cqrs-vs-event-sourcing.md) | separating **reads and writes**, versus changing **what is stored** |
+| 18 | [Mediator or CQRS?](18-mediator-vs-cqrs.md) | separating **the caller from the called**, versus separating **the models** |
 
 ## ③ System decomposition
 
@@ -80,6 +81,7 @@ flowchart LR
     HE --- DDD["DDD"]
     ON --- DDD
     CQ["CQRS"] --- ES["Event Sourcing"]
+    MED["Mediator"] --- CQ
     CP["Package by Component"] --- MM["Modular Monolith"]
     MM --- MS["Microservices"]
     MS --- SL["Serverless"]

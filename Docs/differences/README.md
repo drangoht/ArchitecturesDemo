@@ -38,6 +38,7 @@ le même métier bancaire, le même virement, écrit dans les deux architectures
 |---|---|---|
 | 6 | [DDD ou Hexagonale / Onion ?](06-ddd-vs-hexagonale-onion.md) | **quoi** modéliser et où couper, contre **comment** ranger |
 | 7 | [CQRS ou Event Sourcing ?](07-cqrs-vs-event-sourcing.md) | séparer **lecture et écriture**, contre changer **ce qu'on stocke** |
+| 18 | [Mediator ou CQRS ?](18-mediator-vs-cqrs.md) | séparer **l'appelant de l'appelé**, contre séparer **les modèles** |
 
 ## ③ Découpage du système
 
@@ -80,6 +81,7 @@ flowchart LR
     HE --- DDD["DDD"]
     ON --- DDD
     CQ["CQRS"] --- ES["Event Sourcing"]
+    MED["Mediator"] --- CQ
     CP["Composants"] --- MM["Monolithe modulaire"]
     MM --- MS["Microservices"]
     MS --- SL["Serverless"]
